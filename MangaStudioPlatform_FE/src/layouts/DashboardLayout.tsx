@@ -1,61 +1,43 @@
-import { NavLink, Outlet, Navigate } from "react-router-dom";
+import { Navigate, NavLink, Outlet } from "react-router-dom";
 import {
   BarChart3,
-  BookOpen,
   Bell,
+  BookOpen,
   ClipboardCheck,
   FileText,
   LayoutDashboard,
   LogOut,
-  PlusCircle,
+  PenTool,
   Search,
   Settings,
-  Users,
+  Trophy,
   User,
-  Bell,
 } from "lucide-react";
 
-const menus = [
+const defaultMenus = [
   { label: "Dashboard", path: "/app/dashboard", icon: LayoutDashboard, end: true },
-  { label: "My Series", path: "/app/series", icon: BookOpen, end: true },
-  { label: "Create Series", path: "/app/series/create", icon: PlusCircle },
+  { label: "Series", path: "/app/series", icon: BookOpen },
+  { label: "Approval", path: "/app/series/approval", icon: ClipboardCheck },
   { label: "Chapters", path: "/app/chapters", icon: FileText },
   { label: "Tasks", path: "/app/tasks", icon: ClipboardCheck },
-  { label: "Assistants", path: "/app/assistants", icon: Users },
-  { label: "Reviews", path: "/app/reviews", icon: ClipboardCheck },
   { label: "Analytics", path: "/app/analytics", icon: BarChart3 },
   { label: "Notifications", path: "/app/notifications", icon: Bell },
+  { label: "Ranking", path: "/app/ranking", icon: Trophy },
   { label: "Profile", path: "/app/profile", icon: User },
-export default function DashboardLayout() {
-  const currentUser = JSON.parse(localStorage.getItem("currentUser") || "null");
-  const role = currentUser?.role;
+] as const;
 
-  if (!currentUser) {
-    return <Navigate to="/login" replace />;
-  }
+const editorMenus = [
+  { label: "Dashboard", path: "/app/editor/dashboard", icon: LayoutDashboard },
+  { label: "Review Queue", path: "/app/editor/review-queue", icon: ClipboardCheck },
+  { label: "Series Monitoring", path: "/app/editor/series-monitoring", icon: BookOpen },
+  { label: "Annotations", path: "/app/editor/annotations", icon: PenTool },
+  { label: "Publishing Queue", path: "/app/editor/publishing-queue", icon: FileText },
+  { label: "Ranking & Reports", path: "/app/editor/ranking-reports", icon: Trophy },
+  { label: "Notifications", path: "/app/editor/notifications", icon: Bell },
+  { label: "Profile", path: "/app/editor/profile", icon: User },
+] as const;
 
-  const defaultMenus = [
-    { label: "Dashboard", path: "/app/dashboard", icon: LayoutDashboard },
-    { label: "Series", path: "/app/series", icon: BookOpen },
-    { label: "Approval", path: "/app/series/approval", icon: ClipboardCheck },
-    { label: "Manuscripts", path: "/app/manuscripts", icon: FileText },
-    { label: "Tasks", path: "/app/tasks", icon: ClipboardCheck },
-    { label: "Ranking", path: "/app/ranking", icon: Trophy },
-    { label: "Profile", path: "/app/profile", icon: User },
-  ];
-
-  const editorMenus = [
-    { label: "Dashboard", path: "/app/editor/dashboard", icon: LayoutDashboard },
-    { label: "Review Queue", path: "/app/editor/review-queue", icon: ClipboardCheck },
-    { label: "Series Monitoring", path: "/app/editor/series-monitoring", icon: BookOpen },
-    { label: "Annotations", path: "/app/editor/annotations", icon: PenTool },
-    { label: "Publishing Queue", path: "/app/editor/publishing-queue", icon: FileText },
-    { label: "Ranking & Reports", path: "/app/editor/ranking-reports", icon: Trophy },
-    { label: "Notifications", path: "/app/editor/notifications", icon: Bell },
-    { label: "Profile", path: "/app/editor/profile", icon: User },
-  ];
-
-  const boardMenus = [
+const boardMenus = [
   { label: "Dashboard", path: "/app/board/dashboard", icon: LayoutDashboard },
   { label: "Series Proposals", path: "/app/board/series-proposals", icon: BookOpen },
   { label: "Voting Center", path: "/app/board/voting-center", icon: ClipboardCheck },
@@ -65,14 +47,35 @@ export default function DashboardLayout() {
   { label: "Reports", path: "/app/board/reports", icon: FileText },
   { label: "Notifications", path: "/app/board/notifications", icon: Bell },
   { label: "Profile", path: "/app/board/profile", icon: User },
-];
+] as const;
+
+export default function DashboardLayout() {
+  const currentUser = JSON.parse(localStorage.getItem("currentUser") || "null") as
+    | { role?: string }
+    | null;
+  const role = currentUser?.role;
+
+  if (!currentUser) {
+    return <Navigate to="/login" replace />;
+  }
 
   const menus =
     role === "editor"
       ? editorMenus
       : role === "editorial_board"
-      ? boardMenus
-      : defaultMenus;
+        ? boardMenus
+        : defaultMenus;
+  const workspaceLabel =
+    role === "editor"
+      ? "Editor Workspace"
+      : role === "editorial_board"
+        ? "Editorial Board"
+        : "Creator command center";
+
+  const handleLogout = () => {
+    localStorage.removeItem("currentUser");
+    window.location.href = "/login";
+  };
 
   return (
     <div className="min-h-screen bg-[#050816] text-slate-100">
@@ -83,21 +86,10 @@ export default function DashboardLayout() {
               M
             </div>
             <div>
-              <h1 className="text-lg font-bold leading-tight">Mangaka Studio</h1>
-              <p className="text-xs text-slate-400">Creator command center</p>
+              <h1 className="text-lg font-bold leading-tight">Manga Studio</h1>
+              <p className="text-xs text-slate-400">{workspaceLabel}</p>
             </div>
           </NavLink>
-    <div className="flex min-h-screen bg-slate-950 text-slate-100">
-      <aside className="w-72 border-r border-slate-800 bg-slate-900 p-6">
-        <h1 className="text-2xl font-bold">Manga Studio</h1>
-
-        <p className="text-xs text-slate-500">
-          {role === "editor"
-            ? "Editor Workspace"
-            : role === "editorial_board"
-            ? "Editorial Board"
-            : "Publishing Platform"}
-        </p>
 
           <div className="mt-6 rounded-2xl border border-amber-300/20 bg-amber-300/10 p-4">
             <p className="text-xs uppercase tracking-[0.24em] text-amber-100/80">
@@ -105,8 +97,8 @@ export default function DashboardLayout() {
             </p>
             <div className="mt-3 flex items-center justify-between gap-3">
               <div>
-                <p className="font-semibold text-white">Mangaka</p>
-                <p className="text-xs text-slate-400">Series owner</p>
+                <p className="font-semibold text-white">{role ?? "Mangaka"}</p>
+                <p className="text-xs text-slate-400">{workspaceLabel}</p>
               </div>
               <Settings size={18} className="text-amber-200" />
             </div>
@@ -120,7 +112,7 @@ export default function DashboardLayout() {
                 <NavLink
                   key={item.path}
                   to={item.path}
-                  end={item.end}
+                  end={"end" in item ? item.end : undefined}
                   className={({ isActive }) =>
                     `flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition ${
                       isActive
@@ -128,7 +120,7 @@ export default function DashboardLayout() {
                         : "text-slate-300 hover:bg-white/10 hover:text-white"
                     }`
                   }
->
+                >
                   <Icon size={18} />
                   {item.label}
                 </NavLink>
@@ -136,7 +128,10 @@ export default function DashboardLayout() {
             })}
           </nav>
 
-          <button className="mt-6 flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium text-rose-200 transition hover:bg-rose-500/10">
+          <button
+            onClick={handleLogout}
+            className="mt-6 flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium text-rose-200 transition hover:bg-rose-500/10"
+          >
             <LogOut size={18} />
             Logout
           </button>
@@ -150,8 +145,8 @@ export default function DashboardLayout() {
                   M
                 </div>
                 <div>
-                  <p className="font-semibold">Mangaka Studio</p>
-                  <p className="text-xs text-slate-400">Creator workspace</p>
+                  <p className="font-semibold">Manga Studio</p>
+                  <p className="text-xs text-slate-400">{workspaceLabel}</p>
                 </div>
               </NavLink>
               <button className="rounded-xl border border-white/10 bg-white/5 p-2 text-slate-200">
@@ -159,17 +154,6 @@ export default function DashboardLayout() {
               </button>
             </div>
           </header>
-        <button
-          onClick={() => {
-            localStorage.removeItem("currentUser");
-            window.location.href = "/login";
-          }}
-          className="mt-10 flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm text-red-300 hover:bg-slate-800"
-        >
-          <LogOut size={18} />
-          Logout
-        </button>
-      </aside>
 
           <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
             <Outlet />
