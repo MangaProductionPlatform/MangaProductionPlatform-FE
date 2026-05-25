@@ -14,6 +14,100 @@ const loginHighlights = [
 ];
 
 export default function LoginPage() {
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+
+const heroImage = "https://images.unsplash.com/photo-1544717305-996b815c338c?auto=format&fit=crop&w=1200&q=80";
+
+const stats = [
+  { label: "Series đang hoạt động", value: "24", delta: "+14%" },
+  { label: "Chương hoàn tất", value: "517", delta: "+8%" },
+  { label: "Biên tập viên", value: "12", delta: "+3" },
+];
+
+const features = [
+  { title: "Quản lý storyboard", desc: "Tạo luồng dựng panel, đánh dấu bản thảo và quản lý tiến độ sản xuất." },
+  { title: "Theo dõi xuất bản", desc: "Xem lịch phát hành, deadline và trạng thái story trong một trang duy nhất." },
+  { title: "Phản hồi biên tập", desc: "Thu thập bình luận, ghi chú nghệ thuật và nhận xét nội dung nhanh chóng." },
+];
+
+const trendingSeries = [
+  {
+    title: "Celestial Blade",
+    status: "Ongoing",
+    score: "9.2",
+    image: "https://images.unsplash.com/photo-1515581283639-30a5d5820b7f?auto=format&fit=crop&w=900&q=80",
+  },
+  {
+    title: "Neo Spirit",
+    status: "Review",
+    score: "8.9",
+    image: "https://images.unsplash.com/photo-1542377282-4ec6b7eeac83?auto=format&fit=crop&w=900&q=80",
+  },
+  {
+    title: "Blade of Seasons",
+    status: "Published",
+    score: "9.5",
+    image: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&w=900&q=80",
+  },
+];
+
+export default function LoginPage() {
+
+  const navigate = useNavigate();
+
+  const [showForm, setShowForm] = useState(false);
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+
+  const accounts = [
+    {
+      email: "editor@studio.com",
+      password: "123456",
+      role: "editor",
+    },
+    {
+      email: "admin@studio.com",
+      password: "123456",
+      role: "admin",
+    },
+    {
+     email: "board@studio.com",
+     password: "123456",
+     role: "editorial_board",
+},
+  ];
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const account = accounts.find(
+      (acc) =>
+        acc.email === email &&
+        acc.password === password
+    );
+
+    if (!account) {
+      setError("Sai tài khoản hoặc mật khẩu");
+      return;
+    }
+
+    localStorage.setItem(
+      "currentUser",
+      JSON.stringify(account)
+    );
+
+    if (account.role === "editor") {
+      navigate("/app/editor/dashboard");
+    } else if (account.role === "editorial_board") {
+      navigate("/app/board/dashboard");
+    } else {
+     navigate("/app/dashboard");
+}
+  };
+
   return (
     <div className="min-h-screen bg-[#050816] text-slate-100">
       <div className="grid min-h-screen lg:grid-cols-[1fr_0.95fr]">
@@ -135,6 +229,34 @@ export default function LoginPage() {
 <button className="inline-flex w-full items-center justify-center gap-2 rounded-3xl bg-gradient-to-r from-amber-300 via-rose-400 to-fuchsia-500 px-5 py-3.5 text-sm font-bold text-slate-950 transition hover:scale-[1.01]">
                 Login
                 <ArrowRight size={16} />
+            <form onSubmit={handleLogin} className="space-y-5">
+              <div>
+                <label className="mb-2 block text-sm text-slate-400">Email address</label>
+                <input
+                  type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="editor@studio.com"
+                  className="w-full rounded-3xl border border-slate-700 bg-slate-950 px-5 py-3 text-slate-100 outline-none transition focus:border-indigo-500"
+                />
+              </div>
+
+              <div>
+              <div className="flex items-center justify-between text-sm text-slate-400">
+                <label className="mb-2 block">Password</label>
+
+                <button
+                type="button"
+                className="text-indigo-400 hover:text-indigo-300"
+               > Forgot password? </button>
+              </div>
+
+              <input  type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="123456"
+               className="w-full rounded-3xl border border-slate-700 bg-slate-950 px-5 py-3 text-slate-100 outline-none transition focus:border-indigo-500"
+               />
+                {error && ( <p className="mt-2 text-sm text-red-400"> {error}
+              </p> )}
+              </div>
+
+              <button className="w-full rounded-3xl bg-gradient-to-r from-indigo-500 via-violet-500 to-cyan-500 px-5 py-3 text-base font-semibold text-slate-950 shadow-lg shadow-violet-500/20 transition hover:scale-[1.02]">
+                Đăng nhập
               </button>
 
               <div className="flex items-center justify-between text-sm text-slate-400">

@@ -14,6 +14,13 @@ import { analyticsTimeline, chapterPipeline, mangakaSeries, mangakaStats, notifi
 
 
 const statIcons = [BookOpen, FileText, CheckCircle2, Bell] as const;
+const stats = [
+  { label: "Total Series", value: "0", icon: BookOpen },
+  { label: "Pending Approval", value: "0", icon: Clock },
+  { label: "Approved Series", value: "0", icon: CheckCircle },
+  { label: "Active Tasks", value: "0", icon: FileText },
+  
+];
 
 export default function DashboardPage() {
   return (
