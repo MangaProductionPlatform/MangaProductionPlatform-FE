@@ -51,7 +51,7 @@ import SeriesMonitoringPage from "./pages/editors/SeriesMonitoringPage";
 import AnnotationsPage from "./pages/editors/AnnotationsPage";
 import PublishingQueuePage from "./pages/editors/PublishingQueuePage";
 import RankingReportsPage from "./pages/editors/RankingReportsPage";
-import NotificationsPage from "./pages/editors/NotificationsPage";
+import EditorNotificationsPage from "./pages/editors/NotificationsPage";
 import EditorProfilePage from "./pages/editors/EditorProfilePage";
 import BoardDashboardPage from "./pages/board/BoardDashboardPage";
 import SeriesProposalsPage from "./pages/board/SeriesProposalsPage";
@@ -80,7 +80,6 @@ export default function App() {
 
       <Route path="/app" element={<DashboardLayout />}>
         <Route index element={<Navigate to="dashboard" replace />} />
-        <Route path="/app" element={<DashboardLayout />}>
         <Route path="dashboard" element={<DashboardPage />} />
         <Route path="editor/dashboard" element={<EditorWorkspacePage />} />
         <Route path="editor/review-queue" element={<ReviewQueuePage />} />
@@ -88,7 +87,7 @@ export default function App() {
         <Route path="editor/annotations" element={<AnnotationsPage />} />
         <Route path="editor/publishing-queue" element={<PublishingQueuePage />} />
         <Route path="editor/ranking-reports" element={<RankingReportsPage />} />
-        <Route path="editor/notifications" element={<NotificationsPage />} />
+        <Route path="editor/notifications" element={<EditorNotificationsPage />} />
         <Route path="editor/profile" element={<EditorProfilePage />} />
         <Route path="board/dashboard" element={<BoardDashboardPage />}/>
         <Route path="board/series-proposals" element={<SeriesProposalsPage />} />
