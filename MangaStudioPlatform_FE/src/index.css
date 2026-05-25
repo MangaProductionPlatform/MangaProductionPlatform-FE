@@ -1,13 +1,28 @@
 @import "tailwindcss";
 
+html {
+  scroll-behavior: smooth;
+}
+
 * {
   box-sizing: border-box;
 }
 
 body {
   margin: 0;
-  font-family: Inter, Arial, sans-serif;
-  background: #020617;
+  min-height: 100vh;
+  font-family: Inter, "Segoe UI", Arial, sans-serif;
+  background:
+    radial-gradient(circle at top left,
+      rgba(244, 114, 182, 0.12),
+      transparent 28%),
+    radial-gradient(circle at top right,
+      rgba(34, 211, 238, 0.1),
+      transparent 26%),
+    linear-gradient(180deg, #020617 0%, #050816 100%);
+  color: #e2e8f0;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
 }
 
 .input {
@@ -23,11 +38,13 @@ body {
 .input::placeholder {
   color: #64748b;
 }
+
 @keyframes fade-in-up {
   from {
     opacity: 0;
     transform: translateY(16px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -39,10 +56,13 @@ body {
 }
 
 @keyframes pulse-glow {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 0.25;
     transform: scale(0.95);
   }
+
   50% {
     opacity: 0.6;
     transform: scale(1.05);
@@ -51,4 +71,92 @@ body {
 
 .pulse-glow {
   animation: pulse-glow 6s ease-in-out infinite;
+}
+
+@keyframes float-slow {
+
+  0%,
+  100% {
+    transform: translateY(0px) scale(1);
+  }
+
+  50% {
+    transform: translateY(-18px) scale(1.03);
+  }
+}
+
+@keyframes float-medium {
+
+  0%,
+  100% {
+    transform: translateY(0px) translateX(0px);
+  }
+
+  50% {
+    transform: translateY(16px) translateX(-10px);
+  }
+}
+
+@keyframes float-fast {
+
+  0%,
+  100% {
+    transform: translateY(0px) translateX(0px);
+  }
+
+  50% {
+    transform: translateY(-12px) translateX(8px);
+  }
+}
+
+@keyframes reveal-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes cover-marquee {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.float-slow {
+  animation: float-slow 10s ease-in-out infinite;
+}
+
+.float-medium {
+  animation: float-medium 12s ease-in-out infinite;
+}
+
+.float-fast {
+  animation: float-fast 9s ease-in-out infinite;
+}
+
+.reveal-up {
+  animation: reveal-up 0.8s ease both;
+}
+
+.cover-marquee-track {
+  animation: cover-marquee 34s linear infinite;
+}
+
+.cover-marquee-track:hover {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cover-marquee-track {
+    animation: none;
+  }
 }
