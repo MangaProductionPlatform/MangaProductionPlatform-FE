@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const heroImage = "https://images.unsplash.com/photo-1544717305-996b815c338c?auto=format&fit=crop&w=1200&q=80";
 
@@ -36,7 +37,60 @@ const trendingSeries = [
 ];
 
 export default function LoginPage() {
+
+  const navigate = useNavigate();
+
   const [showForm, setShowForm] = useState(false);
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+
+  const accounts = [
+    {
+      email: "editor@studio.com",
+      password: "123456",
+      role: "editor",
+    },
+    {
+      email: "admin@studio.com",
+      password: "123456",
+      role: "admin",
+    },
+    {
+     email: "board@studio.com",
+     password: "123456",
+     role: "editorial_board",
+},
+  ];
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const account = accounts.find(
+      (acc) =>
+        acc.email === email &&
+        acc.password === password
+    );
+
+    if (!account) {
+      setError("Sai tài khoản hoặc mật khẩu");
+      return;
+    }
+
+    localStorage.setItem(
+      "currentUser",
+      JSON.stringify(account)
+    );
+
+    if (account.role === "editor") {
+      navigate("/app/editor/dashboard");
+    } else if (account.role === "editorial_board") {
+      navigate("/app/board/dashboard");
+    } else {
+     navigate("/app/dashboard");
+}
+  };
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#030814] text-slate-100">
@@ -224,28 +278,30 @@ export default function LoginPage() {
               </button>
             </div>
 
-            <form className="space-y-5">
+            <form onSubmit={handleLogin} className="space-y-5">
               <div>
                 <label className="mb-2 block text-sm text-slate-400">Email address</label>
                 <input
-                  type="email"
-                  placeholder="creator@studio.com"
+                  type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="editor@studio.com"
                   className="w-full rounded-3xl border border-slate-700 bg-slate-950 px-5 py-3 text-slate-100 outline-none transition focus:border-indigo-500"
                 />
               </div>
 
               <div>
-                <div className="flex items-center justify-between text-sm text-slate-400">
-                  <label className="mb-2 block">Password</label>
-                  <button type="button" className="text-indigo-400 hover:text-indigo-300">
-                    Forgot password?
-                  </button>
-                </div>
-                <input
-                  type="password"
-                  placeholder="••••••••"
-                  className="w-full rounded-3xl border border-slate-700 bg-slate-950 px-5 py-3 text-slate-100 outline-none transition focus:border-indigo-500"
-                />
+              <div className="flex items-center justify-between text-sm text-slate-400">
+                <label className="mb-2 block">Password</label>
+
+                <button
+                type="button"
+                className="text-indigo-400 hover:text-indigo-300"
+               > Forgot password? </button>
+              </div>
+
+              <input  type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="123456"
+               className="w-full rounded-3xl border border-slate-700 bg-slate-950 px-5 py-3 text-slate-100 outline-none transition focus:border-indigo-500"
+               />
+                {error && ( <p className="mt-2 text-sm text-red-400"> {error}
+              </p> )}
               </div>
 
               <button className="w-full rounded-3xl bg-gradient-to-r from-indigo-500 via-violet-500 to-cyan-500 px-5 py-3 text-base font-semibold text-slate-950 shadow-lg shadow-violet-500/20 transition hover:scale-[1.02]">

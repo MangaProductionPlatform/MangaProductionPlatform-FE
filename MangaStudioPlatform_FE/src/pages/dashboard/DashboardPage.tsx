@@ -5,6 +5,7 @@ const stats = [
   { label: "Pending Approval", value: "0", icon: Clock },
   { label: "Approved Series", value: "0", icon: CheckCircle },
   { label: "Active Tasks", value: "0", icon: FileText },
+  
 ];
 
 export default function DashboardPage() {
