@@ -149,14 +149,5 @@ body {
 
 .cover-marquee-track {
   animation: cover-marquee 34s linear infinite;
-}
-
-.cover-marquee-track:hover {
-  animation-play-state: paused;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .cover-marquee-track {
-    animation: none;
-  }
+  will-change: transform;
 }

@@ -3,11 +3,11 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowRight,
-  BookOpen,
   LockKeyhole,
   Sparkles,
-  UserRound,
 } from "lucide-react";
+import { mangaErpApi } from "../../shared/api/mangaErpApi";
+import { useToast } from "../../shared/components/ToastProvider";
 
 const loginHighlights = [
   "Resume your reading list instantly",
@@ -15,56 +15,51 @@ const loginHighlights = [
   "Stay synced with editorial updates",
 ] as const;
 
-const accounts = [
-  { email: "editor@studio.com", password: "123456", role: "editor" },
-  { email: "admin@studio.com", password: "123456", role: "admin" },
-  { email: "board@studio.com", password: "123456", role: "editorial_board" },
-  { email: "creator@studio.com", password: "123456", role: "mangaka" },
-  { email: "mangaka@studio.com", password: "123456", role: "mangaka" },
-  { email: "assistant@studio.com", password: "123456", role: "assistant" },
-] as const;
-
 export default function LoginPage() {
   const navigate = useNavigate();
+  const toast = useToast();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleLogin = (event: FormEvent<HTMLFormElement>) => {
+  const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setIsSubmitting(true);
 
-    const account = accounts.find(
-      (item) => item.email === email && item.password === password,
-    );
+    try {
+      const account = await mangaErpApi.login(email, password);
+      localStorage.setItem("currentUser", JSON.stringify(account));
+      toast.success("Login successful", "Welcome back to MangaStudio.");
 
-    if (!account) {
-      setError("Invalid email or password");
-      return;
+      if (account.role === "admin") {
+        navigate("/admin/dashboard");
+        return;
+      }
+
+      if (account.role === "editor") {
+        navigate("/app/editor/dashboard");
+        return;
+      }
+
+      if (account.role === "editorial_board") {
+        navigate("/app/board/dashboard");
+        return;
+      }
+
+      if (account.role === "assistant") {
+        navigate("/assistant/dashboard");
+        return;
+      }
+
+      navigate("/app/dashboard");
+    } catch (err) {
+      toast.error(
+        "Login failed",
+        err instanceof Error ? err.message : "Invalid email or password",
+      );
+    } finally {
+      setIsSubmitting(false);
     }
-
-    localStorage.setItem("currentUser", JSON.stringify(account));
-
-    if (account.role === "admin") {
-      navigate("/admin/dashboard");
-      return;
-    }
-
-    if (account.role === "editor") {
-      navigate("/app/editor/dashboard");
-      return;
-    }
-
-    if (account.role === "editorial_board") {
-      navigate("/app/board/dashboard");
-      return;
-    }
-
-    if (account.role === "assistant") {
-      navigate("/assistant/dashboard");
-      return;
-    }
-
-    navigate("/app/dashboard");
   };
 
   return (
@@ -119,27 +114,14 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-3">
-              {[
-                { value: "2.4M", label: "monthly readers", icon: BookOpen },
-                { value: "780", label: "creator series", icon: UserRound },
-                { value: "24/7", label: "editor coverage", icon: Sparkles },
-              ].map((item) => {
-                const Icon = item.icon;
-
-                return (
-                  <div
-                    key={item.label}
-                    className="rounded-3xl border border-white/10 bg-slate-950/50 p-4 backdrop-blur-xl"
-                  >
-                    <Icon size={18} className="text-amber-300" />
-                    <p className="mt-3 text-2xl font-bold text-white">
-                      {item.value}
-                    </p>
-                    <p className="mt-1 text-sm text-slate-400">{item.label}</p>
-                  </div>
-                );
-              })}
+            <div className="rounded-3xl border border-white/10 bg-slate-950/50 p-5 backdrop-blur-xl">
+              <Sparkles size={18} className="text-amber-300" />
+              <p className="mt-3 text-lg font-bold text-white">
+                Connected to Identity API
+              </p>
+              <p className="mt-1 text-sm leading-6 text-slate-400">
+                Login uses your backend account and routes by the returned role.
+              </p>
             </div>
           </div>
         </aside>
@@ -159,30 +141,6 @@ export default function LoginPage() {
             </div>
 
             <form onSubmit={handleLogin} className="space-y-5">
-              <div className="grid gap-2 rounded-3xl border border-white/10 bg-slate-950/50 p-3 text-xs text-slate-300">
-                {[
-                  ["Admin", "admin@studio.com"],
-                  ["Mangaka", "mangaka@studio.com"],
-                  ["Assistant", "assistant@studio.com"],
-                  ["Editor", "editor@studio.com"],
-                  ["Board", "board@studio.com"],
-                ].map(([label, demoEmail]) => (
-                  <button
-                    key={demoEmail}
-                    type="button"
-                    onClick={() => {
-                      setEmail(demoEmail);
-                      setPassword("123456");
-                      setError("");
-                    }}
-                    className="flex items-center justify-between rounded-2xl px-3 py-2 text-left transition hover:bg-white/10"
-                  >
-                    <span className="font-semibold text-white">{label}</span>
-                    <span>{demoEmail} / 123456</span>
-                  </button>
-                ))}
-              </div>
-
               <label className="block">
                 <span className="mb-2 block text-sm text-slate-300">
                   Email address
@@ -215,10 +173,11 @@ export default function LoginPage() {
                 </div>
               </label>
 
-              {error && <p className="text-sm text-rose-300">{error}</p>}
-
-              <button className="inline-flex w-full items-center justify-center gap-2 rounded-3xl bg-gradient-to-r from-amber-300 via-rose-400 to-fuchsia-500 px-5 py-3.5 text-sm font-bold text-slate-950 transition hover:scale-[1.01]">
-                Login
+              <button
+                disabled={isSubmitting}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-3xl bg-gradient-to-r from-amber-300 via-rose-400 to-fuchsia-500 px-5 py-3.5 text-sm font-bold text-slate-950 transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isSubmitting ? "Logging in..." : "Login"}
                 <ArrowRight size={16} />
               </button>
 
