@@ -1,12 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, Ban } from "lucide-react";
-import {
-  mangaErpApi,
-  type ChapterDto,
-  type MangaSeriesDto,
-} from "../../shared/api/mangaErpApi";
-import { useToast } from "../../shared/components/ToastProvider";
+import { mangaErpApi } from "../../shared/services/mangaErpService";
+import type { ChapterDto, MangaSeriesDto } from "../../shared/types/mangaErp";
+import { useToast } from "../../shared/components/toastContext";
 
 export default function SeriesDetailPage() {
   const params = useParams();
@@ -89,11 +86,17 @@ export default function SeriesDetailPage() {
 
       {!isLoading && series ? (
         <section className="grid gap-5 rounded-lg border border-white/10 bg-slate-900/75 p-5 lg:grid-cols-[13rem_1fr]">
-          <img
-            src={series.coverImageUrl || "/favicon.svg"}
-            alt={series.title}
-            className="aspect-[2/3] w-full rounded-lg object-cover shadow-xl shadow-slate-950/30"
-          />
+          {series.coverImageUrl ? (
+            <img
+              src={series.coverImageUrl}
+              alt={series.title}
+              className="aspect-[2/3] w-full rounded-lg object-cover shadow-xl shadow-slate-950/30"
+            />
+          ) : (
+            <div className="flex aspect-[2/3] w-full items-center justify-center rounded-lg border border-white/10 bg-slate-950/70 text-sm font-bold uppercase text-slate-500">
+              No cover
+            </div>
+          )}
           <div>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <span className="rounded-md border border-cyan-300/20 bg-cyan-300/10 px-2 py-1 text-xs font-semibold text-cyan-100">

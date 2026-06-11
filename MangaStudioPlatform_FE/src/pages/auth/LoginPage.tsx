@@ -6,8 +6,8 @@ import {
   LockKeyhole,
   Sparkles,
 } from "lucide-react";
-import { mangaErpApi } from "../../shared/api/mangaErpApi";
-import { useToast } from "../../shared/components/ToastProvider";
+import { mangaErpApi } from "../../shared/services/mangaErpService";
+import { useToast } from "../../shared/components/toastContext";
 
 const loginHighlights = [
   "Resume your reading list instantly",
@@ -181,16 +181,13 @@ export default function LoginPage() {
                 <ArrowRight size={16} />
               </button>
 
-              <div className="flex items-center justify-between text-sm text-slate-400">
+              <div className="flex justify-center text-sm text-slate-400">
                 <button
                   type="button"
                   className="transition hover:text-white"
                 >
                   Forgot password?
                 </button>
-                <Link to="/register" className="transition hover:text-white">
-                  Create account
-                </Link>
               </div>
             </form>
           </div>

@@ -1,8 +1,8 @@
 import type { FormEvent, ReactNode } from "react";
 import { useMemo, useState } from "react";
 import { CheckCircle2, ClipboardCheck, MessageSquare, Send, XCircle } from "lucide-react";
-import { mangaErpApi } from "../../shared/api/mangaErpApi";
-import { useToast } from "../../shared/components/ToastProvider";
+import { mangaErpApi } from "../../shared/services/mangaErpService";
+import { useToast } from "../../shared/components/toastContext";
 
 type SubmissionAction = "recommend" | "approve" | "reject" | "revision";
 

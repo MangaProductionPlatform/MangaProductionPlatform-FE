@@ -22,7 +22,7 @@ export default function AssistantsPage() {
         </div>
         <h3 className="mt-4 text-lg font-bold text-white">No backend assistants</h3>
         <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-400">
-          Identity currently supports auth/register/login, but it does not
+          Identity currently supports login, but it does not
           expose a users/assistants list endpoint.
         </p>
         <div className="mx-auto mt-5 inline-flex items-center gap-2 rounded-lg border border-amber-300/20 bg-amber-300/10 px-4 py-2 text-sm text-amber-100">

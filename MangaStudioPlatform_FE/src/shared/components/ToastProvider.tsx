@@ -1,26 +1,13 @@
 import type { ReactNode } from "react";
-import { createContext, useCallback, useContext, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { AlertCircle, CheckCircle2, Info, X } from "lucide-react";
-
-type ToastType = "success" | "error" | "info";
-
-type Toast = {
-  id: number;
-  title: string;
-  description?: string;
-  type: ToastType;
-};
-
-type ToastInput = Omit<Toast, "id">;
-
-type ToastContextValue = {
-  notify: (toast: ToastInput) => void;
-  success: (title: string, description?: string) => void;
-  error: (title: string, description?: string) => void;
-  info: (title: string, description?: string) => void;
-};
-
-const ToastContext = createContext<ToastContextValue | null>(null);
+import {
+  ToastContext,
+  type Toast,
+  type ToastContextValue,
+  type ToastInput,
+  type ToastType,
+} from "./toastContext";
 
 const toastStyles: Record<ToastType, string> = {
   success: "border-emerald-300/25 bg-emerald-500/15 text-emerald-50",
@@ -101,14 +88,4 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       </div>
     </ToastContext.Provider>
   );
-}
-
-export function useToast() {
-  const context = useContext(ToastContext);
-
-  if (!context) {
-    throw new Error("useToast must be used within ToastProvider.");
-  }
-
-  return context;
 }

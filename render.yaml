@@ -2,11 +2,12 @@ services:
   - type: web
     name: mangastudio-fe
     runtime: static
+    rootDir: MangaStudioPlatform_FE
     buildCommand: npm ci && npm run build
     staticPublishPath: ./dist
     envVars:
       - key: VITE_API_BASE_URL
-        sync: false
+        value: https://mangaproductionplatform-be.onrender.com
     routes:
       - type: rewrite
         source: /*

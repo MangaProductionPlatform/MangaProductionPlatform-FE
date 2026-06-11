@@ -1,8 +1,9 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, PlusCircle, Search, SlidersHorizontal, TrendingUp } from "lucide-react";
+import { ArrowRight, PlusCircle, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { mangaErpApi, type MangaSeriesDto } from "../../shared/api/mangaErpApi";
-import { useToast } from "../../shared/components/ToastProvider";
+import { mangaErpApi } from "../../shared/services/mangaErpService";
+import type { MangaSeriesDto } from "../../shared/types/mangaErp";
+import { useToast } from "../../shared/components/toastContext";
 
 export default function SeriesListPage() {
   const toast = useToast();
@@ -49,20 +50,6 @@ export default function SeriesListPage() {
     };
   }, [currentUser?.userId, toast]);
 
-  const displaySeries = seriesList.map((series) => ({
-        id: series.id,
-        title: series.title,
-        cover: series.coverImageUrl || "/favicon.svg",
-        status: series.status,
-        genre: series.genre ?? "Uncategorized",
-        ranking: "-",
-        latestChapter: "Load chapters from detail",
-        views: "-",
-        engagement: "-",
-        editor: "-",
-        progress: series.status === "Active" ? 65 : 15,
-      }));
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -95,16 +82,6 @@ export default function SeriesListPage() {
             placeholder="Search title, genre, editor"
           />
         </label>
-        <div className="flex gap-2">
-          <button className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-slate-200 hover:bg-white/10">
-            <SlidersHorizontal size={16} />
-            Status
-          </button>
-          <button className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-slate-200 hover:bg-white/10">
-            <TrendingUp size={16} />
-            Ranking
-          </button>
-        </div>
       </div>
 
       <section className="grid gap-5 xl:grid-cols-2">
@@ -114,7 +91,7 @@ export default function SeriesListPage() {
           </div>
         ) : null}
 
-        {!isLoading && displaySeries.length === 0 ? (
+        {!isLoading && seriesList.length === 0 ? (
           <div className="rounded-lg border border-white/10 bg-slate-900/75 p-6 text-sm text-slate-300">
             No approved series found from backend yet. If you just submitted a
             proposal, check MangaSubmissionDB; it will only appear here after
@@ -122,16 +99,22 @@ export default function SeriesListPage() {
           </div>
         ) : null}
 
-        {!isLoading && displaySeries.map((series) => (
+        {!isLoading && seriesList.map((series) => (
           <article
             key={series.id}
             className="grid gap-4 rounded-lg border border-white/10 bg-slate-900/75 p-4 sm:grid-cols-[8.5rem_1fr]"
           >
-            <img
-              src={series.cover}
-              alt={series.title}
-              className="aspect-[2/3] w-full rounded-lg object-cover shadow-xl shadow-slate-950/30"
-            />
+            {series.coverImageUrl ? (
+              <img
+                src={series.coverImageUrl}
+                alt={series.title}
+                className="aspect-[2/3] w-full rounded-lg object-cover shadow-xl shadow-slate-950/30"
+              />
+            ) : (
+              <div className="flex aspect-[2/3] w-full items-center justify-center rounded-lg border border-white/10 bg-slate-950/70 text-sm font-bold uppercase text-slate-500">
+                No cover
+              </div>
+            )}
             <div className="min-w-0">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
@@ -141,39 +124,16 @@ export default function SeriesListPage() {
                   <h3 className="mt-3 text-2xl font-black text-white">
                     {series.title}
                   </h3>
-                  <p className="mt-1 text-sm text-slate-400">{series.genre}</p>
-                </div>
-                <div className="rounded-lg border border-amber-300/20 bg-amber-300/10 px-3 py-2 text-right">
-                  <p className="text-xs uppercase tracking-[0.18em] text-amber-100/80">
-                    Rank
-                  </p>
-                  <p className="mt-1 text-lg font-bold text-amber-100">
-                    {series.ranking}
+                  <p className="mt-1 text-sm text-slate-400">
+                    {series.genre ?? "Uncategorized"}
                   </p>
                 </div>
               </div>
 
               <dl className="mt-5 grid grid-cols-2 gap-3 text-sm">
-                <Info label="Latest chapter" value={series.latestChapter} />
-                <Info label="Views" value={series.views} />
-                <Info label="Engagement" value={series.engagement} />
-                <Info label="Editor" value={series.editor} />
+                <Info label="Author" value={series.authorId} />
+                <Info label="Created" value={new Date(series.createdAt).toLocaleDateString()} />
               </dl>
-
-              <div className="mt-5">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-400">Production progress</span>
-                  <span className="font-semibold text-white">
-                    {series.progress}%
-                  </span>
-                </div>
-                <div className="mt-2 h-2 rounded-full bg-slate-800">
-                  <div
-                    className="h-full rounded-full bg-gradient-to-r from-cyan-300 via-emerald-300 to-amber-300"
-                    style={{ width: `${series.progress}%` }}
-                  />
-                </div>
-              </div>
 
               <div className="mt-5 flex flex-wrap gap-2">
                 <Link

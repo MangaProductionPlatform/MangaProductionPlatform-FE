@@ -1,5 +1,4 @@
-import { ArrowRight, PencilLine } from "lucide-react";
-import { Link } from "react-router-dom";
+import { PencilLine } from "lucide-react";
 import EmptyBackendState from "../../shared/components/EmptyBackendState";
 
 export default function CreatorPage() {
@@ -9,16 +8,7 @@ export default function CreatorPage() {
         <EmptyBackendState
           icon={PencilLine}
           title="Creator showcase needs backend data"
-          description="Registration still works through the Identity service."
-          action={
-            <Link
-              to="/register"
-              className="inline-flex items-center gap-2 rounded-lg bg-cyan-300 px-4 py-2.5 text-sm font-bold text-slate-950 hover:bg-cyan-200"
-            >
-              Register
-              <ArrowRight size={16} />
-            </Link>
-          }
+          description="Creator onboarding needs backend data before this page can show real content."
         />
       </div>
     </div>
