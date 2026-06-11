@@ -4,6 +4,7 @@ import AssistantLayout from "../layouts/AssistantLayout";
 import DashboardLayout from "../layouts/DashboardLayout";
 import PublicLayout from "../layouts/PublicLayout";
 import AdminAiManagementPage from "../pages/admin/AdminAiManagementPage";
+import AdminCreateUserPage from "../pages/admin/AdminCreateUserPage";
 import AdminDashboardPage from "../pages/admin/AdminDashboardPage";
 import AdminModerationPage from "../pages/admin/AdminModerationPage";
 import AdminNotificationsPage from "../pages/admin/AdminNotificationsPage";
@@ -25,6 +26,7 @@ import AssistantSubmissionsPage from "../pages/assistant/AssistantSubmissionsPag
 import AssistantTaskDetailPage from "../pages/assistant/AssistantTaskDetailPage";
 import AssistantTasksPage from "../pages/assistant/AssistantTasksPage";
 import AssistantsPage from "../pages/assistants/AssistantsPage";
+import ActivateAccountPage from "../pages/auth/ActivateAccountPage";
 import LoginPage from "../pages/auth/LoginPage";
 import BoardDashboardPage from "../pages/board/BoardDashboardPage";
 import BoardNotificationsPage from "../pages/board/BoardNotificationsPage";
@@ -74,6 +76,7 @@ export function AppRouter() {
         <Route path="/creator" element={<CreatorPage />} />
       </Route>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/activate" element={<ActivateAccountPage />} />
 
       <Route path="/app" element={<DashboardLayout />}>
         <Route index element={<Navigate to="dashboard" replace />} />
@@ -133,6 +136,7 @@ export function AppRouter() {
         <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<AdminDashboardPage />} />
         <Route path="users" element={<AdminUsersPage />} />
+        <Route path="users/create" element={<AdminCreateUserPage />} />
         <Route path="users/:id" element={<AdminUserDetailPage />} />
         <Route path="roles" element={<AdminRolesPage />} />
         <Route path="series" element={<AdminSeriesMonitoringPage />} />
