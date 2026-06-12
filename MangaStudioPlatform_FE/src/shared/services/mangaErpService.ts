@@ -1,10 +1,16 @@
 import type {
   ActivatePagePayload,
+  ActivateAccountPayload,
+  ActivateAccountResult,
+  AdminUserDto,
   CreateChapterPayload,
   CreateSubmissionPayload,
   CurrentUser,
   ImportVotePayload,
+  ListUsersResult,
   PageTaskDto,
+  ProvisionAccountPayload,
+  ProvisionAccountResult,
   RankingBoardItemDto,
   RecommendSubmissionPayload,
   ReviewSubmissionPayload,
@@ -31,6 +37,40 @@ export const mangaErpApi = {
       accessToken: pick<string>(data, "accessToken"),
       refreshToken: pick<string>(data, "refreshToken"),
     };
+  },
+
+  async listUsers(filters: { roleFilter?: number; statusFilter?: number } = {}) {
+    const params = new URLSearchParams();
+    if (filters.roleFilter !== undefined) {
+      params.set("roleFilter", String(filters.roleFilter));
+    }
+    if (filters.statusFilter !== undefined) {
+      params.set("statusFilter", String(filters.statusFilter));
+    }
+
+    const query = params.toString();
+    return request<ListUsersResult>(
+      "identity",
+      `/api/v1/admin/accounts${query ? `?${query}` : ""}`,
+    );
+  },
+
+  async getUser(id: string) {
+    return request<AdminUserDto>("identity", `/api/v1/admin/accounts/${id}`);
+  },
+
+  async provisionAccount(payload: ProvisionAccountPayload) {
+    return request<ProvisionAccountResult>("identity", "/api/v1/admin/accounts/provision", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async activateAccount(payload: ActivateAccountPayload) {
+    return request<ActivateAccountResult>("identity", "/api/v1/auth/activate", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
   },
 
   async getAllSeries() {

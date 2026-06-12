@@ -30,6 +30,62 @@ export type AppRole =
   | "editorial_board"
   | "admin";
 
+export type ProvisionRole =
+  | 1
+  | 2
+  | 3
+  | 4;
+
+export type AdminUserDto = {
+  userId: string;
+  username: string;
+  fullName?: string | null;
+  role: string;
+  accountStatus: string;
+  personalEmail?: string | null;
+  createdAt: string;
+  phoneNumber?: string | null;
+  penName?: string | null;
+  drawingSoftwares?: string[] | null;
+  bankAccountNumber?: string | null;
+  managingTantouId?: string | null;
+};
+
+export type ListUsersResult = {
+  users: AdminUserDto[];
+  totalCount: number;
+};
+
+export type ProvisionAccountPayload = {
+  fullName: string;
+  personalEmail: string;
+  role: ProvisionRole;
+  phoneNumber?: string | null;
+  managingTantouId?: string | null;
+};
+
+export type ProvisionAccountResult = {
+  userId: string;
+  generatedUsername: string;
+  personalEmail: string;
+  role: string;
+  status: string;
+};
+
+export type ActivateAccountPayload = {
+  token: string;
+  password: string;
+  penName?: string | null;
+  drawingSoftwares?: string[] | null;
+  bankAccountNumber?: string | null;
+};
+
+export type ActivateAccountResult = {
+  userId: string;
+  username: string;
+  role: string;
+};
+
 export type MangaSeriesDto = {
   id: string;
   title: string;
