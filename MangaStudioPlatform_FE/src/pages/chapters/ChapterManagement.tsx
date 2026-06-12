@@ -1,12 +1,9 @@
 import type { FormEvent } from "react";
 import { useEffect, useState } from "react";
 import { ClipboardList, FileText, Send, Upload, UserPlus } from "lucide-react";
-import {
-  mangaErpApi,
-  type ChapterDto,
-  type MangaSeriesDto,
-} from "../../shared/api/mangaErpApi";
-import { useToast } from "../../shared/components/ToastProvider";
+import { mangaErpApi } from "../../shared/services/mangaErpService";
+import type { ChapterDto, MangaSeriesDto } from "../../shared/types/mangaErp";
+import { useToast } from "../../shared/components/toastContext";
 
 export default function ChapterManagementPage() {
   const toast = useToast();

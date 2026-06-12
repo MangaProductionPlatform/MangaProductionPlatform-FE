@@ -1,13 +1,7 @@
-import { ArrowRight, BookOpenText, LogIn, UserPlus } from "lucide-react";
+import { ArrowRight, BookOpenText, LogIn } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const entryLinks = [
-  {
-    title: "Create account",
-    description: "Register through the Identity service.",
-    to: "/register",
-    icon: UserPlus,
-  },
   {
     title: "Login",
     description: "Open your workspace with a real backend account.",
@@ -39,7 +33,7 @@ export default function LandingPage() {
           </p>
         </section>
 
-        <section className="mt-10 grid gap-4 md:grid-cols-3">
+        <section className="mt-10 grid gap-4 md:grid-cols-2">
           {entryLinks.map((item) => {
             const Icon = item.icon;
 

@@ -10,7 +10,7 @@ import {
   User,
   Wallet,
 } from "lucide-react";
-import { useToast } from "../shared/components/ToastProvider";
+import { useToast } from "../shared/components/toastContext";
 import { clearAuthSession } from "../shared/utils/authSession";
 
 const menus = [

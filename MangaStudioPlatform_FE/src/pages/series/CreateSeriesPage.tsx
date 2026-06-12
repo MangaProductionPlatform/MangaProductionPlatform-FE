@@ -1,22 +1,14 @@
 import type { ReactNode } from "react";
 import type { FormEvent } from "react";
 import { useState } from "react";
-import { BookOpen, ImagePlus, Save, Send, Tags, Upload } from "lucide-react";
-import { mangaErpApi } from "../../shared/api/mangaErpApi";
-import { useToast } from "../../shared/components/ToastProvider";
-
-const tagSuggestions = ["Shonen", "Drama", "Mystery", "Romance", "Sports", "Urban Fantasy"];
-const publishChecklist = [
-  "Series bible prepared",
-  "Main cast profiles",
-  "Cover concept uploaded",
-  "Chapter 1 outline",
-] as const;
+import { ImagePlus, Send, Upload } from "lucide-react";
+import { mangaErpApi } from "../../shared/services/mangaErpService";
+import { useToast } from "../../shared/components/toastContext";
 
 export default function CreateSeriesPage() {
   const toast = useToast();
   const [title, setTitle] = useState("");
-  const [genre, setGenre] = useState("Cyber Fantasy");
+  const [genre, setGenre] = useState("");
   const [description, setDescription] = useState("");
   const [coverImageUrl, setCoverImageUrl] = useState("");
   const [manuscriptUrl, setManuscriptUrl] = useState("");
@@ -77,18 +69,10 @@ export default function CreateSeriesPage() {
             Submit a new manga proposal
           </h2>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
-            Define the title, genre, description, cover, and tags before the
-            first chapter enters production.
+            Define the title, genre, description, cover, and manuscript URL.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/10"
-          >
-            <Save size={16} />
-            Save Draft
-          </button>
           <button
             type="submit"
             form="series-proposal-form"
@@ -118,17 +102,12 @@ export default function CreateSeriesPage() {
               />
             </Field>
             <Field label="Genre">
-              <select
+              <input
                 className="input"
                 value={genre}
                 onChange={(event) => setGenre(event.target.value)}
-              >
-                <option>Cyber Fantasy</option>
-                <option>Slice of Life</option>
-                <option>Sports Drama</option>
-                <option>Mystery</option>
-                <option>Action Comedy</option>
-              </select>
+                placeholder="Genre"
+              />
             </Field>
           </div>
 
@@ -143,7 +122,7 @@ export default function CreateSeriesPage() {
             </Field>
           </div>
 
-          <div className="mt-5 grid gap-5 lg:grid-cols-[1fr_0.85fr]">
+          <div className="mt-5">
             <Field label="Cover Upload">
               <div className="flex min-h-64 flex-col justify-center rounded-lg border border-dashed border-cyan-300/30 bg-cyan-300/5 p-6 text-center">
                 <ImagePlus className="text-cyan-200" size={36} />
@@ -158,60 +137,10 @@ export default function CreateSeriesPage() {
                 />
               </div>
             </Field>
-
-            <Field label="Tags">
-              <div className="rounded-lg border border-white/10 bg-slate-950/70 p-3">
-                <div className="flex items-center gap-2 text-slate-400">
-                  <Tags size={16} />
-                  <input
-                    className="w-full bg-transparent text-sm text-white outline-none placeholder:text-slate-500"
-                    placeholder="Add tag"
-                  />
-                </div>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {tagSuggestions.map((tag) => (
-                    <button
-                      key={tag}
-                      type="button"
-                      className="rounded-md border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs font-medium text-slate-200 hover:bg-white/10"
-                    >
-                      {tag}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </Field>
           </div>
         </section>
 
         <aside className="space-y-5">
-          <section className="rounded-lg border border-white/10 bg-slate-900/75 p-5">
-            <div className="flex items-center gap-3">
-              <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-300 text-slate-950">
-                <BookOpen size={18} />
-              </span>
-              <div>
-                <h3 className="font-bold text-white">Series package</h3>
-                <p className="text-sm text-slate-400">Draft readiness</p>
-              </div>
-            </div>
-            <div className="mt-5 space-y-3">
-              {publishChecklist.map((item, index) => (
-                <label
-                  key={item}
-                  className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/5 p-3 text-sm text-slate-200"
-                >
-                  <input
-                    type="checkbox"
-                    defaultChecked={index < 2}
-                    className="h-4 w-4 accent-cyan-300"
-                  />
-                  {item}
-                </label>
-              ))}
-            </div>
-          </section>
-
           <section className="rounded-lg border border-white/10 bg-slate-900/75 p-5">
             <div className="flex items-center gap-3">
               <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-cyan-300 text-slate-950">
@@ -223,7 +152,6 @@ export default function CreateSeriesPage() {
 </div>
             </div>
             <div className="mt-5 space-y-3">
-              <input className="input" type="file" />
               <input
                 required
                 className="input"
@@ -231,7 +159,6 @@ export default function CreateSeriesPage() {
                 onChange={(event) => setManuscriptUrl(event.target.value)}
                 placeholder="Manuscript URL required by backend"
               />
-              <input className="input" placeholder="Target first deadline" />
             </div>
           </section>
         </aside>
