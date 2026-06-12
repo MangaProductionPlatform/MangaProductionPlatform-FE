@@ -1,4 +1,4 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { Navigate, NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
   Bell,
   ClipboardList,
@@ -6,11 +6,12 @@ import {
   FolderOpen,
   LayoutDashboard,
   LogOut,
-  Search,
   UploadCloud,
   User,
   Wallet,
 } from "lucide-react";
+import { useToast } from "../shared/components/ToastProvider";
+import { clearAuthSession } from "../shared/utils/authSession";
 
 const menus = [
   {
@@ -28,6 +29,20 @@ const menus = [
 ];
 
 export default function AssistantLayout() {
+  const navigate = useNavigate();
+  const toast = useToast();
+  const currentUser = JSON.parse(localStorage.getItem("currentUser") || "null");
+
+  if (!currentUser) {
+    return <Navigate to="/login" replace />;
+  }
+
+  const handleLogout = () => {
+    clearAuthSession();
+    toast.info("Logged out", "Your session has been cleared.");
+    navigate("/login", { replace: true });
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
       <div className="flex min-h-screen">
@@ -80,7 +95,11 @@ export default function AssistantLayout() {
               );
             })}
           </nav>
-<button className="mt-6 flex w-full items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium text-rose-200 transition hover:bg-rose-500/10">
+<button
+            type="button"
+            onClick={handleLogout}
+            className="mt-6 flex w-full items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium text-rose-200 transition hover:bg-rose-500/10"
+          >
             <LogOut size={18} />
             Logout
           </button>
@@ -98,8 +117,14 @@ export default function AssistantLayout() {
                   <p className="text-xs text-slate-400">Worker workspace</p>
                 </div>
               </NavLink>
-              <button className="rounded-lg border border-white/10 bg-white/5 p-2 text-slate-200">
-                <Search size={18} />
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="rounded-lg border border-rose-300/20 bg-rose-500/10 p-2 text-rose-100"
+                title="Logout"
+                aria-label="Logout"
+              >
+                <LogOut size={18} />
               </button>
             </div>
           </header>

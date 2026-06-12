@@ -1,5 +1,56 @@
 # React + TypeScript + Vite
 
+## Render Deploy
+
+This frontend can be deployed as a Render Static Site with `render.yaml`.
+
+Build command:
+
+```bash
+npm ci && npm run build
+```
+
+Publish directory:
+
+```bash
+dist
+```
+
+Environment variable:
+
+```bash
+VITE_API_BASE_URL=https://mangaproductionplatform-be.onrender.com
+```
+
+## Docker
+
+Build and run the frontend container:
+
+```bash
+docker compose up --build
+```
+
+Set the backend production gateway URL before running:
+
+```bash
+VITE_API_BASE_URL=https://mangaproductionplatform-be.onrender.com docker compose up --build
+```
+
+On Windows PowerShell:
+
+```powershell
+$env:VITE_API_BASE_URL="https://mangaproductionplatform-be.onrender.com"
+docker compose up --build
+```
+
+The app will be available at `http://localhost:8080`.
+The backend Swagger is available at `https://mangaproductionplatform-be.onrender.com/swagger`.
+
+If the backend is not exposed through one gateway, set service-specific URLs instead:
+`VITE_IDENTITY_API_BASE_URL`, `VITE_SUBMISSION_API_BASE_URL`, `VITE_SERIES_API_BASE_URL`,
+`VITE_CHAPTER_API_BASE_URL`, `VITE_TASK_API_BASE_URL`, `VITE_QA_API_BASE_URL`,
+`VITE_PUBLISHING_API_BASE_URL`, and `VITE_RANKING_API_BASE_URL`.
+
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 Currently, two official plugins are available:

@@ -62,10 +62,12 @@ import BoardProfilePage from "./pages/board/BoardProfilePage";
 import PublishingSchedulePage from "./pages/board/PublishingSchedulePage";
 import RankingAnalyticsPage from "./pages/board/RankingAnalyticsPage";
 import CancellationReviewPage from "./pages/board/CancellationReviewPage";
+import { ToastProvider } from "./shared/components/ToastProvider";
 
 
 export default function App() {
   return (
+    <ToastProvider>
     <Routes>
       <Route element={<PublicLayout />}>
         <Route path="/" element={<LandingPage />} />
@@ -150,5 +152,6 @@ export default function App() {
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </ToastProvider>
   );
 }

@@ -1,14 +1,14 @@
 import {
   ArrowRight,
-  BookOpen,
   ChevronDown,
-  PencilLine,
   ShieldCheck,
   Sparkles,
 } from "lucide-react";
+import type { FormEvent } from "react";
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import { mangaCovers } from "../../shared/constants/mangakaImages";
+import { Link, useNavigate } from "react-router-dom";
+import { mangaErpApi, type RegisterRole } from "../../shared/api/mangaErpApi";
+import { useToast } from "../../shared/components/ToastProvider";
 
 const registerBenefits = [
   "Read, vote, and follow favorite series",
@@ -18,46 +18,80 @@ const registerBenefits = [
 
 const registerRoles = [
   {
-    value: "READER",
+    value: "Reader",
     label: "Reader/User",
     description: "Read manga, vote, and follow series.",
   },
   {
-    value: "MANGAKA",
+    value: "Mangaka",
     label: "Mangaka",
     description: "Create manga and publish chapters.",
   },
   {
-    value: "ASSISTANT",
+    value: "Assistant",
     label: "Assistant",
     description: "Support creators by handling assigned tasks.",
   },
   {
-    value: "TANTOU_EDITOR",
+    value: "TantouEditor",
     label: "Tantou Editor",
     description: "Edit, review, and coordinate manga releases.",
+  },
+  {
+    value: "EditorialBoard",
+    label: "Editorial Board",
+    description: "Approve proposals, publishing schedules, and board decisions.",
   },
 ] as const;
 
 export default function RegisterPage() {
+  const navigate = useNavigate();
+  const toast = useToast();
   const [selectedRole, setSelectedRole] =
-    useState<(typeof registerRoles)[number]["value"]>("READER");
+    useState<RegisterRole>("Reader");
+  const [displayName, setDisplayName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const activeRole = registerRoles.find((role) => role.value === selectedRole);
+
+  const handleRegister = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (password !== confirmPassword) {
+      toast.error("Password mismatch", "Password confirmation does not match.");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const username = email.split("@")[0] || displayName;
+      await mangaErpApi.register({
+        username,
+        email,
+        password,
+        fullName: displayName,
+        role: selectedRole,
+      });
+      toast.success("Account created", "Redirecting to login...");
+      window.setTimeout(() => navigate("/login"), 700);
+    } catch (err) {
+      toast.error(
+        "Could not create account",
+        err instanceof Error ? err.message : "Please check the form and try again.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#050816] text-slate-100">
       <div className="grid min-h-screen lg:grid-cols-[0.95fr_1fr]">
-        <section className="relative overflow-hidden border-b border-white/10 bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.2),transparent_24%),linear-gradient(180deg,rgba(2,6,23,0.98),rgba(15,23,42,0.94))] p-8 lg:border-b-0 lg:border-r lg:p-10">
-          <div className="absolute inset-0 opacity-45">
-            <img
-              src={mangaCovers[1].image}
-              alt="Manga cover background"
-              className="h-full w-full object-cover"
-            />
-            <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,8,22,0.25),rgba(5,8,22,0.96))]" />
-          </div>
-
+        <section className="relative overflow-hidden border-b border-white/10 bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.18),transparent_24%),linear-gradient(180deg,rgba(2,6,23,0.98),rgba(15,23,42,0.94))] p-8 lg:border-b-0 lg:border-r lg:p-10">
           <div className="relative flex h-full flex-col justify-between gap-10">
             <Link to="/" className="inline-flex items-center gap-3 self-start">
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-300 via-rose-400 to-fuchsia-500 text-sm font-black text-slate-950">
@@ -96,27 +130,15 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-3">
-              {[
-                { value: "Fast", label: "onboarding", icon: BookOpen },
-                { value: "Secure", label: "profile setup", icon: ShieldCheck },
-                { value: "Open", label: "creator workflow", icon: PencilLine },
-              ].map((item) => {
-                const Icon = item.icon;
-
-                return (
-                  <div
-                    key={item.label}
-                    className="rounded-3xl border border-white/10 bg-slate-950/50 p-4 backdrop-blur-xl"
-                  >
-                    <Icon size={18} className="text-amber-300" />
-                    <p className="mt-3 text-2xl font-bold text-white">
-                      {item.value}
-                    </p>
-                    <p className="mt-1 text-sm text-slate-400">{item.label}</p>
-                  </div>
-                );
-              })}
+            <div className="rounded-3xl border border-white/10 bg-slate-950/50 p-5 backdrop-blur-xl">
+              <ShieldCheck size={18} className="text-amber-300" />
+              <p className="mt-3 text-lg font-bold text-white">
+                Connected to Identity API
+              </p>
+              <p className="mt-1 text-sm leading-6 text-slate-400">
+                Accounts are created in the backend database configured for the
+                Identity service.
+              </p>
             </div>
           </div>
         </section>
@@ -135,13 +157,15 @@ export default function RegisterPage() {
               </p>
             </div>
 
-            <form className="space-y-5">
+            <form onSubmit={handleRegister} className="space-y-5">
               <label className="block">
                 <span className="mb-2 block text-sm text-slate-300">
                   Display name
                 </span>
                 <input
                   type="text"
+                  value={displayName}
+                  onChange={(event) => setDisplayName(event.target.value)}
                   placeholder="Your pen name"
                   className="w-full rounded-3xl border border-white/10 bg-slate-950/70 px-5 py-3 text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-amber-300/50"
                 />
@@ -156,9 +180,7 @@ export default function RegisterPage() {
                     name="role"
                     value={selectedRole}
                     onChange={(event) =>
-                      setSelectedRole(
-                        event.target.value as (typeof registerRoles)[number]["value"],
-                      )
+                      setSelectedRole(event.target.value as RegisterRole)
                     }
                     className="w-full appearance-none rounded-3xl border border-white/10 bg-slate-950/70 px-5 py-3 pr-12 text-slate-100 outline-none transition focus:border-amber-300/50"
                   >
@@ -186,6 +208,8 @@ export default function RegisterPage() {
                 </span>
                 <input
                   type="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
                   placeholder="creator@mangastudio.com"
                   className="w-full rounded-3xl border border-white/10 bg-slate-950/70 px-5 py-3 text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-amber-300/50"
                 />
@@ -197,6 +221,8 @@ export default function RegisterPage() {
                 </span>
                 <input
                   type="password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
                   placeholder="Create a password"
                   className="w-full rounded-3xl border border-white/10 bg-slate-950/70 px-5 py-3 text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-amber-300/50"
                 />
@@ -208,12 +234,17 @@ export default function RegisterPage() {
                 </span>
                 <input
                   type="password"
+                  value={confirmPassword}
+                  onChange={(event) => setConfirmPassword(event.target.value)}
                   placeholder="Repeat password"
                   className="w-full rounded-3xl border border-white/10 bg-slate-950/70 px-5 py-3 text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-amber-300/50"
                 />
               </label>
-<button className="inline-flex w-full items-center justify-center gap-2 rounded-3xl bg-gradient-to-r from-amber-300 via-rose-400 to-fuchsia-500 px-5 py-3.5 text-sm font-bold text-slate-950 transition hover:scale-[1.01]">
-                Create account
+<button
+                disabled={isSubmitting}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-3xl bg-gradient-to-r from-amber-300 via-rose-400 to-fuchsia-500 px-5 py-3.5 text-sm font-bold text-slate-950 transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isSubmitting ? "Creating..." : "Create account"}
                 <ArrowRight size={16} />
               </button>
 

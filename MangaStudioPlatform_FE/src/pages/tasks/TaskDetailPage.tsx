@@ -1,12 +1,27 @@
+import { Link } from "react-router-dom";
+import { ArrowLeft, ClipboardCheck } from "lucide-react";
+
 export default function TaskDetailPage() {
   return (
-    <div>
-      <h2 className="text-3xl font-bold">Task Detail</h2>
-      <p className="mt-1 text-slate-400">View assigned task information.</p>
+    <div className="space-y-5">
+      <Link
+        to="/app/tasks"
+        className="inline-flex items-center gap-2 text-sm font-semibold text-cyan-200 hover:text-cyan-100"
+      >
+        <ArrowLeft size={16} />
+        Back to Tasks
+      </Link>
 
-      <div className="mt-8 rounded-2xl border border-dashed border-slate-700 p-10 text-center text-slate-400">
-        No task detail data.
-      </div>
+      <section className="rounded-lg border border-white/10 bg-slate-900/75 p-8 text-center">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg bg-cyan-300 text-slate-950">
+          <ClipboardCheck size={22} />
+        </div>
+        <h2 className="mt-4 text-xl font-bold text-white">No backend task detail</h2>
+        <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-400">
+          This route has no backend task detail endpoint yet, so local placeholder task data
+          has been removed.
+        </p>
+      </section>
     </div>
   );
 }

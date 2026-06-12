@@ -1,0 +1,16 @@
+services:
+  manga-studio-fe:
+    build: .
+    image: mangastudio-fe:latest
+    ports:
+      - "8080:80"
+    environment:
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-https://mangaproductionplatform-be.onrender.com}
+      VITE_IDENTITY_API_BASE_URL: ${VITE_IDENTITY_API_BASE_URL:-}
+      VITE_SUBMISSION_API_BASE_URL: ${VITE_SUBMISSION_API_BASE_URL:-}
+      VITE_SERIES_API_BASE_URL: ${VITE_SERIES_API_BASE_URL:-}
+      VITE_CHAPTER_API_BASE_URL: ${VITE_CHAPTER_API_BASE_URL:-}
+      VITE_TASK_API_BASE_URL: ${VITE_TASK_API_BASE_URL:-}
+      VITE_QA_API_BASE_URL: ${VITE_QA_API_BASE_URL:-}
+      VITE_PUBLISHING_API_BASE_URL: ${VITE_PUBLISHING_API_BASE_URL:-}
+      VITE_RANKING_API_BASE_URL: ${VITE_RANKING_API_BASE_URL:-}

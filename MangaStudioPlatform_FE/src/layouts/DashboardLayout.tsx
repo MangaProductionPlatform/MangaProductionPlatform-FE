@@ -1,4 +1,4 @@
-import { Navigate, NavLink, Outlet } from "react-router-dom";
+import { Navigate, NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
   BarChart3,
   Bell,
@@ -8,11 +8,12 @@ import {
   LayoutDashboard,
   LogOut,
   PenTool,
-  Search,
   Settings,
   Trophy,
   User,
 } from "lucide-react";
+import { useToast } from "../shared/components/ToastProvider";
+import { clearAuthSession } from "../shared/utils/authSession";
 
 const defaultMenus = [
   { label: "Dashboard", path: "/app/dashboard", icon: LayoutDashboard, end: true },
@@ -50,6 +51,8 @@ const boardMenus = [
 ] as const;
 
 export default function DashboardLayout() {
+  const navigate = useNavigate();
+  const toast = useToast();
   const currentUser = JSON.parse(localStorage.getItem("currentUser") || "null") as
     | { role?: string }
     | null;
@@ -73,8 +76,9 @@ export default function DashboardLayout() {
         : "Creator command center";
 
   const handleLogout = () => {
-    localStorage.removeItem("currentUser");
-    window.location.href = "/login";
+    clearAuthSession();
+    toast.info("Logged out", "Your session has been cleared.");
+    navigate("/login", { replace: true });
   };
 
   return (
@@ -149,8 +153,14 @@ export default function DashboardLayout() {
                   <p className="text-xs text-slate-400">{workspaceLabel}</p>
                 </div>
               </NavLink>
-              <button className="rounded-xl border border-white/10 bg-white/5 p-2 text-slate-200">
-                <Search size={18} />
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="rounded-xl border border-rose-300/20 bg-rose-500/10 p-2 text-rose-100"
+                title="Logout"
+                aria-label="Logout"
+              >
+                <LogOut size={18} />
               </button>
             </div>
           </header>

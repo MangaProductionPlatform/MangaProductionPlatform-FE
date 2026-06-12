@@ -1,8 +1,68 @@
 import { Link } from "react-router-dom";
 import { ArrowRight, PlusCircle, Search, SlidersHorizontal, TrendingUp } from "lucide-react";
-import { mangakaSeries } from "../../shared/constants/mangakaWorkSpace";
+import { useEffect, useMemo, useState } from "react";
+import { mangaErpApi, type MangaSeriesDto } from "../../shared/api/mangaErpApi";
+import { useToast } from "../../shared/components/ToastProvider";
 
 export default function SeriesListPage() {
+  const toast = useToast();
+  const [seriesList, setSeriesList] = useState<MangaSeriesDto[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const currentUser = useMemo(
+    () => JSON.parse(localStorage.getItem("currentUser") || "null") as
+      | { userId?: string }
+      | null,
+    [],
+  );
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function loadSeries() {
+      setIsLoading(true);
+
+      try {
+        const result = currentUser?.userId
+          ? await mangaErpApi.getSeriesByAuthor(currentUser.userId)
+          : await mangaErpApi.getAllSeries();
+
+        if (!ignore) {
+          setSeriesList(result);
+        }
+      } catch (err) {
+        if (!ignore) {
+          toast.error(
+            "Could not load series",
+            err instanceof Error ? err.message : "Please check that Series service is running.",
+          );
+        }
+      } finally {
+        if (!ignore) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    loadSeries();
+    return () => {
+      ignore = true;
+    };
+  }, [currentUser?.userId, toast]);
+
+  const displaySeries = seriesList.map((series) => ({
+        id: series.id,
+        title: series.title,
+        cover: series.coverImageUrl || "/favicon.svg",
+        status: series.status,
+        genre: series.genre ?? "Uncategorized",
+        ranking: "-",
+        latestChapter: "Load chapters from detail",
+        views: "-",
+        engagement: "-",
+        editor: "-",
+        progress: series.status === "Active" ? 65 : 15,
+      }));
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -14,8 +74,8 @@ export default function SeriesListPage() {
             Manga created by you
           </h2>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
-            Track production status, latest chapter, ranking, views, and editor
-            handoff for every active title.
+            Approved backend series appear here. New titles submitted from this
+            workspace start as proposals and do not appear here until approved.
           </p>
         </div>
         <Link
@@ -23,7 +83,7 @@ export default function SeriesListPage() {
           className="inline-flex items-center justify-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-cyan-100"
         >
           <PlusCircle size={16} />
-          Create Series
+          Submit Proposal
         </Link>
       </div>
 
@@ -48,7 +108,21 @@ export default function SeriesListPage() {
       </div>
 
       <section className="grid gap-5 xl:grid-cols-2">
-        {mangakaSeries.map((series) => (
+        {isLoading ? (
+          <div className="rounded-lg border border-white/10 bg-slate-900/75 p-5 text-sm text-slate-300">
+            Loading series from backend...
+          </div>
+        ) : null}
+
+        {!isLoading && displaySeries.length === 0 ? (
+          <div className="rounded-lg border border-white/10 bg-slate-900/75 p-6 text-sm text-slate-300">
+            No approved series found from backend yet. If you just submitted a
+            proposal, check MangaSubmissionDB; it will only appear here after
+            the approval flow creates a series record.
+          </div>
+        ) : null}
+
+        {!isLoading && displaySeries.map((series) => (
           <article
             key={series.id}
             className="grid gap-4 rounded-lg border border-white/10 bg-slate-900/75 p-4 sm:grid-cols-[8.5rem_1fr]"
