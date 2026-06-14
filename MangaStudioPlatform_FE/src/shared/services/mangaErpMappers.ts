@@ -1,4 +1,4 @@
-import type { AppRole, ChapterDto, MangaSeriesDto } from "../types/mangaErp";
+import type { AppRole, ChapterDto, MangaSeriesDto, SubmissionDetailDto, SubmissionSummaryDto } from "../types/mangaErp";
 
 export function pick<T>(value: Record<string, unknown>, key: string): T {
   return (value[key] ?? value[`${key[0].toUpperCase()}${key.slice(1)}`]) as T;
@@ -25,8 +25,34 @@ export function mapSeries(item: Record<string, unknown>): MangaSeriesDto {
     genre: pick<string | null | undefined>(item, "genre"),
     coverImageUrl: pick<string | null | undefined>(item, "coverImageUrl"),
     status: pick<string>(item, "status"),
-    authorId: pick<string>(item, "authorId"),
+    authorId: pick<string | null | undefined>(item, "authorId"),
+    submissionId: pick<string | null | undefined>(item, "submissionId"),
     createdAt: pick<string>(item, "createdAt"),
+  };
+}
+
+export function mapSubmissionSummary(item: Record<string, unknown>): SubmissionSummaryDto {
+  return {
+    id: pick<string>(item, "id"),
+    title: pick<string>(item, "title"),
+    genre: pick<string | null | undefined>(item, "genre"),
+    status: pick<string>(item, "status"),
+    feedbackMessage: pick<string | null | undefined>(item, "feedbackMessage"),
+    createdAt: pick<string>(item, "createdAt"),
+    reviewedAt: pick<string | null | undefined>(item, "reviewedAt"),
+  };
+}
+
+export function mapSubmissionDetail(item: Record<string, unknown>): SubmissionDetailDto {
+  return {
+    ...mapSubmissionSummary(item),
+    description: pick<string | null | undefined>(item, "description"),
+    coverImageUrl: pick<string | null | undefined>(item, "coverImageUrl"),
+    manuscriptUrl: pick<string | null | undefined>(item, "manuscriptUrl"),
+    submitterId: pick<string>(item, "submitterId"),
+    editorRecommendationMessage: pick<string | null | undefined>(item, "editorRecommendationMessage"),
+    assignedEditorId: pick<string | null | undefined>(item, "assignedEditorId"),
+    reviewedByUserId: pick<string | null | undefined>(item, "reviewedByUserId"),
   };
 }
 

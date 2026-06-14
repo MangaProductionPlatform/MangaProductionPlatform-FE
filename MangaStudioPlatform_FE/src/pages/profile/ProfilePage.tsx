@@ -1,5 +1,8 @@
-import type { ReactNode } from "react";
-import { Mail, ShieldCheck, User } from "lucide-react";
+import type { FormEvent, ReactNode } from "react";
+import { useState } from "react";
+import { Mail, Save, ShieldCheck, User } from "lucide-react";
+import { mangaErpApi } from "../../shared/services/mangaErpService";
+import { useToast } from "../../shared/components/toastContext";
 
 type StoredUser = {
   userId?: string;
@@ -7,10 +10,51 @@ type StoredUser = {
   role?: string;
 };
 
+const drawingSoftwareOptions = [
+  "Clip Studio Paint",
+  "Photoshop",
+  "Procreate",
+  "Traditional",
+] as const;
+
 export default function ProfilePage() {
+  const toast = useToast();
   const currentUser = JSON.parse(localStorage.getItem("currentUser") || "null") as
     | StoredUser
     | null;
+  const [penName, setPenName] = useState("");
+  const [bankAccountNumber, setBankAccountNumber] = useState("");
+  const [drawingSoftwares, setDrawingSoftwares] = useState<string[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const toggleSoftware = (value: string) => {
+    setDrawingSoftwares((items) =>
+      items.includes(value)
+        ? items.filter((item) => item !== value)
+        : [...items, value],
+    );
+  };
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      await mangaErpApi.updateProfile({
+        penName: penName.trim() || null,
+        drawingSoftwares,
+        bankAccountNumber: bankAccountNumber.trim() || null,
+      });
+      toast.success("Profile updated", "Your backend profile was saved.");
+    } catch (err) {
+      toast.error(
+        "Could not update profile",
+        err instanceof Error ? err.message : "Please check your session and try again.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -18,12 +62,9 @@ export default function ProfilePage() {
         <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-200">
           Profile
         </p>
-        <h2 className="mt-2 text-3xl font-black text-white">
-          Account profile
-        </h2>
+        <h2 className="mt-2 text-3xl font-black text-white">Account profile</h2>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
-          This page only shows the authenticated session stored by the login
-          flow. Profile data is loaded from the current backend session.
+          Update the authenticated user's working profile in the Identity service.
         </p>
       </div>
 
@@ -46,12 +87,76 @@ export default function ProfilePage() {
           </div>
         </aside>
 
-        <main className="rounded-lg border border-white/10 bg-slate-900/75 p-5">
-          <div className="grid gap-5 md:grid-cols-2">
-            <Info icon={<Mail size={16} />} label="Email" value={currentUser?.email ?? "-"} />
-            <Info icon={<ShieldCheck size={16} />} label="Role" value={currentUser?.role ?? "-"} />
-            <Info icon={<User size={16} />} label="User ID" value={currentUser?.userId ?? "-"} />
-          </div>
+        <main className="space-y-5">
+          <section className="rounded-lg border border-white/10 bg-slate-900/75 p-5">
+            <div className="grid gap-5 md:grid-cols-2">
+              <Info icon={<Mail size={16} />} label="Email" value={currentUser?.email ?? "-"} />
+              <Info icon={<ShieldCheck size={16} />} label="Role" value={currentUser?.role ?? "-"} />
+              <Info icon={<User size={16} />} label="User ID" value={currentUser?.userId ?? "-"} />
+            </div>
+          </section>
+
+          <form
+            onSubmit={handleSubmit}
+            className="rounded-lg border border-white/10 bg-slate-900/75 p-5"
+          >
+            <div className="grid gap-5 md:grid-cols-2">
+              <label className="block">
+                <span className="mb-2 block text-sm font-semibold text-slate-200">
+                  Pen name
+                </span>
+                <input
+                  className="input"
+                  value={penName}
+                  onChange={(event) => setPenName(event.target.value)}
+                  placeholder="Display name"
+                />
+              </label>
+
+              <label className="block">
+                <span className="mb-2 block text-sm font-semibold text-slate-200">
+                  Bank account number
+                </span>
+                <input
+                  className="input"
+                  value={bankAccountNumber}
+                  onChange={(event) => setBankAccountNumber(event.target.value)}
+                  placeholder="Bank account number"
+                />
+              </label>
+            </div>
+
+            <div className="mt-5">
+              <span className="mb-2 block text-sm font-semibold text-slate-200">
+                Drawing software
+              </span>
+              <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                {drawingSoftwareOptions.map((item) => (
+                  <label
+                    key={item}
+                    className="flex items-center gap-2 rounded-lg border border-white/10 bg-slate-950/70 p-3 text-sm text-slate-200"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={drawingSoftwares.includes(item)}
+                      onChange={() => toggleSoftware(item)}
+                      className="h-4 w-4 accent-cyan-300"
+                    />
+                    {item}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="mt-6 inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-bold text-slate-950 hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <Save size={16} />
+              {isSubmitting ? "Saving..." : "Save profile"}
+            </button>
+          </form>
         </main>
       </section>
     </div>

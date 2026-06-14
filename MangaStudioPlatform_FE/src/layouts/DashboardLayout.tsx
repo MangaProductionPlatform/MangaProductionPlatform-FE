@@ -84,8 +84,8 @@ export default function DashboardLayout() {
   return (
     <div className="min-h-screen bg-[#050816] text-slate-100">
       <div className="flex min-h-screen">
-        <aside className="sticky top-0 hidden h-screen w-72 shrink-0 border-r border-white/10 bg-slate-950/85 p-5 backdrop-blur-xl lg:block">
-          <NavLink to="/app/dashboard" className="flex items-center gap-3">
+        <aside className="sticky top-0 hidden h-screen w-72 shrink-0 flex-col overflow-hidden border-r border-white/10 bg-slate-950/85 p-5 backdrop-blur-xl lg:flex">
+          <NavLink to="/app/dashboard" className="flex shrink-0 items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-300 via-rose-400 to-cyan-300 text-sm font-black text-slate-950">
               M
             </div>
@@ -95,7 +95,7 @@ export default function DashboardLayout() {
             </div>
           </NavLink>
 
-          <div className="mt-6 rounded-2xl border border-amber-300/20 bg-amber-300/10 p-4">
+          <div className="mt-6 shrink-0 rounded-2xl border border-amber-300/20 bg-amber-300/10 p-4">
             <p className="text-xs uppercase tracking-[0.24em] text-amber-100/80">
               Active role
             </p>
@@ -108,7 +108,7 @@ export default function DashboardLayout() {
             </div>
           </div>
 
-          <nav className="mt-6 space-y-1.5">
+          <nav className="mt-6 min-h-0 flex-1 space-y-1.5 overflow-y-auto pr-1">
             {menus.map((item) => {
               const Icon = item.icon;
 
@@ -134,7 +134,7 @@ export default function DashboardLayout() {
 
           <button
             onClick={handleLogout}
-            className="mt-6 flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium text-rose-200 transition hover:bg-rose-500/10"
+            className="mt-4 flex w-full shrink-0 items-center gap-3 rounded-xl border border-rose-300/20 bg-rose-500/10 px-3.5 py-2.5 text-sm font-medium text-rose-100 transition hover:bg-rose-500/15"
           >
             <LogOut size={18} />
             Logout

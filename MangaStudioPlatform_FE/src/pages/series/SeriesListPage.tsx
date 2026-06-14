@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { ArrowRight, PlusCircle, Search } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { mangaErpApi } from "../../shared/services/mangaErpService";
 import type { MangaSeriesDto } from "../../shared/types/mangaErp";
 import { useToast } from "../../shared/components/toastContext";
@@ -9,13 +9,6 @@ export default function SeriesListPage() {
   const toast = useToast();
   const [seriesList, setSeriesList] = useState<MangaSeriesDto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const currentUser = useMemo(
-    () => JSON.parse(localStorage.getItem("currentUser") || "null") as
-      | { userId?: string }
-      | null,
-    [],
-  );
-
   useEffect(() => {
     let ignore = false;
 
@@ -23,9 +16,7 @@ export default function SeriesListPage() {
       setIsLoading(true);
 
       try {
-        const result = currentUser?.userId
-          ? await mangaErpApi.getSeriesByAuthor(currentUser.userId)
-          : await mangaErpApi.getAllSeries();
+        const result = await mangaErpApi.getMySeries();
 
         if (!ignore) {
           setSeriesList(result);
@@ -48,7 +39,7 @@ export default function SeriesListPage() {
     return () => {
       ignore = true;
     };
-  }, [currentUser?.userId, toast]);
+  }, [toast]);
 
   return (
     <div className="space-y-6">
@@ -131,7 +122,7 @@ export default function SeriesListPage() {
               </div>
 
               <dl className="mt-5 grid grid-cols-2 gap-3 text-sm">
-                <Info label="Author" value={series.authorId} />
+                <Info label="Submission" value={series.submissionId ?? "-"} />
                 <Info label="Created" value={new Date(series.createdAt).toLocaleDateString()} />
               </dl>
 

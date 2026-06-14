@@ -93,7 +93,8 @@ export type MangaSeriesDto = {
   genre?: string | null;
   coverImageUrl?: string | null;
   status: string;
-  authorId: string;
+  authorId?: string | null;
+  submissionId?: string | null;
   createdAt: string;
 };
 
@@ -128,12 +129,42 @@ export type RankingBoardItemDto = {
 };
 
 export type CreateSubmissionPayload = {
-  submitterId: string;
   title: string;
   description?: string | null;
   genre?: string | null;
   coverImageUrl?: string | null;
+  manuscriptUrl?: string | null;
+};
+
+export type UpdateSubmissionMetadataPayload = {
+  title: string;
+  description?: string | null;
+  genre?: string | null;
+  coverImageUrl?: string | null;
+};
+
+export type UpdateSubmissionManuscriptPayload = {
   manuscriptUrl: string;
+};
+
+export type SubmissionSummaryDto = {
+  id: string;
+  title: string;
+  genre?: string | null;
+  status: string;
+  feedbackMessage?: string | null;
+  createdAt: string;
+  reviewedAt?: string | null;
+};
+
+export type SubmissionDetailDto = SubmissionSummaryDto & {
+  description?: string | null;
+  coverImageUrl?: string | null;
+  manuscriptUrl?: string | null;
+  submitterId: string;
+  editorRecommendationMessage?: string | null;
+  assignedEditorId?: string | null;
+  reviewedByUserId?: string | null;
 };
 
 export type CreateChapterPayload = {
@@ -149,16 +180,18 @@ export type ActivatePagePayload = {
   assignedAssistantId: string;
 };
 
-export type SubmissionFeedbackPayload = {
-  feedbackMessage: string;
+export type RecommendSubmissionPayload = {
+  recommendationMessage: string;
 };
 
-export type RecommendSubmissionPayload = SubmissionFeedbackPayload & {
-  reviewerEditorId: string;
+export type ReviewSubmissionPayload = {
+  reason: string;
 };
 
-export type ReviewSubmissionPayload = SubmissionFeedbackPayload & {
-  reviewerUserId: string;
+export type UpdateProfilePayload = {
+  penName?: string | null;
+  drawingSoftwares?: string[] | null;
+  bankAccountNumber?: string | null;
 };
 
 export type SchedulePublicationPayload = {
