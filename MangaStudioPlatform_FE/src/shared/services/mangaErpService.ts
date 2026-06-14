@@ -107,6 +107,7 @@ export const mangaErpApi = {
   },
 
   async getSeriesByAuthor(_authorId: string) {
+    void _authorId;
     return this.getMySeries();
   },
 

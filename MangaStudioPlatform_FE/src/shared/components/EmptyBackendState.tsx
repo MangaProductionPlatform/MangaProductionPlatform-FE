@@ -1,5 +1,6 @@
 import type { ComponentType, ReactNode } from "react";
 import { Database, type LucideProps } from "lucide-react";
+import CoverMarquee from "./CoverMarquee";
 
 export function EmptyBackendState({
   eyebrow,
@@ -30,16 +31,21 @@ export function EmptyBackendState({
         </p>
       </div>
 
-      <section className="rounded-lg border border-white/10 bg-slate-900/75 p-8 text-center">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg bg-cyan-300 text-slate-950">
-          <Icon size={22} />
+      <section className="overflow-hidden rounded-lg border border-white/10 bg-slate-900/75">
+        <div className="border-b border-white/10 py-5">
+          <CoverMarquee compact />
         </div>
-        <h3 className="mt-4 text-lg font-bold text-white">No backend data</h3>
-        <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-400">
-          This page will display records after the backend exposes a matching
-          API.
-        </p>
-        {action ? <div className="mt-5">{action}</div> : null}
+        <div className="p-8 text-center">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg bg-cyan-300 text-slate-950">
+            <Icon size={22} />
+          </div>
+          <h3 className="mt-4 text-lg font-bold text-white">No backend data</h3>
+          <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-400">
+            This page will display records after the backend exposes a matching
+            API.
+          </p>
+          {action ? <div className="mt-5">{action}</div> : null}
+        </div>
       </section>
     </div>
   );

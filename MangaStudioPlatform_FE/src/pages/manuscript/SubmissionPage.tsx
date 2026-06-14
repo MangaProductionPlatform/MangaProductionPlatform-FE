@@ -34,8 +34,34 @@ export default function SubmissionPage() {
   };
 
   useEffect(() => {
-    void loadSubmissions();
-  }, []);
+    let ignore = false;
+
+    async function loadInitialSubmissions() {
+      try {
+        const result = await mangaErpApi.getMySubmissions();
+        if (!ignore) {
+          setItems(result);
+        }
+      } catch (err) {
+        if (!ignore) {
+          setItems([]);
+          toast.error(
+            "Could not load submissions",
+            err instanceof Error ? err.message : "Please check your Mangaka session.",
+          );
+        }
+      } finally {
+        if (!ignore) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    void loadInitialSubmissions();
+    return () => {
+      ignore = true;
+    };
+  }, [toast]);
 
   const fillForm = (detail: SubmissionDetailDto | null) => {
     setSelected(detail);
@@ -251,6 +277,13 @@ export default function SubmissionPage() {
           </div>
 
           <div className="mt-5 space-y-3">
+            {coverImageUrl ? (
+              <img
+                src={coverImageUrl}
+                alt="Submission cover preview"
+                className="mx-auto aspect-[2/3] max-h-72 rounded-lg border border-white/10 object-cover shadow-xl shadow-slate-950/30"
+              />
+            ) : null}
             <input
               required
               className="input"

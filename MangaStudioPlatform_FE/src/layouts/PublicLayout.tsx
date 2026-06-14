@@ -1,5 +1,6 @@
 import { LogIn, Menu } from "lucide-react";
 import { Link, NavLink, Outlet } from "react-router-dom";
+import { mangaHeroImage } from "../shared/visuals/mangaVisuals";
 
 const navItems = [
   { to: "/discover", label: "Discover" },
@@ -13,9 +14,12 @@ export default function PublicLayout() {
   return (
     <div className="min-h-screen bg-[#050816] text-slate-100">
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div className="absolute left-[-12rem] top-24 h-72 w-72 rounded-full bg-rose-500/15 blur-3xl float-slow" />
-        <div className="absolute right-[-10rem] top-40 h-80 w-80 rounded-full bg-cyan-500/15 blur-3xl float-medium" />
-        <div className="absolute bottom-[-10rem] left-1/2 h-96 w-96 -translate-x-1/2 rounded-full bg-amber-500/10 blur-3xl float-fast" />
+        <img
+          src={mangaHeroImage}
+          alt=""
+          className="h-full w-full object-cover opacity-[0.08]"
+        />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,8,22,0.8),rgba(5,8,22,0.98))]" />
       </div>
 
       <header className="sticky top-0 z-40 border-b border-white/10 bg-slate-950/70 backdrop-blur-xl">

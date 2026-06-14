@@ -137,8 +137,11 @@ export default function RankingPage() {
                       className="h-24 w-16 rounded-2xl border border-white/10 object-cover shadow-[0_12px_30px_rgba(0,0,0,0.35)]"
                     />
                   ) : (
-                    <div className="flex h-24 w-16 items-center justify-center rounded-2xl border border-white/10 bg-slate-950/70 text-xs font-bold uppercase text-slate-500">
-                      No cover
+                    <div className="relative flex h-24 w-16 items-end overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-amber-200 via-rose-300 to-cyan-300 p-2">
+                      <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent,rgba(2,6,23,0.78))]" />
+                      <span className="relative text-[0.6rem] font-black uppercase leading-tight text-white">
+                        Cover
+                      </span>
                     </div>
                   )}
                   <div>

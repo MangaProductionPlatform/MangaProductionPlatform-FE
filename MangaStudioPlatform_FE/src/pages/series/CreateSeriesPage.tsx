@@ -127,10 +127,20 @@ export default function CreateSeriesPage() {
           <div className="mt-5">
             <Field label="Cover Upload">
               <div className="flex min-h-64 flex-col justify-center rounded-lg border border-dashed border-cyan-300/30 bg-cyan-300/5 p-6 text-center">
-                <ImagePlus className="text-cyan-200" size={36} />
-                <span className="mt-3 text-sm font-semibold text-white">
-                  Cover image URL
-                </span>
+                {coverImageUrl ? (
+                  <img
+                    src={coverImageUrl}
+                    alt="Cover preview"
+                    className="mx-auto aspect-[2/3] max-h-72 rounded-lg border border-white/10 object-cover shadow-xl shadow-slate-950/30"
+                  />
+                ) : (
+                  <>
+                    <ImagePlus className="mx-auto text-cyan-200" size={36} />
+                    <span className="mt-3 text-sm font-semibold text-white">
+                      Cover image URL
+                    </span>
+                  </>
+                )}
                 <input
                   className="input mt-4"
                   value={coverImageUrl}
