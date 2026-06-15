@@ -26,8 +26,33 @@ export default function AdminUsersPage() {
   };
 
   useEffect(() => {
-    void loadUsers();
-  }, []);
+    let ignore = false;
+
+    async function loadInitialUsers() {
+      try {
+        const result = await mangaErpApi.listUsers();
+        if (!ignore) {
+          setUsers(result.users);
+        }
+      } catch (err) {
+        if (!ignore) {
+          toast.error(
+            "Could not load users",
+            err instanceof Error ? err.message : "Please check your admin session.",
+          );
+        }
+      } finally {
+        if (!ignore) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    void loadInitialUsers();
+    return () => {
+      ignore = true;
+    };
+  }, [toast]);
 
   return (
     <div className="space-y-6">

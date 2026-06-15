@@ -102,8 +102,11 @@ export default function SeriesListPage() {
                 className="aspect-[2/3] w-full rounded-lg object-cover shadow-xl shadow-slate-950/30"
               />
             ) : (
-              <div className="flex aspect-[2/3] w-full items-center justify-center rounded-lg border border-white/10 bg-slate-950/70 text-sm font-bold uppercase text-slate-500">
-                No cover
+              <div className="relative flex aspect-[2/3] w-full items-end overflow-hidden rounded-lg border border-white/10 bg-gradient-to-br from-amber-200 via-rose-300 to-cyan-300 p-3 shadow-xl shadow-slate-950/30">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.55),transparent_28%),linear-gradient(180deg,transparent,rgba(2,6,23,0.78))]" />
+                <span className="relative text-sm font-black uppercase leading-tight text-white">
+                  Cover pending
+                </span>
               </div>
             )}
             <div className="min-w-0">

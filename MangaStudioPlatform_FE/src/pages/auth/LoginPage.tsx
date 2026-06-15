@@ -8,6 +8,8 @@ import {
 } from "lucide-react";
 import { mangaErpApi } from "../../shared/services/mangaErpService";
 import { useToast } from "../../shared/components/toastContext";
+import CoverMarquee from "../../shared/components/CoverMarquee";
+import { mangaHeroImage } from "../../shared/visuals/mangaVisuals";
 
 const loginHighlights = [
   "Resume your reading list instantly",
@@ -68,7 +70,7 @@ export default function LoginPage() {
         <aside className="relative overflow-hidden border-b border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(244,114,182,0.22),transparent_24%),linear-gradient(180deg,rgba(2,6,23,0.98),rgba(15,23,42,0.94))] p-8 lg:border-b-0 lg:border-r lg:p-10">
           <div className="absolute inset-0 opacity-45">
             <img
-              src="/images/manga-background.jpg"
+              src={mangaHeroImage}
               alt="Manga background"
               className="h-full w-full object-cover"
             />
@@ -112,6 +114,7 @@ export default function LoginPage() {
                   </div>
                 ))}
               </div>
+              <CoverMarquee compact />
             </div>
 
             <div className="rounded-3xl border border-white/10 bg-slate-950/50 p-5 backdrop-blur-xl">

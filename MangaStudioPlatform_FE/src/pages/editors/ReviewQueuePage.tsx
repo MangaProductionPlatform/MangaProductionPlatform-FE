@@ -35,8 +35,34 @@ export default function ReviewQueuePage() {
   };
 
   useEffect(() => {
-    void loadQueue();
-  }, []);
+    let ignore = false;
+
+    async function loadInitialQueue() {
+      try {
+        const result = await mangaErpApi.getSubmissionQueue();
+        if (!ignore) {
+          setQueue(result);
+        }
+      } catch (err) {
+        if (!ignore) {
+          setQueue([]);
+          toast.error(
+            "Could not load review queue",
+            err instanceof Error ? err.message : "Please check your Tantou Editor session.",
+          );
+        }
+      } finally {
+        if (!ignore) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    void loadInitialQueue();
+    return () => {
+      ignore = true;
+    };
+  }, [toast]);
 
   const openSubmission = async (id: string) => {
     try {

@@ -1,5 +1,7 @@
 import { ArrowRight, BookOpenText, LogIn } from "lucide-react";
 import { Link } from "react-router-dom";
+import CoverMarquee from "../../shared/components/CoverMarquee";
+import { mangaHeroImage } from "../../shared/visuals/mangaVisuals";
 
 const entryLinks = [
   {
@@ -20,7 +22,8 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-[#050816] text-slate-100">
       <main className="mx-auto flex min-h-screen max-w-6xl flex-col justify-center px-4 py-12 sm:px-6 lg:px-8">
-        <section className="max-w-3xl">
+        <section className="grid items-center gap-8 lg:grid-cols-[1fr_24rem]">
+          <div className="max-w-3xl">
           <p className="text-sm font-semibold uppercase tracking-[0.35em] text-cyan-200">
             MangaStudio
           </p>
@@ -31,6 +34,27 @@ export default function LandingPage() {
             Use the actions below to demo real backend-connected
             flows.
           </p>
+          </div>
+          <div className="relative min-h-80 overflow-hidden rounded-lg border border-white/10 bg-slate-900/70 shadow-[0_24px_80px_rgba(2,6,23,0.45)]">
+            <img
+              src={mangaHeroImage}
+              alt="Manga covers and production inspiration"
+              className="absolute inset-0 h-full w-full object-cover opacity-65"
+            />
+            <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,8,22,0.08),rgba(5,8,22,0.92))]" />
+            <div className="absolute inset-x-0 bottom-0 p-5">
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-amber-100">
+                Cover desk
+              </p>
+              <h2 className="mt-2 text-2xl font-black text-white">
+                Stories move from pitch to print.
+              </h2>
+            </div>
+          </div>
+        </section>
+
+        <section className="mt-10">
+          <CoverMarquee />
         </section>
 
         <section className="mt-10 grid gap-4 md:grid-cols-2">

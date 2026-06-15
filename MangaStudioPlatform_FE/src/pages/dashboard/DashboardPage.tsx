@@ -1,5 +1,7 @@
 import { Link } from "react-router-dom";
 import { ArrowRight, BookOpen, FileText, PlusCircle, Trophy } from "lucide-react";
+import CoverMarquee from "../../shared/components/CoverMarquee";
+import { mangaHeroImage } from "../../shared/visuals/mangaVisuals";
 
 const backendSections = [
   {
@@ -31,18 +33,30 @@ const backendSections = [
 export default function DashboardPage() {
   return (
     <div className="space-y-8">
-      <section className="overflow-hidden rounded-lg border border-white/10 bg-slate-900/80 p-6 lg:p-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-200">
-          Mangaka Dashboard
-        </p>
-        <h2 className="mt-3 max-w-3xl text-3xl font-black text-white sm:text-4xl">
-          Backend-connected workspace
-        </h2>
-        <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-300">
-          Use the sections below to demo
-          data created by the running backend services.
-        </p>
+      <section className="grid overflow-hidden rounded-lg border border-white/10 bg-slate-900/80 lg:grid-cols-[1fr_24rem]">
+        <div className="p-6 lg:p-8">
+          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-200">
+            Mangaka Dashboard
+          </p>
+          <h2 className="mt-3 max-w-3xl text-3xl font-black text-white sm:text-4xl">
+            Backend-connected workspace
+          </h2>
+          <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-300">
+            Use the sections below to demo data created by the running backend
+            services.
+          </p>
+        </div>
+        <div className="relative min-h-56 overflow-hidden border-t border-white/10 lg:border-l lg:border-t-0">
+          <img
+            src={mangaHeroImage}
+            alt="Manga production desk"
+            className="absolute inset-0 h-full w-full object-cover opacity-70"
+          />
+          <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(15,23,42,0.25),rgba(5,8,22,0.88))]" />
+        </div>
       </section>
+
+      <CoverMarquee compact />
 
       <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
         {backendSections.map((section) => {

@@ -148,6 +148,24 @@ body {
 }
 
 .cover-marquee-track {
-  animation: cover-marquee 34s linear infinite;
+  animation: cover-marquee 9s linear infinite;
   will-change: transform;
+}
+
+.cover-marquee {
+  mask-image: linear-gradient(90deg, transparent, black 9%, black 91%, transparent);
+}
+
+.cover-marquee:hover .cover-marquee-track {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cover-marquee-track,
+  .float-slow,
+  .float-medium,
+  .float-fast,
+  .pulse-glow {
+    animation: none;
+  }
 }
