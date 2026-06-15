@@ -33,8 +33,7 @@ export default function CreateSeriesPage() {
 
     setIsSubmitting(true);
     try {
-      const result = await mangaErpApi.createSubmission({
-        submitterId: currentUser.userId,
+      const result = await mangaErpApi.createDraftSubmission({
         title,
         description,
         genre,
@@ -42,10 +41,13 @@ export default function CreateSeriesPage() {
         manuscriptUrl,
       });
       const submissionId = result.submissionId ?? result.SubmissionId;
+      if (submissionId) {
+        await mangaErpApi.submitSubmission(submissionId);
+      }
       toast.success(
         "Proposal submitted",
         submissionId
-          ? `Submission ID: ${submissionId}`
+          ? `Submission ID: ${submissionId}. Sent to Tantou Editor review.`
           : "Your proposal was sent to the backend.",
       );
     } catch (err) {

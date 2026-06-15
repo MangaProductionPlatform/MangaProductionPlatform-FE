@@ -1,178 +1,221 @@
-import type { FormEvent, ReactNode } from "react";
-import { useMemo, useState } from "react";
-import { CheckCircle2, ClipboardCheck, MessageSquare, Send, XCircle } from "lucide-react";
+import type { ReactNode } from "react";
+import { useEffect, useState } from "react";
+import { CheckCircle2, Eye, MessageSquare, RefreshCw, XCircle } from "lucide-react";
 import { mangaErpApi } from "../../shared/services/mangaErpService";
+import type { SubmissionDetailDto, SubmissionSummaryDto } from "../../shared/types/mangaErp";
 import { useToast } from "../../shared/components/toastContext";
 
-type SubmissionAction = "recommend" | "approve" | "reject" | "revision";
+type BoardAction = "approve" | "revision" | "reject";
 
 export default function SeriesProposalsPage() {
   const toast = useToast();
-  const [submissionId, setSubmissionId] = useState("");
-  const [feedbackMessage, setFeedbackMessage] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState<SubmissionAction | null>(null);
-  const currentUser = useMemo(
-    () => JSON.parse(localStorage.getItem("currentUser") || "null") as
-      | { userId?: string; role?: string }
-      | null,
-    [],
-  );
+  const [queue, setQueue] = useState<SubmissionSummaryDto[]>([]);
+  const [selected, setSelected] = useState<SubmissionDetailDto | null>(null);
+  const [reason, setReason] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [runningAction, setRunningAction] = useState<BoardAction | null>(null);
 
-  const reviewerId = currentUser?.userId ?? "";
-
-  const runAction = async (action: SubmissionAction) => {
-    if (!submissionId.trim()) {
-      toast.error("Submission ID required", "Paste the submission ID returned after proposal creation.");
-      return;
-    }
-
-    if (!reviewerId) {
-      toast.error("Login required", "Please login again before reviewing submissions.");
-      return;
-    }
-
-    if (action !== "approve" && !feedbackMessage.trim()) {
-      toast.error("Feedback required", "Enter feedback before sending this action.");
-      return;
-    }
-
-    setIsSubmitting(action);
+  const loadQueue = async () => {
+    setIsLoading(true);
     try {
-      if (action === "recommend") {
-        await mangaErpApi.recommendSubmission(submissionId.trim(), {
-          reviewerEditorId: reviewerId,
-          feedbackMessage,
-        });
-        toast.success("Submission recommended", "The proposal was sent to Editorial Board.");
-      }
-
-      if (action === "approve") {
-        await mangaErpApi.approveSubmission(submissionId.trim(), reviewerId);
-        toast.success("Submission approved", "The backend accepted the approval request.");
-      }
-
-      if (action === "reject") {
-        await mangaErpApi.rejectSubmission(submissionId.trim(), {
-          reviewerUserId: reviewerId,
-          feedbackMessage,
-        });
-        toast.success("Submission rejected", "The rejection was saved to the backend.");
-      }
-
-      if (action === "revision") {
-        await mangaErpApi.requestSubmissionRevision(submissionId.trim(), {
-          reviewerUserId: reviewerId,
-          feedbackMessage,
-        });
-        toast.success("Revision requested", "The revision request was saved to the backend.");
+      const result = await mangaErpApi.getSubmissionQueue();
+      setQueue(result);
+      if (selected && !result.some((item) => item.id === selected.id)) {
+        setSelected(null);
       }
     } catch (err) {
+      setQueue([]);
       toast.error(
-        "Submission action failed",
-        err instanceof Error ? err.message : "Please check the submission ID and your role.",
+        "Could not load Board queue",
+        err instanceof Error ? err.message : "Please check your Editorial Board session.",
       );
     } finally {
-      setIsSubmitting(null);
+      setIsLoading(false);
     }
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  useEffect(() => {
+    void loadQueue();
+  }, []);
+
+  const openSubmission = async (id: string) => {
+    try {
+      const detail = await mangaErpApi.getSubmission(id);
+      setSelected(detail);
+      setReason(detail.feedbackMessage ?? "");
+    } catch (err) {
+      toast.error(
+        "Could not open submission",
+        err instanceof Error ? err.message : "Please try again.",
+      );
+    }
+  };
+
+  const runAction = async (action: BoardAction) => {
+    if (!selected) {
+      toast.error("Select a submission", "Open one proposal before sending an action.");
+      return;
+    }
+
+    if (action !== "approve" && !reason.trim()) {
+      toast.error("Reason required", "Enter a revision or rejection reason.");
+      return;
+    }
+
+    setRunningAction(action);
+    try {
+      if (action === "approve") {
+        await mangaErpApi.approveSubmission(selected.id);
+        toast.success("Submission approved", "A series record was created by the backend.");
+      }
+
+      if (action === "revision") {
+        await mangaErpApi.ebRequestSubmissionRevision(selected.id, {
+          reason: reason.trim(),
+        });
+        toast.success("Revision requested", "The author can revise and resubmit.");
+      }
+
+      if (action === "reject") {
+        await mangaErpApi.ebRejectSubmission(selected.id, {
+          reason: reason.trim(),
+        });
+        toast.success("Rejected", "The EB rejection was saved.");
+      }
+
+      await loadQueue();
+      const refreshed = await mangaErpApi.getSubmission(selected.id).catch(() => null);
+      setSelected(refreshed);
+    } catch (err) {
+      toast.error(
+        "Submission action failed",
+        err instanceof Error ? err.message : "Please check submission status and your role.",
+      );
+    } finally {
+      setRunningAction(null);
+    }
   };
 
   return (
     <div className="space-y-6">
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-200">
-          Submission Service
-        </p>
-        <h2 className="mt-2 text-3xl font-black text-white">
-          Review series proposal by ID
-        </h2>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
-          The backend exposes create/recommend/approve/reject/revision commands.
-          It does not expose a submission list endpoint, so paste a known
-          submission ID to perform review actions.
-        </p>
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-200">
+            Editorial Board
+          </p>
+          <h2 className="mt-2 text-3xl font-black text-white">Series proposals</h2>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
+            Recommended submissions waiting for final Board decision.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => void loadQueue()}
+          className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-bold text-slate-950 hover:bg-cyan-100"
+        >
+          <RefreshCw size={16} />
+          Refresh
+        </button>
       </div>
 
-      <form
-        onSubmit={handleSubmit}
-        className="grid gap-5 rounded-lg border border-white/10 bg-slate-900/75 p-5 xl:grid-cols-[1fr_22rem]"
-      >
-        <section className="space-y-4">
-          <label className="block">
-            <span className="mb-2 block text-sm font-semibold text-slate-200">
-              Submission ID
-            </span>
-            <input
-              className="input"
-              value={submissionId}
-              onChange={(event) => setSubmissionId(event.target.value)}
-              placeholder="Paste submission GUID"
-            />
-          </label>
-
-          <label className="block">
-            <span className="mb-2 block text-sm font-semibold text-slate-200">
-              Feedback message
-            </span>
-            <textarea
-              className="input min-h-36 resize-y"
-              value={feedbackMessage}
-              onChange={(event) => setFeedbackMessage(event.target.value)}
-              placeholder="Reason, recommendation, or revision note"
-            />
-          </label>
-
-          <div className="rounded-lg border border-amber-300/20 bg-amber-300/10 p-4 text-sm leading-6 text-amber-100">
-            After approve succeeds, the Submission service publishes the approval
-            event. In local multi-service mode, the new Series only appears if
-            the event path between services is running correctly.
-          </div>
-        </section>
-
-        <aside className="space-y-3">
-          <ActionButton
-            icon={<Send size={16} />}
-            label="Recommend"
-            description="Tantou Editor only"
-            loading={isSubmitting === "recommend"}
-            onClick={() => void runAction("recommend")}
-          />
-          <ActionButton
-            icon={<CheckCircle2 size={16} />}
-            label="Approve"
-            description="Editorial Board only"
-            loading={isSubmitting === "approve"}
-            onClick={() => void runAction("approve")}
-          />
-          <ActionButton
-            icon={<XCircle size={16} />}
-            label="Reject"
-            description="Tantou Editor or Board"
-            loading={isSubmitting === "reject"}
-            onClick={() => void runAction("reject")}
-          />
-          <ActionButton
-            icon={<MessageSquare size={16} />}
-            label="Request Revision"
-            description="Tantou Editor or Board"
-            loading={isSubmitting === "revision"}
-            onClick={() => void runAction("revision")}
-          />
-
-          <div className="rounded-lg border border-white/10 bg-slate-950/60 p-4">
-            <div className="flex items-center gap-2 text-sm font-semibold text-white">
-              <ClipboardCheck size={16} className="text-cyan-200" />
-              Current reviewer
+      <section className="grid gap-5 xl:grid-cols-[1fr_24rem]">
+        <div className="space-y-3">
+          {isLoading ? (
+            <div className="rounded-lg border border-white/10 bg-slate-900/75 p-5 text-sm text-slate-300">
+              Loading Board queue from backend...
             </div>
-            <p className="mt-2 break-all text-xs leading-5 text-slate-400">
-              {reviewerId || "Not logged in"}
-            </p>
-          </div>
+          ) : null}
+
+          {!isLoading && queue.length === 0 ? (
+            <div className="rounded-lg border border-white/10 bg-slate-900/75 p-5 text-sm text-slate-300">
+              No submissions waiting for Board review.
+            </div>
+          ) : null}
+
+          {queue.map((item) => (
+            <article
+              key={item.id}
+              className="rounded-lg border border-white/10 bg-slate-900/75 p-4"
+            >
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                  <span className="rounded-md border border-cyan-300/20 bg-cyan-300/10 px-2 py-1 text-xs font-semibold text-cyan-100">
+                    {item.status}
+                  </span>
+                  <h3 className="mt-3 text-xl font-black text-white">{item.title}</h3>
+                  <p className="mt-1 text-sm text-slate-400">{item.genre ?? "Uncategorized"}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void openSubmission(item.id)}
+                  className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10"
+                >
+                  <Eye size={15} />
+                  Open
+                </button>
+              </div>
+            </article>
+          ))}
+        </div>
+
+        <aside className="rounded-lg border border-white/10 bg-slate-900/75 p-5">
+          <h3 className="text-lg font-bold text-white">Board decision</h3>
+          {selected ? (
+            <div className="mt-4 space-y-4">
+              <div className="rounded-lg border border-white/10 bg-slate-950/60 p-4">
+                <p className="break-all text-xs text-slate-500">{selected.id}</p>
+                <h4 className="mt-2 font-bold text-white">{selected.title}</h4>
+                <p className="mt-2 text-sm leading-6 text-slate-300">
+                  {selected.description || "No description."}
+                </p>
+                {selected.editorRecommendationMessage ? (
+                  <p className="mt-3 rounded-lg border border-cyan-300/20 bg-cyan-300/10 p-3 text-sm leading-6 text-cyan-50">
+                    {selected.editorRecommendationMessage}
+                  </p>
+                ) : null}
+                {selected.manuscriptUrl ? (
+                  <a
+                    href={selected.manuscriptUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-3 inline-flex text-sm font-semibold text-cyan-200 hover:text-cyan-100"
+                  >
+                    Open manuscript
+                  </a>
+                ) : null}
+              </div>
+
+              <textarea
+                className="input min-h-32 resize-y"
+                value={reason}
+                onChange={(event) => setReason(event.target.value)}
+                placeholder="Revision or rejection reason"
+              />
+
+              <ActionButton
+                icon={<CheckCircle2 size={16} />}
+                label="Approve and create series"
+                loading={runningAction === "approve"}
+                onClick={() => void runAction("approve")}
+              />
+              <ActionButton
+                icon={<MessageSquare size={16} />}
+                label="Request revision"
+                loading={runningAction === "revision"}
+                onClick={() => void runAction("revision")}
+              />
+              <ActionButton
+                icon={<XCircle size={16} />}
+                label="Reject"
+                loading={runningAction === "reject"}
+                onClick={() => void runAction("reject")}
+              />
+            </div>
+          ) : (
+            <p className="mt-4 text-sm text-slate-400">Open a proposal to review it.</p>
+          )}
         </aside>
-      </form>
+      </section>
     </div>
   );
 }
@@ -180,13 +223,11 @@ export default function SeriesProposalsPage() {
 function ActionButton({
   icon,
   label,
-  description,
   loading,
   onClick,
 }: {
   icon: ReactNode;
   label: string;
-  description: string;
   loading: boolean;
   onClick: () => void;
 }) {
@@ -195,19 +236,12 @@ function ActionButton({
       type="button"
       disabled={loading}
       onClick={onClick}
-      className="flex w-full items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/5 p-4 text-left transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+      className="flex w-full items-center gap-3 rounded-lg border border-white/10 bg-white/5 p-3 text-left text-sm font-bold text-white hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
     >
-      <span className="flex items-center gap-3">
-        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-cyan-300 text-slate-950">
-          {icon}
-        </span>
-        <span>
-          <span className="block font-bold text-white">
-            {loading ? "Sending..." : label}
-          </span>
-          <span className="text-xs text-slate-400">{description}</span>
-        </span>
+      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-300 text-slate-950">
+        {icon}
       </span>
+      {loading ? "Sending..." : label}
     </button>
   );
 }

@@ -32,9 +32,7 @@ export default function ChapterManagementPage() {
     async function load() {
       setIsLoading(true);
       try {
-        const seriesResult = currentUser?.userId
-          ? await mangaErpApi.getSeriesByAuthor(currentUser.userId)
-          : await mangaErpApi.getAllSeries();
+        const seriesResult = await mangaErpApi.getMySeries();
 
         if (ignore) return;
         setSeriesList(seriesResult);

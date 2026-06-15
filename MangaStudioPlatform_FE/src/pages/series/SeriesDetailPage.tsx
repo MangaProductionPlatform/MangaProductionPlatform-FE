@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Ban } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { mangaErpApi } from "../../shared/services/mangaErpService";
 import type { ChapterDto, MangaSeriesDto } from "../../shared/types/mangaErp";
 import { useToast } from "../../shared/components/toastContext";
@@ -11,7 +11,6 @@ export default function SeriesDetailPage() {
   const [series, setSeries] = useState<MangaSeriesDto | null>(null);
   const [chapters, setChapters] = useState<ChapterDto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isCancelling, setIsCancelling] = useState(false);
 
   useEffect(() => {
     if (!params.id) return;
@@ -49,25 +48,6 @@ export default function SeriesDetailPage() {
     };
   }, [params.id, toast]);
 
-  const handleCancelSeries = async () => {
-    if (!series) return;
-
-    setIsCancelling(true);
-    try {
-      await mangaErpApi.cancelSeries(series.id);
-      toast.success("Series cancelled", "The backend accepted the cancellation request.");
-      const refreshed = await mangaErpApi.getSeries(series.id);
-      setSeries(refreshed);
-    } catch (err) {
-      toast.error(
-        "Could not cancel series",
-        err instanceof Error ? err.message : "Please check your role and try again.",
-      );
-    } finally {
-      setIsCancelling(false);
-    }
-  };
-
   return (
     <div className="space-y-6">
       <Link
@@ -102,15 +82,6 @@ export default function SeriesDetailPage() {
               <span className="rounded-md border border-cyan-300/20 bg-cyan-300/10 px-2 py-1 text-xs font-semibold text-cyan-100">
                 {series.status}
               </span>
-              <button
-                type="button"
-                disabled={isCancelling}
-                onClick={handleCancelSeries}
-                className="inline-flex items-center gap-2 rounded-lg border border-rose-300/30 bg-rose-300/10 px-3 py-2 text-sm font-bold text-rose-100 hover:bg-rose-300/15 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <Ban size={16} />
-                {isCancelling ? "Cancelling..." : "Cancel Series"}
-              </button>
             </div>
             <h2 className="mt-3 text-3xl font-black text-white">{series.title}</h2>
             <p className="mt-2 text-sm text-slate-400">
