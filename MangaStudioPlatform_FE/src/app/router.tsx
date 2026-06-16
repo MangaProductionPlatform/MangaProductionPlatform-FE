@@ -63,6 +63,12 @@ import SeriesDetailPage from "../pages/series/SeriesDetailPage";
 import SeriesListPage from "../pages/series/SeriesListPage";
 import TaskBoardPage from "../pages/tasks/TaskBoardPage";
 import TaskDetailPage from "../pages/tasks/TaskDetailPage";
+import MangakaDashboardPage from "../pages/mangaka/MangakaDashboardPage";
+import TaskAssignmentPage from "../pages/mangaka/TaskAssignmentPage";
+import LayerReviewPage from "../pages/mangaka/LayerReviewPage";
+import QaSubmissionPage from "../pages/mangaka/QaSubmissionPage";
+import MangakaProfilePage from "../pages/mangaka/MangakaProfilePage";
+
 
 export function AppRouter() {
   return (
@@ -131,6 +137,17 @@ export function AppRouter() {
         <Route path="income" element={<AssistantIncomePage />} />
         <Route path="profile" element={<AssistantProfilePage />} />
       </Route>
+
+      <Route path="/mangaka" element={<DashboardLayout />}>
+        <Route index element={<Navigate to="dashboard" replace />} />
+        <Route path="dashboard" element={<MangakaDashboardPage />} />
+        <Route path="chapters" element={<ChapterManagementPage />} />
+        <Route path="task-assignment" element={<TaskAssignmentPage />} />
+        <Route path="layer-review" element={<LayerReviewPage />} />
+        <Route path="qa-submission" element={<QaSubmissionPage />} />
+        <Route path="profile" element={<MangakaProfilePage />} />
+      </Route>
+
 
       <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<Navigate to="dashboard" replace />} />
