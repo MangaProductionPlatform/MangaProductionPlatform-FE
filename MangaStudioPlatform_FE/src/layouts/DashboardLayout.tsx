@@ -62,17 +62,55 @@ export default function DashboardLayout() {
     return <Navigate to="/login" replace />;
   }
 
+  const mangakaMenus = [
+  {
+    label: "Dashboard",
+    path: "/mangaka/dashboard",
+    icon: LayoutDashboard,
+  },
+  {
+    label: "Chapter Management",
+    path: "/mangaka/chapters",
+    icon: BookOpen,
+  },
+  {
+    label: "Task Assignment",
+    path: "/mangaka/task-assignment",
+    icon: ClipboardCheck,
+  },
+  {
+    label: "Layer Review",
+    path: "/mangaka/layer-review",
+    icon: PenTool,
+  },
+  {
+    label: "Submit QA",
+    path: "/mangaka/qa-submission",
+    icon: FileText,
+  },
+  {
+    label: "Profile",
+    path: "/mangaka/profile",
+    icon: User,
+  },
+  ];
+
   const menus =
-    role === "editor"
-      ? editorMenus
-      : role === "editorial_board"
-        ? boardMenus
-        : defaultMenus;
+  role === "editor"
+    ? editorMenus
+    : role === "editorial_board"
+    ? boardMenus
+    : role === "mangaka"
+    ? mangakaMenus
+    : defaultMenus;
+
   const workspaceLabel =
-    role === "editor"
-      ? "Editor Workspace"
-      : role === "editorial_board"
-        ? "Editorial Board"
+  role === "editor"
+    ? "Editor Workspace"
+    : role === "editorial_board"
+      ? "Editorial Board"
+      : role === "mangaka"
+        ? "Mangaka Workspace"
         : "Creator command center";
 
   const handleLogout = () => {

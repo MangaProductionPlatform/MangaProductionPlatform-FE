@@ -53,6 +53,11 @@ export default function LoginPage() {
         return;
       }
 
+      if (account.role === "mangaka") {
+        navigate("/mangaka/dashboard");
+        return;
+          }
+
       navigate("/app/dashboard");
     } catch (err) {
       toast.error(
