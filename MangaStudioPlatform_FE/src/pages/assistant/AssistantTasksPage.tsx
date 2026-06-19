@@ -4,25 +4,27 @@ import { Link } from "react-router-dom";
 import { taskService } from "../../shared/services/taskService";
 
 type AssistantTask = {
-  id: string;
-  pageTaskId?: string;
-  chapter?: string;
+  pageTaskId: string;
+  chapterId?: string;
   chapterTitle?: string;
+  chapterNumber?: number;
   pageNumber?: number;
-  layerType?: string;
-  deadline?: string;
-  status?: string;
+  taskStatus?: string;
+  currentLayerType?: string | null;
+  currentLayerVersion?: number | null;
+  updatedAt?: string;
 };
 
 const taskStatuses = [
-  "Assigned",
-  "InProgress",
+  "All",
+  "Incomplete",
+  "Reviewing",
   "RevisionRequired",
   "Submitted",
 ];
 
 export default function AssistantTasksPage() {
-  const [status, setStatus] = useState("Assigned");
+  const [status, setStatus] = useState("All");
   const [tasks, setTasks] = useState<AssistantTask[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -33,7 +35,10 @@ export default function AssistantTasksPage() {
       setError("");
 
       try {
-        const result = await taskService.getAssignedTasks(status);
+        const result =
+          status === "All"
+            ? await taskService.getAssignedTasks()
+            : await taskService.getAssignedTasks(status);
 
         const list = Array.isArray(result)
           ? result
@@ -68,7 +73,7 @@ export default function AssistantTasksPage() {
 
         <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
           Danh sách task được phân công cho Assistant từ API GET
-          /api/v1/tasks/assigned?status=...
+          /api/v1/tasks/assigned.
         </p>
       </div>
 
@@ -111,7 +116,7 @@ export default function AssistantTasksPage() {
 
       <div className="grid gap-4">
         {tasks.map((task) => {
-          const taskId = task.pageTaskId ?? task.id;
+          const taskId = task.pageTaskId;
 
           return (
             <div
@@ -124,28 +129,35 @@ export default function AssistantTasksPage() {
                     <ClipboardList size={18} className="text-cyan-300" />
 
                     <h2 className="font-bold text-white">
-                      {task.chapterTitle ?? task.chapter ?? "Untitled Chapter"}
+                      {task.chapterTitle ?? "Untitled Chapter"}
                     </h2>
                   </div>
 
                   <p className="mt-2 text-slate-400">
-                    Page {task.pageNumber ?? "N/A"}
+                    Chapter {task.chapterNumber ?? "N/A"} · Page{" "}
+                    {task.pageNumber ?? "N/A"}
                   </p>
 
                   <p className="mt-1 text-slate-400">
-                    Layer: {task.layerType ?? "N/A"}
+                    Layer: {task.currentLayerType ?? "No layer submitted yet"}
+                  </p>
+
+                  <p className="mt-1 break-all text-xs text-slate-500">
+                    Task ID: {task.pageTaskId}
                   </p>
                 </div>
 
                 <span className="rounded-lg bg-cyan-500/10 px-3 py-2 text-sm text-cyan-300">
-                  {task.status ?? status}
+                  {task.taskStatus ?? "Unknown"}
                 </span>
               </div>
 
               <div className="mt-4 flex items-center justify-between">
                 <div className="flex items-center gap-2 text-sm text-slate-500">
                   <Clock size={16} />
-                  {task.deadline ?? "No deadline"}
+                  {task.updatedAt
+                    ? new Date(task.updatedAt).toLocaleString()
+                    : "No updated time"}
                 </div>
 
                 <Link
