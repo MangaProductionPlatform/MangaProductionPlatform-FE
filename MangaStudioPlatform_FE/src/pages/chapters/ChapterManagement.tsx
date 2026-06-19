@@ -5,6 +5,22 @@ import { mangaErpApi } from "../../shared/services/mangaErpService";
 import type { ChapterDto, MangaSeriesDto } from "../../shared/types/mangaErp";
 import { useToast } from "../../shared/components/toastContext";
 
+type ChapterLike = ChapterDto & {
+  chapterId?: string;
+  ChapterId?: string;
+  Id?: string;
+};
+
+function getChapterId(chapter: ChapterLike | null | undefined) {
+  return (
+    chapter?.id ??
+    chapter?.chapterId ??
+    chapter?.ChapterId ??
+    chapter?.Id ??
+    ""
+  );
+}
+
 export default function ChapterManagementPage() {
   const toast = useToast();
   const [seriesList, setSeriesList] = useState<MangaSeriesDto[]>([]);
@@ -31,36 +47,52 @@ export default function ChapterManagementPage() {
 
     async function load() {
       setIsLoading(true);
+
       try {
         const seriesResult = await mangaErpApi.getMySeries();
 
         if (ignore) return;
+
         setSeriesList(seriesResult);
+
         const firstSeriesId = seriesResult[0]?.id ?? "";
         setSelectedSeriesId((current) => current || firstSeriesId);
 
-        if (firstSeriesId) {
-          const chapterResult = await mangaErpApi.getChaptersBySeries(firstSeriesId);
-          if (!ignore) {
-            setChapters(chapterResult);
-            const firstChapterId = chapterResult[0]?.id ?? "";
-            setDetailChapterId(firstChapterId);
-            if (firstChapterId) {
-              const detail = await mangaErpApi.getChapter(firstChapterId);
-              if (!ignore) setSelectedChapter(detail);
-            }
-          }
-        } else {
+        if (!firstSeriesId) {
           setChapters([]);
+          setSelectedChapter(null);
+          setDetailChapterId("");
+          return;
+        }
+
+        const chapterResult = await mangaErpApi.getChaptersBySeries(firstSeriesId);
+
+        if (ignore) return;
+
+        setChapters(chapterResult);
+
+        const firstChapterId = getChapterId(chapterResult[0] as ChapterLike);
+
+        setDetailChapterId(firstChapterId);
+
+        if (firstChapterId) {
+          const detail = await mangaErpApi.getChapter(firstChapterId);
+          if (!ignore) setSelectedChapter(detail);
+        } else {
           setSelectedChapter(null);
         }
       } catch (err) {
         if (!ignore) {
           setSeriesList([]);
           setChapters([]);
+          setSelectedChapter(null);
+          setDetailChapterId("");
+
           toast.error(
             "Could not load chapters",
-            err instanceof Error ? err.message : "Please check that Series service is running.",
+            err instanceof Error
+              ? err.message
+              : "Please check that Series service is running.",
           );
         }
       } finally {
@@ -68,7 +100,8 @@ export default function ChapterManagementPage() {
       }
     }
 
-    load();
+    void load();
+
     return () => {
       ignore = true;
     };
@@ -76,37 +109,41 @@ export default function ChapterManagementPage() {
 
   useEffect(() => {
     if (!selectedSeriesId) return;
+
     let ignore = false;
 
-    mangaErpApi
-      .getChaptersBySeries(selectedSeriesId)
-      .then((result) => {
-        if (!ignore) {
-          setChapters(result);
-          const firstChapterId = result[0]?.id ?? "";
-          setDetailChapterId(firstChapterId);
-          setSelectedChapter(null);
-          if (firstChapterId) {
-            void mangaErpApi
-              .getChapter(firstChapterId)
-              .then((detail) => {
-                if (!ignore) setSelectedChapter(detail);
-              })
-              .catch(() => {
-                if (!ignore) setSelectedChapter(null);
-              });
-          }
+    async function loadChaptersBySeries() {
+      try {
+        const result = await mangaErpApi.getChaptersBySeries(selectedSeriesId);
+
+        if (ignore) return;
+
+        setChapters(result);
+
+        const firstChapterId = getChapterId(result[0] as ChapterLike);
+
+        setDetailChapterId(firstChapterId);
+        setSelectedChapter(null);
+
+        if (firstChapterId) {
+          const detail = await mangaErpApi.getChapter(firstChapterId);
+          if (!ignore) setSelectedChapter(detail);
         }
-      })
-      .catch((err) => {
+      } catch (err) {
         if (!ignore) {
           setChapters([]);
+          setSelectedChapter(null);
+          setDetailChapterId("");
+
           toast.error(
             "Could not load chapters",
             err instanceof Error ? err.message : "Please try again.",
           );
         }
-      });
+      }
+    }
+
+    void loadChaptersBySeries();
 
     return () => {
       ignore = true;
@@ -114,25 +151,28 @@ export default function ChapterManagementPage() {
   }, [selectedSeriesId, toast]);
 
   useEffect(() => {
-    if (!detailChapterId) {
-      return;
-    }
+    if (!detailChapterId) return;
 
     let ignore = false;
-    mangaErpApi
-      .getChapter(detailChapterId)
-      .then((result) => {
+
+    async function loadChapterDetail() {
+      try {
+        const result = await mangaErpApi.getChapter(detailChapterId);
+
         if (!ignore) setSelectedChapter(result);
-      })
-      .catch((err) => {
+      } catch (err) {
         if (!ignore) {
           setSelectedChapter(null);
+
           toast.error(
             "Could not load chapter detail",
             err instanceof Error ? err.message : "Please try again.",
           );
         }
-      });
+      }
+    }
+
+    void loadChapterDetail();
 
     return () => {
       ignore = true;
@@ -148,6 +188,7 @@ export default function ChapterManagementPage() {
     }
 
     setIsSubmitting(true);
+
     try {
       await mangaErpApi.createChapter({
         seriesId: selectedSeriesId,
@@ -156,12 +197,20 @@ export default function ChapterManagementPage() {
         totalPages: Number(totalPages),
         assignedEditorId: null,
       });
+
       toast.success("Chapter created", `${chapterTitle} was saved to the backend.`);
+
+      const createdTitle = chapterTitle;
       setChapterTitle("");
+
       const chapterResult = await mangaErpApi.getChaptersBySeries(selectedSeriesId);
+
       setChapters(chapterResult);
-      const created = chapterResult.find((chapter) => chapter.title === chapterTitle);
-      if (created) setDetailChapterId(created.id);
+
+      const created = chapterResult.find((chapter) => chapter.title === createdTitle);
+      const createdId = getChapterId(created as ChapterLike);
+
+      if (createdId) setDetailChapterId(createdId);
     } catch (err) {
       toast.error(
         "Could not create chapter",
@@ -186,12 +235,15 @@ export default function ChapterManagementPage() {
     }
 
     setIsActivatingPage(true);
+
     try {
       await mangaErpApi.activatePage(detailChapterId, {
         pageNumber: Number(pageNumber),
         assignedAssistantId: assistantId.trim(),
       });
+
       toast.success("Page task activated", `Page ${pageNumber} was assigned in the backend.`);
+
       const detail = await mangaErpApi.getChapter(detailChapterId);
       setSelectedChapter(detail);
     } catch (err) {
@@ -216,9 +268,12 @@ export default function ChapterManagementPage() {
     }
 
     setIsSubmittingQA(true);
+
     try {
       await mangaErpApi.submitChapterForQA(detailChapterId, currentUser.userId);
+
       toast.success("Submitted for QA", "The backend accepted the QA submission.");
+
       const detail = await mangaErpApi.getChapter(detailChapterId);
       setSelectedChapter(detail);
     } catch (err) {
@@ -238,13 +293,16 @@ export default function ChapterManagementPage() {
           <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-200">
             Chapter Management
           </p>
+
           <h2 className="mt-2 text-3xl font-black text-white">
             Backend chapters
           </h2>
+
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
             Create and track chapter records from the running Chapter service.
           </p>
         </div>
+
         <button
           type="button"
           disabled={isSubmittingQA || !detailChapterId}
@@ -260,6 +318,7 @@ export default function ChapterManagementPage() {
         <article className="rounded-lg border border-white/10 bg-slate-900/75 p-5">
           <div>
             <h3 className="text-lg font-bold text-white">Current Chapters</h3>
+
             <p className="mt-1 text-sm text-slate-400">
               Only backend chapter records are shown here.
             </p>
@@ -279,69 +338,101 @@ export default function ChapterManagementPage() {
             ) : null}
 
             {!isLoading &&
-              chapters.map((chapter) => (
-                <article
-                  key={chapter.id}
-                  className="rounded-lg border border-white/10 bg-white/5 p-4"
-                >
-                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                    <div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="rounded-md bg-slate-950/80 px-2 py-1 text-xs font-semibold text-slate-300">
-                          Chapter {chapter.chapterNumber}
-                        </span>
-                        <span className={statusTone(chapter.status)}>
-                          {chapter.status}
-                        </span>
+              chapters.map((chapter) => {
+                const chapterId = getChapterId(chapter as ChapterLike);
+
+                return (
+                  <article
+                    key={chapterId}
+                    className="rounded-lg border border-white/10 bg-white/5 p-4"
+                  >
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="rounded-md bg-slate-950/80 px-2 py-1 text-xs font-semibold text-slate-300">
+                            Chapter {chapter.chapterNumber}
+                          </span>
+
+                          <span className={statusTone(chapter.status)}>
+                            {chapter.status}
+                          </span>
+                        </div>
+
+                        <h4 className="mt-3 text-xl font-bold text-white">
+                          {chapter.title}
+                        </h4>
+
+                        <p className="mt-1 text-sm text-slate-400">
+                          {chapter.totalPages} pages
+                        </p>
+
+                        <p className="mt-2 break-all text-xs text-slate-500">
+                          ID: {chapterId || "-"}
+                        </p>
                       </div>
-                      <h4 className="mt-3 text-xl font-bold text-white">
-                        {chapter.title}
-                      </h4>
-                      <p className="mt-1 text-sm text-slate-400">
-                        {chapter.totalPages} pages
-                      </p>
+
+                      <dl className="grid grid-cols-3 gap-2 text-sm sm:min-w-80">
+                        <Info label="Pages" value={String(chapter.totalPages)} />
+                        <Info label="Editor" value={chapter.assignedEditorId ?? "-"} />
+                        <Info
+                          label="Created"
+                          value={
+                            chapter.createdAt
+                              ? new Date(chapter.createdAt).toLocaleDateString()
+                              : "-"
+                          }
+                        />
+                      </dl>
                     </div>
-                    <dl className="grid grid-cols-3 gap-2 text-sm sm:min-w-80">
-                      <Info label="Pages" value={String(chapter.totalPages)} />
-                      <Info label="Editor" value={chapter.assignedEditorId ?? "-"} />
-                      <Info
-                        label="Created"
-                        value={new Date(chapter.createdAt).toLocaleDateString()}
-                      />
-                    </dl>
-                  </div>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setDetailChapterId(chapter.id)}
-                      className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10"
-                    >
-                      <ClipboardList size={15} />
-                      Detail
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setDetailChapterId(chapter.id);
-                        void mangaErpApi
-                          .submitChapterForQA(chapter.id, currentUser?.userId ?? "")
-                          .then(() => toast.success("Submitted for QA", "The backend accepted the QA submission."))
-                          .catch((err) =>
-                            toast.error(
-                              "Could not submit for QA",
-                              err instanceof Error ? err.message : "Please check your role and page status.",
-                            ),
-                          );
-                      }}
-                      disabled={!currentUser?.userId}
-                      className="inline-flex items-center gap-2 rounded-lg border border-cyan-300/30 bg-cyan-300/10 px-3 py-2 text-sm font-semibold text-cyan-100 hover:bg-cyan-300/15 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      <Send size={15} />
-                      Submit QA
-                    </button>
-                  </div>
-                </article>
-              ))}
+
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setDetailChapterId(chapterId)}
+                        disabled={!chapterId}
+                        className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        <ClipboardList size={15} />
+                        Detail
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!chapterId) {
+                            toast.error("Missing chapter ID", "Backend did not return a valid chapter ID.");
+                            return;
+                          }
+
+                          setDetailChapterId(chapterId);
+
+                          void mangaErpApi
+                            .submitChapterForQA(chapterId, currentUser?.userId ?? "")
+                            .then(() =>
+                              toast.success(
+                                "Submitted for QA",
+                                "The backend accepted the QA submission.",
+                              ),
+                            )
+                            .catch((err) =>
+                              toast.error(
+                                "Could not submit for QA",
+                                err instanceof Error
+                                  ? err.message
+                                  : "Please check your role and page status.",
+                              ),
+                            );
+                        }}
+                        disabled={!currentUser?.userId || !chapterId}
+                        className="inline-flex items-center gap-2 rounded-lg border border-cyan-300/30 bg-cyan-300/10 px-3 py-2 text-sm font-semibold text-cyan-100 hover:bg-cyan-300/15 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        <Send size={15} />
+                        Submit QA
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
           </div>
         </article>
 
@@ -351,6 +442,7 @@ export default function ChapterManagementPage() {
               <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-300 text-slate-950">
                 <ClipboardList size={18} />
               </span>
+
               <div>
                 <h3 className="font-bold text-white">Chapter Detail</h3>
                 <p className="text-sm text-slate-400">GET /api/v1/chapters/:id</p>
@@ -364,24 +456,35 @@ export default function ChapterManagementPage() {
                 onChange={(event) => {
                   const chapterId = event.target.value;
                   setDetailChapterId(chapterId);
+
                   if (!chapterId) {
                     setSelectedChapter(null);
                   }
                 }}
               >
                 <option value="">Select chapter detail</option>
-                {chapters.map((chapter) => (
-                  <option key={chapter.id} value={chapter.id}>
-                    Ch. {chapter.chapterNumber} - {chapter.title}
-                  </option>
-                ))}
+
+                {chapters.map((chapter) => {
+                  const chapterId = getChapterId(chapter as ChapterLike);
+
+                  return (
+                    <option key={chapterId} value={chapterId}>
+                      Ch. {chapter.chapterNumber} - {chapter.title}
+                    </option>
+                  );
+                })}
               </select>
 
               {selectedChapter ? (
                 <div className="rounded-lg border border-white/10 bg-slate-950/60 p-4">
                   <p className="font-bold text-white">{selectedChapter.title}</p>
+
                   <p className="mt-1 text-sm text-slate-400">
                     {selectedChapter.totalPages} pages · {selectedChapter.status}
+                  </p>
+
+                  <p className="mt-2 break-all text-xs text-slate-500">
+                    ID: {getChapterId(selectedChapter as ChapterLike)}
                   </p>
 
                   <div className="mt-4 space-y-2">
@@ -395,8 +498,10 @@ export default function ChapterManagementPage() {
                             <span className="font-semibold text-white">
                               Page {task.pageNumber}
                             </span>
+
                             <span className="text-slate-300">{task.status}</span>
                           </div>
+
                           <p className="mt-1 break-all text-xs text-slate-500">
                             Assistant: {task.assignedAssistantId ?? "-"}
                           </p>
@@ -425,11 +530,13 @@ export default function ChapterManagementPage() {
               <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-300 text-slate-950">
                 <UserPlus size={18} />
               </span>
+
               <div>
                 <h3 className="font-bold text-white">Activate Page Task</h3>
                 <p className="text-sm text-slate-400">Assign assistant by ID</p>
               </div>
             </div>
+
             <div className="mt-5 space-y-3">
               <input
                 required
@@ -440,6 +547,7 @@ export default function ChapterManagementPage() {
                 onChange={(event) => setPageNumber(event.target.value)}
                 placeholder="Page number"
               />
+
               <input
                 required
                 className="input"
@@ -447,6 +555,7 @@ export default function ChapterManagementPage() {
                 onChange={(event) => setAssistantId(event.target.value)}
                 placeholder="Assistant user ID"
               />
+
               <button
                 disabled={isActivatingPage}
                 className="inline-flex items-center justify-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-bold text-slate-950 hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-60"
@@ -465,11 +574,13 @@ export default function ChapterManagementPage() {
               <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-cyan-300 text-slate-950">
                 <Upload size={18} />
               </span>
+
               <div>
                 <h3 className="font-bold text-white">Create Chapter</h3>
                 <p className="text-sm text-slate-400">Backend chapter record</p>
               </div>
             </div>
+
             <div className="mt-5 space-y-3">
               <select
                 className="input"
@@ -477,12 +588,14 @@ export default function ChapterManagementPage() {
                 onChange={(event) => setSelectedSeriesId(event.target.value)}
               >
                 <option value="">Select backend series</option>
+
                 {seriesList.map((series) => (
                   <option key={series.id} value={series.id}>
                     {series.title}
                   </option>
                 ))}
               </select>
+
               <input
                 required
                 className="input"
@@ -490,6 +603,7 @@ export default function ChapterManagementPage() {
                 onChange={(event) => setChapterTitle(event.target.value)}
                 placeholder="Chapter title"
               />
+
               <div className="grid grid-cols-2 gap-3">
                 <input
                   required
@@ -501,6 +615,7 @@ export default function ChapterManagementPage() {
                   onChange={(event) => setChapterNumber(event.target.value)}
                   placeholder="Chapter no."
                 />
+
                 <input
                   required
                   className="input"
@@ -511,15 +626,19 @@ export default function ChapterManagementPage() {
                   placeholder="Total pages"
                 />
               </div>
+
               <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-cyan-300/30 bg-cyan-300/5 p-5 text-center">
                 <FileText className="text-cyan-200" size={28} />
+
                 <span className="mt-2 text-sm font-semibold text-white">
                   No uploaded pages yet
                 </span>
+
                 <span className="text-xs text-slate-400">
                   This form creates the backend chapter record only.
                 </span>
               </div>
+
               <button
                 disabled={isSubmitting}
                 className="inline-flex items-center justify-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-bold text-slate-950 hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-60"

@@ -29,11 +29,13 @@ export const chapterService = {
     return request("chapter", `/api/v1/chapters/${chapterId}`);
   },
 
-  createBasePage(chapterId: string, payload: CreateBasePagePayload) {
-    return request("chapter", `/api/v1/chapters/${chapterId}/pages`, {
-      method: "POST",
-      body: JSON.stringify(payload),
-    });
+  createBasePage(chapterId: string, pageNumber: number) {
+  return request("chapter", `/api/v1/chapters/${chapterId}/pages`, {
+    method: "POST",
+    body: JSON.stringify({
+      PageNumber: pageNumber,
+    }),
+  });
   },
 
   activatePageTask(chapterId: string, payload: ActivatePageTaskPayload) {

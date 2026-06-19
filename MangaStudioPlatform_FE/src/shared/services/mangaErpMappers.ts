@@ -61,7 +61,11 @@ export function mapChapter(item: Record<string, unknown>): ChapterDto {
     pick<Record<string, unknown>[] | null | undefined>(item, "pageTasks") ?? [];
 
   return {
-    id: pick<string>(item, "id"),
+    id:
+    pick<string>(item, "id") ??
+    pick<string>(item, "chapterId") ??
+    pick<string>(item, "ChapterId") ??
+    pick<string>(item, "Id"),
     seriesId: pick<string>(item, "seriesId"),
     title: pick<string>(item, "title"),
     chapterNumber: Number(pick<number>(item, "chapterNumber")),
