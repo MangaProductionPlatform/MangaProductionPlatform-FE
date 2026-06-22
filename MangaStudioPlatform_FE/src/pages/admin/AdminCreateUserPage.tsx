@@ -60,6 +60,15 @@ export default function AdminCreateUserPage() {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
+    const nameParts = fullName.trim().split(/\s+/).filter(Boolean);
+    if (nameParts.length < 2) {
+      toast.error(
+        "Full name is invalid",
+        "Backend requires at least first and last name, for example: Cuong FPT.",
+      );
+      return;
+    }
+
     if (role === 3 && !managingTantouId) {
       toast.error("Tantou editor required", "Select the editor who manages this Mangaka.");
       return;
@@ -132,7 +141,7 @@ export default function AdminCreateUserPage() {
             className="input"
             value={fullName}
             onChange={(event) => setFullName(event.target.value)}
-            placeholder="Nguyen Van A"
+            placeholder="Nguyen Van A (at least 2 words)"
           />
         </Field>
 
@@ -184,7 +193,11 @@ export default function AdminCreateUserPage() {
               disabled={isLoadingEditors}
             >
               <option value="">
-                {isLoadingEditors ? "Loading editors..." : "Select Tantou editor"}
+                {isLoadingEditors
+                  ? "Loading editors..."
+                  : tantouUsers.length
+                    ? "Select Tantou editor"
+                    : "No Tantou Editor found — create one first"}
               </option>
               {tantouUsers.map((user) => (
                 <option key={user.userId} value={user.userId}>
@@ -192,6 +205,12 @@ export default function AdminCreateUserPage() {
                 </option>
               ))}
             </select>
+            {!isLoadingEditors && tantouUsers.length === 0 ? (
+              <p className="mt-2 text-xs text-amber-200">
+                Mangaka requires a managing Tantou Editor. Change Role to
+                Tantou Editor, create that account first, then return here.
+              </p>
+            ) : null}
           </Field>
         ) : null}
 

@@ -69,6 +69,21 @@ export default function DashboardLayout() {
     icon: LayoutDashboard,
   },
   {
+    label: "Series Submissions",
+    path: "/mangaka/submissions",
+    icon: FileText,
+  },
+  {
+    label: "My Series",
+    path: "/mangaka/series",
+    icon: BookOpen,
+  },
+  {
+    label: "Studio Assistants",
+    path: "/mangaka/assistants",
+    icon: User,
+  },
+  {
     label: "Chapter Management",
     path: "/mangaka/chapters",
     icon: BookOpen,

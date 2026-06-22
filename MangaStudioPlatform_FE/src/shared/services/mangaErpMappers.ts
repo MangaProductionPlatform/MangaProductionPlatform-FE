@@ -56,8 +56,9 @@ export function mapSubmissionDetail(item: Record<string, unknown>): SubmissionDe
   };
 }
 
-export function mapChapter(item: Record<string, unknown>): ChapterDto {
+export function mapChapter(item: Record<string, unknown>, knownSeriesId?: string): ChapterDto {
   const rawPageTasks =
+    pick<Record<string, unknown>[] | null | undefined>(item, "pages") ??
     pick<Record<string, unknown>[] | null | undefined>(item, "pageTasks") ?? [];
 
   return {
@@ -66,7 +67,7 @@ export function mapChapter(item: Record<string, unknown>): ChapterDto {
     pick<string>(item, "chapterId") ??
     pick<string>(item, "ChapterId") ??
     pick<string>(item, "Id"),
-    seriesId: pick<string>(item, "seriesId"),
+    seriesId: pick<string>(item, "seriesId") ?? knownSeriesId ?? "",
     title: pick<string>(item, "title"),
     chapterNumber: Number(pick<number>(item, "chapterNumber")),
     totalPages: Number(pick<number>(item, "totalPages")),
@@ -75,11 +76,14 @@ export function mapChapter(item: Record<string, unknown>): ChapterDto {
     scheduledPublishAt: pick<string | null | undefined>(item, "scheduledPublishAt"),
     publishedAt: pick<string | null | undefined>(item, "publishedAt"),
     createdAt: pick<string>(item, "createdAt"),
+    approvedPages: Number(pick<number>(item, "approvedPages") ?? 0),
+    progressPercent: Number(pick<number>(item, "progressPercent") ?? 0),
     pageTasks: rawPageTasks.map((pageTask) => ({
-      id: pick<string>(pageTask, "id"),
+      id: pick<string>(pageTask, "id") ?? pick<string>(pageTask, "pageTaskId"),
       pageNumber: Number(pick<number>(pageTask, "pageNumber")),
-      status: pick<string>(pageTask, "status"),
+      status: pick<string>(pageTask, "status") ?? pick<string>(pageTask, "taskStatus"),
       assignedAssistantId: pick<string | null | undefined>(pageTask, "assignedAssistantId"),
+      previewCompositeUrl: pick<string | null | undefined>(pageTask, "previewCompositeUrl"),
       createdAt: pick<string>(pageTask, "createdAt"),
       updatedAt: pick<string>(pageTask, "updatedAt"),
     })),

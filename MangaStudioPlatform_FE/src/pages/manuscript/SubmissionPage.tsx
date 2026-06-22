@@ -2,7 +2,7 @@ import type { FormEvent } from "react";
 import { useEffect, useState } from "react";
 import { Eye, FileText, RefreshCw, Save, Send, Upload } from "lucide-react";
 import { mangaErpApi } from "../../shared/services/mangaErpService";
-import type { SubmissionDetailDto, SubmissionSummaryDto } from "../../shared/types/mangaErp";
+import type { FeedbackPinDto, SubmissionDetailDto, SubmissionSummaryDto } from "../../shared/types/mangaErp";
 import { useToast } from "../../shared/components/toastContext";
 
 export default function SubmissionPage() {
@@ -16,6 +16,7 @@ export default function SubmissionPage() {
   const [manuscriptUrl, setManuscriptUrl] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [feedbackPins, setFeedbackPins] = useState<FeedbackPinDto[]>([]);
 
   const loadSubmissions = async () => {
     setIsLoading(true);
@@ -74,8 +75,12 @@ export default function SubmissionPage() {
 
   const openSubmission = async (id: string) => {
     try {
-      const detail = await mangaErpApi.getSubmission(id);
+      const [detail, pins] = await Promise.all([
+        mangaErpApi.getSubmission(id),
+        mangaErpApi.getSubmissionFeedbackPins(id).catch(() => []),
+      ]);
       fillForm(detail);
+      setFeedbackPins(pins);
     } catch (err) {
       toast.error(
         "Could not open submission",
@@ -176,10 +181,10 @@ export default function SubmissionPage() {
     try {
       if (selected.status === "Requires_Revision") {
         await mangaErpApi.resubmitSubmission(selected.id);
-        toast.success("Resubmitted", "The submission returned to TE review.");
+        toast.success("Resubmitted", "The submission returned to Editorial Board review.");
       } else {
         await mangaErpApi.submitSubmission(selected.id);
-        toast.success("Submitted", "The submission was sent to TE review.");
+        toast.success("Submitted", "The submission was sent to Editorial Board review.");
       }
       await openSubmission(selected.id);
       await loadSubmissions();
@@ -354,6 +359,7 @@ export default function SubmissionPage() {
               {selected?.status === "Requires_Revision" ? "Resubmit" : "Submit"}
             </button>
           </div>
+          {selected ? <div className="mt-5 rounded-lg border border-white/10 bg-slate-950/50 p-3"><div className="flex items-center justify-between gap-2"><p className="text-xs font-semibold uppercase tracking-[.16em] text-slate-400">Feedback pins ({feedbackPins.length})</p><button type="button" className="text-xs font-semibold text-cyan-200" onClick={() => void mangaErpApi.getSubmissionFeedbackPins(selected.id,true).then(setFeedbackPins).catch(e => toast.error("Could not load pin history",e instanceof Error?e.message:"Unknown error"))}>Load history</button></div><div className="mt-3 space-y-2">{feedbackPins.map(pin=><div key={pin.id} className="rounded-md border border-white/10 p-2 text-xs text-slate-300"><b className="text-white">{pin.pageIdentifier} · {pin.category}</b><p className="mt-1">{pin.comment}</p></div>)}{!feedbackPins.length?<p className="text-xs text-slate-500">No feedback pins.</p>:null}</div></div>:null}
         </form>
       </section>
     </div>

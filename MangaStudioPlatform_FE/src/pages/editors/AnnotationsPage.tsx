@@ -1,5 +1,21 @@
-import { EmptyBackendState } from "../../shared/components/EmptyBackendState";
+import { useState } from "react";
+import { mangaErpApi } from "../../shared/services/mangaErpService";
+import type { QaBugPinDto } from "../../shared/types/mangaErp";
+import { useToast } from "../../shared/components/toastContext";
 
 export default function AnnotationsPage() {
-  return <EmptyBackendState eyebrow="Editor" title="Annotations" description="QA pin APIs exist, but this page is not wired to them yet." />;
+  const toast = useToast();
+  const [chapterId,setChapterId]=useState(""); const [pageTaskId,setPageTaskId]=useState("");
+  const [x,setX]=useState("0.5"); const [y,setY]=useState("0.5"); const [note,setNote]=useState("");
+  const [issueType,setIssueType]=useState("Artwork"); const [batchToken,setBatchToken]=useState<string>(()=>crypto.randomUUID());
+  const [pins,setPins]=useState<QaBugPinDto[]>([]); const [busy,setBusy]=useState(false);
+  const load=async()=>{if(!chapterId.trim())return;try{setPins(await mangaErpApi.getQaPins(chapterId.trim()));}catch(e){toast.error("Could not load QA pins",e instanceof Error?e.message:"Unknown error");}};
+  const add=async()=>{if(!chapterId||!pageTaskId||!note.trim())return toast.error("Missing pin data","Chapter, page task and note are required.");setBusy(true);try{await mangaErpApi.addQaPin(chapterId.trim(),{pageTaskId:pageTaskId.trim(),coordinateX:Number(x),coordinateY:Number(y),noteMessage:note.trim(),issueType,batchToken});toast.success("QA pin added");setNote("");await load();}catch(e){toast.error("Could not add pin",e instanceof Error?e.message:"Unknown error");}finally{setBusy(false);}};
+  const send=async()=>{setBusy(true);try{await mangaErpApi.sendQaFeedback(chapterId.trim(),batchToken);toast.success("Feedback batch sent");setBatchToken(crypto.randomUUID());await load();}catch(e){toast.error("Could not send feedback",e instanceof Error?e.message:"Unknown error");}finally{setBusy(false);}};
+  const resolve=async(id:string)=>{try{await mangaErpApi.resolveQaPin(id);toast.success("Pin resolved");await load();}catch(e){toast.error("Could not resolve pin",e instanceof Error?e.message:"Unknown error");}};
+  const approve=async()=>{try{await mangaErpApi.approveChapterQa(chapterId.trim());toast.success("Chapter approved");await load();}catch(e){toast.error("Could not approve chapter",e instanceof Error?e.message:"Unknown error");}};
+  return <div className="space-y-6"><div><p className="text-xs font-semibold uppercase tracking-[.28em] text-cyan-200">Tantou Editor · QA</p><h2 className="mt-2 text-3xl font-black text-white">Chapter annotations</h2></div>
+    <section className="grid gap-3 rounded-lg border border-white/10 bg-slate-900/75 p-5 md:grid-cols-2"><input className="input" value={chapterId} onChange={e=>setChapterId(e.target.value)} placeholder="Chapter ID"/><input className="input" value={pageTaskId} onChange={e=>setPageTaskId(e.target.value)} placeholder="Page task ID"/><input className="input" type="number" step="0.01" value={x} onChange={e=>setX(e.target.value)} placeholder="Coordinate X"/><input className="input" type="number" step="0.01" value={y} onChange={e=>setY(e.target.value)} placeholder="Coordinate Y"/><input className="input" value={issueType} onChange={e=>setIssueType(e.target.value)} placeholder="Issue type"/><input className="input" value={batchToken} onChange={e=>setBatchToken(e.target.value)} placeholder="Batch token"/><textarea className="input min-h-24 md:col-span-2" value={note} onChange={e=>setNote(e.target.value)} placeholder="QA feedback note"/><div className="flex flex-wrap gap-2 md:col-span-2"><button disabled={busy} className="rounded-lg bg-white px-4 py-2 font-bold text-slate-950" onClick={()=>void add()}>Add pin</button><button className="rounded-lg border border-white/10 px-4 py-2 text-white" onClick={()=>void load()}>Load pins</button><button disabled={busy} className="rounded-lg border border-amber-300/30 px-4 py-2 text-amber-100" onClick={()=>void send()}>Send feedback batch</button><button className="rounded-lg border border-cyan-300/30 px-4 py-2 text-cyan-100" onClick={()=>void approve()}>Approve chapter</button></div></section>
+    <div className="space-y-3">{pins.map(pin=><article key={pin.id} className="rounded-lg border border-white/10 bg-slate-900/75 p-4"><div className="flex justify-between gap-4"><div><b className="text-white">{pin.issueType||"Issue"}</b><p className="mt-1 text-sm text-slate-400">{pin.noteMessage} · ({pin.coordinateX}, {pin.coordinateY}) · {pin.status}</p></div><button className="rounded-lg border border-white/10 px-3 py-2 text-sm text-white" onClick={()=>void resolve(pin.id)}>Resolve</button></div></article>)}</div>
+  </div>;
 }

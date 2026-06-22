@@ -7,24 +7,28 @@ import {
   XCircle,
 } from "lucide-react";
 import { taskService } from "../../shared/services/taskService";
+import { mangaErpApi } from "../../shared/services/mangaErpService";
+import type { ChapterDto, MangaSeriesDto } from "../../shared/types/mangaErp";
 
 type ChapterTask = {
-  id: string;
-  pageTaskId?: string;
-  chapter?: string;
-  chapterTitle?: string;
-  page?: number;
-  pageNumber?: number;
-  layerType?: string;
-  assistant?: string;
-  assistantName?: string;
-  status?: string;
+  id?: string;
+  pageTaskId: string;
+  pageNumber: number;
+  taskStatus: string;
+  assignedAssistantId?: string | null;
+  currentLayerType?: string | null;
+  currentLayerVersion?: number | null;
+  rejectionNote?: string | null;
+  updatedAt: string;
   fileUrlOriginal?: string;
   fileUrlOptimized?: string;
 };
 
 export default function LayerReviewPage() {
-  const [chapterId, setChapterId] = useState("chapter-001");
+  const [chapterId, setChapterId] = useState("");
+  const [seriesId, setSeriesId] = useState("");
+  const [seriesList, setSeriesList] = useState<MangaSeriesDto[]>([]);
+  const [chapters, setChapters] = useState<ChapterDto[]>([]);
   const [tasks, setTasks] = useState<ChapterTask[]>([]);
   const [selectedTaskId, setSelectedTaskId] = useState("");
   const [rejectionNote, setRejectionNote] = useState("");
@@ -35,6 +39,28 @@ export default function LayerReviewPage() {
   const selectedTask = tasks.find(
     (task) => (task.pageTaskId ?? task.id) === selectedTaskId
   );
+  const selectedChapter = chapters.find((chapter) => chapter.id === chapterId);
+
+  async function selectSeries(id: string) {
+    setSeriesId(id);
+    setTasks([]);
+    setSelectedTaskId("");
+    if (!id) { setChapters([]); setChapterId(""); return; }
+    try {
+      const result = await mangaErpApi.getChaptersBySeries(id);
+      setChapters(result);
+      setChapterId(result[0]?.id ?? "");
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "Could not load chapters.");
+    }
+  }
+
+  useEffect(() => {
+    void mangaErpApi.getMySeries().then((items) => {
+      setSeriesList(items);
+      if (items[0]) void selectSeries(items[0].id);
+    });
+  }, []);
 
   async function loadChapterTasks() {
     if (!chapterId.trim()) {
@@ -72,10 +98,6 @@ export default function LayerReviewPage() {
       setIsLoading(false);
     }
   }
-
-  useEffect(() => {
-    void loadChapterTasks();
-  }, []);
 
   async function handleReview(isAccepted: boolean) {
     if (!selectedTask) {
@@ -133,8 +155,22 @@ export default function LayerReviewPage() {
       </div>
 
       <section className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
-        <div className="grid gap-4 md:grid-cols-[1fr_auto]">
+        <div className="grid gap-4 md:grid-cols-[1fr_1fr_auto]">
           <div>
+            <label className="text-sm text-slate-400">Series</label>
+            <select value={seriesId} onChange={(event) => void selectSeries(event.target.value)} className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none">
+              <option value="">Select Series</option>
+              {seriesList.map((series) => <option key={series.id} value={series.id}>{series.title}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="text-sm text-slate-400">Chapter</label>
+            <select value={chapterId} onChange={(event) => setChapterId(event.target.value)} className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none">
+              <option value="">Select Chapter</option>
+              {chapters.map((chapter) => <option key={chapter.id} value={chapter.id}>Ch. {chapter.chapterNumber} - {chapter.title}</option>)}
+            </select>
+          </div>
+          <div className="hidden">
             <label className="text-sm text-slate-400">Chapter ID</label>
             <input
               value={chapterId}
@@ -201,23 +237,24 @@ export default function LayerReviewPage() {
                   }`}
                 >
                   <h3 className="font-semibold text-white">
-                    {task.chapterTitle ?? task.chapter ?? "Untitled Chapter"}
+                    {selectedChapter ? `Ch. ${selectedChapter.chapterNumber} - ${selectedChapter.title}` : "Selected Chapter"}
                   </h3>
 
                   <p className="mt-2 text-sm text-slate-400">
-                    Page {task.pageNumber ?? task.page ?? "N/A"}
+                    Page {task.pageNumber}
                   </p>
 
                   <p className="text-sm text-slate-400">
-                    Layer: {task.layerType ?? "N/A"}
+                    Layer: {task.currentLayerType ?? "Not submitted"}
+                    {task.currentLayerVersion ? ` · v${task.currentLayerVersion}` : ""}
                   </p>
 
                   <p className="text-sm text-slate-500">
-                    Assistant: {task.assistantName ?? task.assistant ?? "N/A"}
+                    Assistant: {task.assignedAssistantId ?? "Unassigned"}
                   </p>
 
                   <span className="mt-3 inline-flex rounded-lg bg-yellow-500/10 px-3 py-1 text-xs text-yellow-300">
-                    {task.status ?? "Waiting Review"}
+                    {task.taskStatus}
                   </span>
                 </button>
               );
@@ -245,7 +282,9 @@ export default function LayerReviewPage() {
                     className="mt-4 max-h-80 w-full rounded-xl object-contain"
                   />
                 ) : (
-                  <div className="mt-4 h-56 rounded-xl border border-slate-700 bg-slate-900" />
+                  <div className="mt-4 flex h-56 items-center justify-center rounded-xl border border-slate-700 bg-slate-900 px-6 text-center text-sm text-slate-500">
+                    Backend task DTO does not return the submitted layer file URL yet.
+                  </div>
                 )}
               </div>
 

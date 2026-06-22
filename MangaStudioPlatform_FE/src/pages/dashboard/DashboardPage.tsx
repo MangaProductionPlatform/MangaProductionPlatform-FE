@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { ArrowRight, BookOpen, FileText, PlusCircle, Trophy } from "lucide-react";
 import CoverMarquee from "../../shared/components/CoverMarquee";
-import { mangaHeroImage } from "../../shared/visuals/mangaVisuals";
+import { mangaWorkspaceImage } from "../../shared/visuals/mangaVisuals";
 
 const backendSections = [
   {
@@ -48,7 +48,7 @@ export default function DashboardPage() {
         </div>
         <div className="relative min-h-56 overflow-hidden border-t border-white/10 lg:border-l lg:border-t-0">
           <img
-            src={mangaHeroImage}
+              src={mangaWorkspaceImage}
             alt="Manga production desk"
             className="absolute inset-0 h-full w-full object-cover opacity-70"
           />
