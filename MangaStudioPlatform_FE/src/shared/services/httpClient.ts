@@ -28,7 +28,9 @@ export async function request<T>(
   init: RequestInit = {},
 ): Promise<T> {
   const headers = new Headers(init.headers);
-  headers.set("Content-Type", "application/json");
+  if (init.body != null && !(init.body instanceof FormData)) {
+    headers.set("Content-Type", "application/json");
+  }
 
   Object.entries(authHeaders()).forEach(([key, value]) => {
     headers.set(key, value);
@@ -44,17 +46,23 @@ export async function request<T>(
     const validationErrors = body.errors
       ? Object.values(body.errors).flat().join(" ")
       : "";
+    const detailErrors = body.details
+      ?.map((detail) => detail.message)
+      .filter(Boolean)
+      .join(" ");
     throw new Error(
       validationErrors ||
+        detailErrors ||
         body.message ||
         body.title ||
+        body.error ||
         `API error ${response.status}`,
     );
   }
 
-  if (response.status === 204) {
+  if (response.status === 204 || response.headers.get("content-length") === "0") {
     return undefined as T;
   }
-
-  return (await response.json()) as T;
+  const text = await response.text();
+  return (text ? JSON.parse(text) : undefined) as T;
 }

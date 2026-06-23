@@ -1,6 +1,5 @@
 import type { ComponentType, ReactNode } from "react";
 import { Database, type LucideProps } from "lucide-react";
-import CoverMarquee from "./CoverMarquee";
 
 export function EmptyBackendState({
   eyebrow,
@@ -32,9 +31,6 @@ export function EmptyBackendState({
       </div>
 
       <section className="overflow-hidden rounded-lg border border-white/10 bg-slate-900/75">
-        <div className="border-b border-white/10 py-5">
-          <CoverMarquee compact />
-        </div>
         <div className="p-8 text-center">
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg bg-cyan-300 text-slate-950">
             <Icon size={22} />

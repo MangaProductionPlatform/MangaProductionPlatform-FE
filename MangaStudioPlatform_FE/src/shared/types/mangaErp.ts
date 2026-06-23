@@ -5,13 +5,14 @@ export type ServiceName =
   | "chapter"
   | "task"
   | "qa"
-  | "publishing"
-  | "ranking";
+  | "publishing";
 
 export type ApiErrorBody = {
   message?: string;
   title?: string;
+  error?: string;
   errors?: Record<string, string[]>;
+  details?: Array<{ field?: string; message?: string }>;
 };
 
 export type CurrentUser = {
@@ -108,7 +109,9 @@ export type ChapterDto = {
   assignedEditorId?: string | null;
   scheduledPublishAt?: string | null;
   publishedAt?: string | null;
-  createdAt: string;
+  createdAt?: string;
+  approvedPages?: number;
+  progressPercent?: number;
   pageTasks?: PageTaskDto[];
 };
 
@@ -117,8 +120,9 @@ export type PageTaskDto = {
   pageNumber: number;
   status: string;
   assignedAssistantId?: string | null;
-  createdAt: string;
-  updatedAt: string;
+  previewCompositeUrl?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 export type RankingBoardItemDto = {
@@ -199,6 +203,78 @@ export type SchedulePublicationPayload = {
   seriesId: string;
   issueType: string;
   scheduledPublishAt: string;
+};
+
+export type UpdateAdminAccountPayload = {
+  fullName: string;
+  personalEmail: string;
+  role: number;
+  phoneNumber?: string | null;
+  managingTantouId?: string | null;
+};
+
+export type RevisionFeedbackPinPayload = {
+  pageIdentifier: string;
+  coordinateX: number;
+  coordinateY: number;
+  comment: string;
+  category: number;
+};
+
+export type RequestRevisionPayload = {
+  reason: string;
+  pins?: RevisionFeedbackPinPayload[];
+};
+
+export type FeedbackPinDto = {
+  id: string;
+  pageIdentifier: string;
+  coordinateX: number;
+  coordinateY: number;
+  comment: string;
+  category: string;
+  createdByUserId: string;
+  isArchived: boolean;
+  createdAt: string;
+};
+
+export type StudioInvitationDto = {
+  invitationId: string;
+  seriesId: string;
+  inviterMangakaId: string;
+  assistantEmail: string;
+  message?: string | null;
+  status: string;
+  expiresAt: string;
+};
+
+export type InviteAssistantPayload = {
+  assistantEmail: string;
+  message?: string | null;
+};
+
+export type AddQaPinPayload = {
+  pageTaskId: string;
+  coordinateX: number;
+  coordinateY: number;
+  noteMessage: string;
+  issueType: string;
+  batchToken: string;
+};
+
+export type QaBugPinDto = {
+  id: string;
+  chapterId: string;
+  pageTaskId: string;
+  editorId: string;
+  coordinateX: number;
+  coordinateY: number;
+  noteMessage: string;
+  issueType?: string | null;
+  batchToken: string;
+  status: string;
+  resolvedAt?: string | null;
+  createdAt: string;
 };
 
 export type ImportVotePayload = {

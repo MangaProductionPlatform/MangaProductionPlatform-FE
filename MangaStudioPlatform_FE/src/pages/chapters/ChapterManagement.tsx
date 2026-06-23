@@ -1,6 +1,6 @@
 import type { FormEvent } from "react";
 import { useEffect, useState } from "react";
-import { ClipboardList, FileText, Send, Upload, UserPlus } from "lucide-react";
+import { ClipboardList, Copy, FileText, Send, Upload, UserPlus } from "lucide-react";
 import { mangaErpApi } from "../../shared/services/mangaErpService";
 import type { ChapterDto, MangaSeriesDto } from "../../shared/types/mangaErp";
 import { useToast } from "../../shared/components/toastContext";
@@ -270,7 +270,7 @@ export default function ChapterManagementPage() {
     setIsSubmittingQA(true);
 
     try {
-      await mangaErpApi.submitChapterForQA(detailChapterId, currentUser.userId);
+      await mangaErpApi.submitChapterForQA(detailChapterId);
 
       toast.success("Submitted for QA", "The backend accepted the QA submission.");
 
@@ -369,6 +369,15 @@ export default function ChapterManagementPage() {
                         <p className="mt-2 break-all text-xs text-slate-500">
                           ID: {chapterId || "-"}
                         </p>
+                        {chapterId ? (
+                          <button
+                            type="button"
+                            onClick={() => void navigator.clipboard.writeText(chapterId).then(() => toast.success("Chapter ID copied"))}
+                            className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-cyan-300/20 bg-cyan-300/10 px-2 py-1 text-xs font-semibold text-cyan-100"
+                          >
+                            <Copy size={13} /> Copy Chapter ID
+                          </button>
+                        ) : null}
                       </div>
 
                       <dl className="grid grid-cols-3 gap-2 text-sm sm:min-w-80">
@@ -407,7 +416,7 @@ export default function ChapterManagementPage() {
                           setDetailChapterId(chapterId);
 
                           void mangaErpApi
-                            .submitChapterForQA(chapterId, currentUser?.userId ?? "")
+                            .submitChapterForQA(chapterId)
                             .then(() =>
                               toast.success(
                                 "Submitted for QA",

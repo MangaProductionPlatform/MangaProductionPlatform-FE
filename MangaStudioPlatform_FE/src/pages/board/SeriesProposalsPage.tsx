@@ -12,6 +12,12 @@ export default function SeriesProposalsPage() {
   const [queue, setQueue] = useState<SubmissionSummaryDto[]>([]);
   const [selected, setSelected] = useState<SubmissionDetailDto | null>(null);
   const [reason, setReason] = useState("");
+  const [assignedEditorId, setAssignedEditorId] = useState("");
+  const [pinPage, setPinPage] = useState("");
+  const [pinX, setPinX] = useState("0.5");
+  const [pinY, setPinY] = useState("0.5");
+  const [pinComment, setPinComment] = useState("");
+  const [pinCategory, setPinCategory] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [runningAction, setRunningAction] = useState<BoardAction | null>(null);
 
@@ -87,23 +93,34 @@ export default function SeriesProposalsPage() {
       toast.error("Reason required", "Enter a revision or rejection reason.");
       return;
     }
+    if (action === "approve" && !assignedEditorId.trim()) {
+      toast.error("Editor required", "Backend requires the Tantou Editor user ID when approving.");
+      return;
+    }
 
     setRunningAction(action);
     try {
       if (action === "approve") {
-        await mangaErpApi.approveSubmission(selected.id);
+        await mangaErpApi.approveSubmission(selected.id, assignedEditorId.trim());
         toast.success("Submission approved", "A series record was created by the backend.");
       }
 
       if (action === "revision") {
-        await mangaErpApi.ebRequestSubmissionRevision(selected.id, {
+        await mangaErpApi.requestSubmissionRevision(selected.id, {
           reason: reason.trim(),
+          pins: pinComment.trim() ? [{
+            pageIdentifier: pinPage.trim() || "cover",
+            coordinateX: Number(pinX),
+            coordinateY: Number(pinY),
+            comment: pinComment.trim(),
+            category: pinCategory,
+          }] : [],
         });
         toast.success("Revision requested", "The author can revise and resubmit.");
       }
 
       if (action === "reject") {
-        await mangaErpApi.ebRejectSubmission(selected.id, {
+        await mangaErpApi.rejectSubmission(selected.id, {
           reason: reason.trim(),
         });
         toast.success("Rejected", "The EB rejection was saved.");
@@ -131,7 +148,7 @@ export default function SeriesProposalsPage() {
           </p>
           <h2 className="mt-2 text-3xl font-black text-white">Series proposals</h2>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
-            Recommended submissions waiting for final Board decision.
+            Series submissions waiting for Editorial Board review.
           </p>
         </div>
         <button
@@ -217,6 +234,21 @@ export default function SeriesProposalsPage() {
                 onChange={(event) => setReason(event.target.value)}
                 placeholder="Revision or rejection reason"
               />
+
+              <input
+                className="input"
+                value={assignedEditorId}
+                onChange={(event) => setAssignedEditorId(event.target.value)}
+                placeholder="Tantou Editor user ID (required for approval)"
+              />
+
+              <div className="space-y-2 rounded-lg border border-white/10 bg-slate-950/40 p-3">
+                <p className="text-xs font-semibold uppercase tracking-[.16em] text-slate-400">Optional revision pin</p>
+                <input className="input" value={pinPage} onChange={e => setPinPage(e.target.value)} placeholder="Page identifier, e.g. cover or page-3" />
+                <div className="grid grid-cols-2 gap-2"><input className="input" type="number" step="0.01" value={pinX} onChange={e => setPinX(e.target.value)} placeholder="X"/><input className="input" type="number" step="0.01" value={pinY} onChange={e => setPinY(e.target.value)} placeholder="Y"/></div>
+                <select className="input" value={pinCategory} onChange={e => setPinCategory(Number(e.target.value))}><option value={0}>Visual</option><option value={1}>Content</option><option value={2}>Typo</option></select>
+                <textarea className="input min-h-20" value={pinComment} onChange={e => setPinComment(e.target.value)} placeholder="Pin comment (leave empty for no pin)" />
+              </div>
 
               <ActionButton
                 icon={<CheckCircle2 size={16} />}

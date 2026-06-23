@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { mangaErpApi } from "../../shared/services/mangaErpService";
 import type { MangaSeriesDto } from "../../shared/types/mangaErp";
 import { useToast } from "../../shared/components/toastContext";
+import { mangaCoverImages } from "../../shared/visuals/mangaVisuals";
 
 export default function SeriesListPage() {
   const toast = useToast();
@@ -90,25 +91,16 @@ export default function SeriesListPage() {
           </div>
         ) : null}
 
-        {!isLoading && seriesList.map((series) => (
+        {!isLoading && seriesList.map((series, index) => (
           <article
             key={series.id}
             className="grid gap-4 rounded-lg border border-white/10 bg-slate-900/75 p-4 sm:grid-cols-[8.5rem_1fr]"
           >
-            {series.coverImageUrl ? (
-              <img
-                src={series.coverImageUrl}
-                alt={series.title}
-                className="aspect-[2/3] w-full rounded-lg object-cover shadow-xl shadow-slate-950/30"
-              />
-            ) : (
-              <div className="relative flex aspect-[2/3] w-full items-end overflow-hidden rounded-lg border border-white/10 bg-gradient-to-br from-amber-200 via-rose-300 to-cyan-300 p-3 shadow-xl shadow-slate-950/30">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.55),transparent_28%),linear-gradient(180deg,transparent,rgba(2,6,23,0.78))]" />
-                <span className="relative text-sm font-black uppercase leading-tight text-white">
-                  Cover pending
-                </span>
-              </div>
-            )}
+            <img
+              src={series.coverImageUrl || mangaCoverImages[index % mangaCoverImages.length].image}
+              alt={series.title}
+              className="aspect-[2/3] w-full rounded-lg object-cover shadow-xl shadow-slate-950/30"
+            />
             <div className="min-w-0">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>

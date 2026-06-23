@@ -1,4 +1,4 @@
-import { mangaCoverImages, mangaCoverSheet } from "../visuals/mangaVisuals";
+import { mangaCoverImages } from "../visuals/mangaVisuals";
 
 type CoverMarqueeProps = {
   compact?: boolean;
@@ -21,9 +21,9 @@ export default function CoverMarquee({ compact = false }: CoverMarqueeProps) {
               aria-label={`${cover.title} manga cover inspiration`}
               className="absolute inset-0 bg-cover bg-no-repeat opacity-95 transition duration-500 group-hover:scale-105"
               style={{
-                backgroundImage: `url(${mangaCoverSheet})`,
+                backgroundImage: `url(${cover.image})`,
                 backgroundPosition: cover.position,
-                backgroundSize: "600% 100%",
+                backgroundSize: "cover",
               }}
             />
             <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(2,6,23,0),rgba(2,6,23,0.82))]" />

@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { mangaErpApi } from "../../shared/services/mangaErpService";
 import type { ChapterDto, MangaSeriesDto } from "../../shared/types/mangaErp";
 import { useToast } from "../../shared/components/toastContext";
+import { mangaCoverImages } from "../../shared/visuals/mangaVisuals";
 
 export default function SeriesDetailPage() {
   const params = useParams();
@@ -66,20 +67,11 @@ export default function SeriesDetailPage() {
 
       {!isLoading && series ? (
         <section className="grid gap-5 rounded-lg border border-white/10 bg-slate-900/75 p-5 lg:grid-cols-[13rem_1fr]">
-          {series.coverImageUrl ? (
-            <img
-              src={series.coverImageUrl}
-              alt={series.title}
-              className="aspect-[2/3] w-full rounded-lg object-cover shadow-xl shadow-slate-950/30"
-            />
-          ) : (
-            <div className="relative flex aspect-[2/3] w-full items-end overflow-hidden rounded-lg border border-white/10 bg-gradient-to-br from-amber-200 via-rose-300 to-cyan-300 p-4 shadow-xl shadow-slate-950/30">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.55),transparent_28%),linear-gradient(180deg,transparent,rgba(2,6,23,0.78))]" />
-              <span className="relative text-base font-black uppercase leading-tight text-white">
-                Cover pending
-              </span>
-            </div>
-          )}
+          <img
+            src={series.coverImageUrl || mangaCoverImages[2].image}
+            alt={series.title}
+            className="aspect-[2/3] w-full rounded-lg object-cover shadow-xl shadow-slate-950/30"
+          />
           <div>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <span className="rounded-md border border-cyan-300/20 bg-cyan-300/10 px-2 py-1 text-xs font-semibold text-cyan-100">

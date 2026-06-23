@@ -9,11 +9,16 @@ export default function AdminUsersPage() {
   const toast = useToast();
   const [users, setUsers] = useState<AdminUserDto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [roleFilter, setRoleFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
 
   const loadUsers = async () => {
     setIsLoading(true);
     try {
-      const result = await mangaErpApi.listUsers();
+      const result = await mangaErpApi.listUsers({
+        roleFilter: roleFilter === "" ? undefined : Number(roleFilter),
+        statusFilter: statusFilter === "" ? undefined : Number(statusFilter),
+      });
       setUsers(result.users);
     } catch (err) {
       toast.error(
@@ -85,6 +90,16 @@ export default function AdminUsersPage() {
         </div>
       </div>
 
+      <section className="flex flex-wrap gap-3 rounded-lg border border-white/10 bg-slate-900/75 p-4">
+        <select className="input max-w-56" value={roleFilter} onChange={e => setRoleFilter(e.target.value)}>
+          <option value="">All roles</option><option value="0">Admin</option><option value="1">Editorial Board</option><option value="2">Tantou Editor</option><option value="3">Mangaka</option><option value="4">Assistant</option><option value="99">Reader</option>
+        </select>
+        <select className="input max-w-56" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
+          <option value="">All statuses</option><option value="0">Pending activation</option><option value="1">Active</option><option value="2">Suspended</option><option value="3">Deactivated</option>
+        </select>
+        <button type="button" className="rounded-lg bg-cyan-300 px-4 py-2 text-sm font-bold text-slate-950" onClick={() => void loadUsers()}>Apply filters</button>
+      </section>
+
       <section className="overflow-hidden rounded-lg border border-white/10 bg-slate-900/75">
         {isLoading ? (
           <div className="p-5 text-sm text-slate-300">Loading users...</div>
@@ -110,6 +125,7 @@ export default function AdminUsersPage() {
                   <th className="px-4 py-3">Status</th>
                   <th className="px-4 py-3">Phone</th>
                   <th className="px-4 py-3">Created</th>
+                  <th className="px-4 py-3 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/10">
@@ -126,6 +142,14 @@ export default function AdminUsersPage() {
                     <td className="px-4 py-3">{user.phoneNumber ?? "-"}</td>
                     <td className="px-4 py-3">
                       {new Date(user.createdAt).toLocaleDateString()}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <Link
+                        to={`/admin/users/${user.userId}`}
+                        className="inline-flex rounded-lg bg-cyan-300 px-3 py-2 text-xs font-bold text-slate-950 hover:bg-cyan-200"
+                      >
+                        Manage
+                      </Link>
                     </td>
                   </tr>
                 ))}

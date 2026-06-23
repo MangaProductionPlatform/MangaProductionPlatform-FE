@@ -6,18 +6,22 @@ import type {
   CreateChapterPayload,
   CreateSubmissionPayload,
   CurrentUser,
-  ImportVotePayload,
+  AddQaPinPayload,
+  FeedbackPinDto,
+  InviteAssistantPayload,
   ListUsersResult,
   PageTaskDto,
   ProvisionAccountPayload,
   ProvisionAccountResult,
-  RankingBoardItemDto,
-  RecommendSubmissionPayload,
+  QaBugPinDto,
+  RequestRevisionPayload,
   ReviewSubmissionPayload,
   SchedulePublicationPayload,
   SubmissionDetailDto,
   SubmissionSummaryDto,
+  StudioInvitationDto,
   UpdateProfilePayload,
+  UpdateAdminAccountPayload,
   UpdateSubmissionManuscriptPayload,
   UpdateSubmissionMetadataPayload,
 } from "../types/mangaErp";
@@ -71,6 +75,39 @@ export const mangaErpApi = {
     return request<AdminUserDto>("identity", `/api/v1/admin/accounts/${id}`);
   },
 
+  async updateUser(id: string, payload: UpdateAdminAccountPayload) {
+    return request("identity", `/api/v1/admin/accounts/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async updateUserRole(id: string, role: number) {
+    return request("identity", `/api/v1/admin/accounts/${id}/role`, {
+      method: "PATCH",
+      body: JSON.stringify({ role }),
+    });
+  },
+
+  async updateUserStatus(id: string, status: number) {
+    return request("identity", `/api/v1/admin/accounts/${id}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ status }),
+    });
+  },
+
+  async resendActivation(id: string) {
+    return request<{ message: string }>("identity", `/api/v1/admin/accounts/${id}/resend-activation`, {
+      method: "POST",
+    });
+  },
+
+  async deleteUser(id: string) {
+    return request<{ message: string }>("identity", `/api/v1/admin/accounts/${id}`, {
+      method: "DELETE",
+    });
+  },
+
   async provisionAccount(payload: ProvisionAccountPayload) {
     return request<ProvisionAccountResult>("identity", "/api/v1/admin/accounts/provision", {
       method: "POST",
@@ -100,15 +137,6 @@ export const mangaErpApi = {
   async getSeries(id: string) {
     const data = await request<Record<string, unknown>>("series", `/api/v1/series/${id}`);
     return mapSeries(data);
-  },
-
-  async getAllSeries() {
-    return this.getMySeries();
-  },
-
-  async getSeriesByAuthor(_authorId: string) {
-    void _authorId;
-    return this.getMySeries();
   },
 
   async createDraftSubmission(payload: CreateSubmissionPayload) {
@@ -168,50 +196,50 @@ export const mangaErpApi = {
     return mapSubmissionDetail(data);
   },
 
-  async startSubmissionReview(id: string) {
-    return request("submission", `/api/v1/submissions/${id}/start-review`, {
-      method: "POST",
-    });
-  },
-
-  async recommendSubmission(id: string, payload: RecommendSubmissionPayload) {
-    return request<void>("submission", `/api/v1/submissions/${id}/recommend`, {
-      method: "POST",
-      body: JSON.stringify(payload),
-    });
-  },
-
-  async approveSubmission(id: string) {
+  async approveSubmission(id: string, assignedEditorId: string) {
     return request<void>("submission", `/api/v1/submissions/${id}/approve`, {
       method: "POST",
+      body: JSON.stringify({ assignedEditorId }),
     });
   },
 
-  async teRejectSubmission(id: string, payload: ReviewSubmissionPayload) {
-    return request<void>("submission", `/api/v1/submissions/${id}/te-reject`, {
+  async rejectSubmission(id: string, payload: ReviewSubmissionPayload) {
+    return request<void>("submission", `/api/v1/submissions/${id}/reject`, {
       method: "POST",
       body: JSON.stringify(payload),
     });
   },
 
-  async ebRejectSubmission(id: string, payload: ReviewSubmissionPayload) {
-    return request<void>("submission", `/api/v1/submissions/${id}/eb-reject`, {
+  async requestSubmissionRevision(id: string, payload: RequestRevisionPayload) {
+    return request<void>("submission", `/api/v1/submissions/${id}/request-revision`, {
       method: "POST",
       body: JSON.stringify(payload),
     });
   },
 
-  async teRequestSubmissionRevision(id: string, payload: ReviewSubmissionPayload) {
-    return request<void>("submission", `/api/v1/submissions/${id}/te-request-revision`, {
+  async getSubmissionFeedbackPins(id: string, includeHistory = false) {
+    const suffix = includeHistory ? "/history" : "";
+    return request<FeedbackPinDto[]>("submission", `/api/v1/submissions/${id}/feedback-pins${suffix}`);
+  },
+
+  async inviteAssistant(seriesId: string, payload: InviteAssistantPayload) {
+    return request("series", `/api/v1/studios/${seriesId}/invitations`, {
       method: "POST",
       body: JSON.stringify(payload),
     });
   },
 
-  async ebRequestSubmissionRevision(id: string, payload: ReviewSubmissionPayload) {
-    return request<void>("submission", `/api/v1/submissions/${id}/eb-request-revision`, {
+  async getSeriesInvitations(seriesId: string) {
+    return request<StudioInvitationDto[]>("series", `/api/v1/studios/${seriesId}/invitations`);
+  },
+
+  async getPendingInvitations() {
+    return request<StudioInvitationDto[]>("series", "/api/v1/studios/invitations/pending");
+  },
+
+  async respondToInvitation(invitationId: string, response: "accept" | "decline") {
+    return request<void>("series", `/api/v1/studios/invitations/${invitationId}/${response}`, {
       method: "POST",
-      body: JSON.stringify(payload),
     });
   },
 
@@ -226,7 +254,7 @@ export const mangaErpApi = {
     const data = await request<Record<string, unknown>[]>("chapter",
       `/api/v1/chapters/series/${seriesId}`,
     );
-    return data.map(mapChapter);
+    return data.map((chapter) => mapChapter(chapter, seriesId));
   },
 
   async getChapter(id: string) {
@@ -241,31 +269,54 @@ export const mangaErpApi = {
     });
   },
 
-  async submitChapterForQA(chapterId: string, mangakaId: string) {
-    return request<void>(
-      "chapter",
-      `/api/v1/chapters/${chapterId}/submit-for-qa?mangakaId=${encodeURIComponent(mangakaId)}`,
-      { method: "POST" },
-    );
+  async addBasePage(chapterId: string, pageNumber: number) {
+    return request("chapter", `/api/v1/chapters/${chapterId}/pages`, {
+      method: "POST",
+      body: JSON.stringify({ pageNumber }),
+    });
   },
 
-  async getRankingBoard(votePeriod: string) {
-    return request<RankingBoardItemDto[]>("ranking",
-      `/api/v1/ranking/board?votePeriod=${encodeURIComponent(votePeriod)}`,
-    );
+  async submitChapterForQA(chapterId: string) {
+    return request<void>("chapter", `/api/v1/chapters/${chapterId}/submit-for-qa`, { method: "POST" });
   },
 
-  async importVote(payload: ImportVotePayload) {
-    return request<void>("ranking", "/api/v1/ranking/votes", {
+  async addQaPin(chapterId: string, payload: AddQaPinPayload) {
+    return request<string>("qa", `/api/v1/qa/chapters/${chapterId}/pins`, {
       method: "POST",
       body: JSON.stringify(payload),
     });
+  },
+
+  async getQaPins(chapterId: string) {
+    return request<QaBugPinDto[]>("qa", `/api/v1/qa/chapters/${chapterId}/pins`);
+  },
+
+  async sendQaFeedback(chapterId: string, batchToken: string) {
+    return request("qa", `/api/v1/qa/chapters/${chapterId}/send-feedback`, {
+      method: "POST",
+      body: JSON.stringify({ batchToken }),
+    });
+  },
+
+  async resolveQaPin(pinId: string) {
+    return request<boolean>("qa", `/api/v1/qa/pins/${pinId}/resolve`, { method: "POST" });
+  },
+
+  async approveChapterQa(chapterId: string) {
+    return request("qa", `/api/v1/qa/chapters/${chapterId}/approve`, { method: "POST" });
   },
 
   async schedulePublication(payload: SchedulePublicationPayload) {
     return request<void>("publishing", "/api/v1/publishing/schedule", {
       method: "POST",
       body: JSON.stringify(payload),
+    });
+  },
+
+  async publishChapter(chapterId: string) {
+    return request("publishing", "/api/v1/publishing/publish", {
+      method: "POST",
+      body: JSON.stringify({ chapterId }),
     });
   },
 };

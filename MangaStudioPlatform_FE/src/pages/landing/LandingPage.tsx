@@ -1,7 +1,8 @@
 import { ArrowRight, BookOpenText, LogIn } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import CoverMarquee from "../../shared/components/CoverMarquee";
-import { mangaHeroImage } from "../../shared/visuals/mangaVisuals";
+import { mangaHeroSlides } from "../../shared/visuals/mangaVisuals";
 
 const entryLinks = [
   {
@@ -19,6 +20,17 @@ const entryLinks = [
 ] as const;
 
 export default function LandingPage() {
+  const [heroIndex, setHeroIndex] = useState(0);
+  const heroSlide = mangaHeroSlides[heroIndex];
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setHeroIndex((current) => (current + 1) % mangaHeroSlides.length);
+    }, 3500);
+
+    return () => window.clearInterval(timer);
+  }, []);
+
   return (
     <div className="min-h-screen bg-[#050816] text-slate-100">
       <main className="mx-auto flex min-h-screen max-w-6xl flex-col justify-center px-4 py-12 sm:px-6 lg:px-8">
@@ -37,17 +49,18 @@ export default function LandingPage() {
           </div>
           <div className="relative min-h-80 overflow-hidden rounded-lg border border-white/10 bg-slate-900/70 shadow-[0_24px_80px_rgba(2,6,23,0.45)]">
             <img
-              src={mangaHeroImage}
+              key={heroSlide.image}
+              src={heroSlide.image}
               alt="Manga covers and production inspiration"
-              className="absolute inset-0 h-full w-full object-cover opacity-65"
+              className="hero-slide absolute inset-0 h-full w-full object-cover opacity-65"
             />
             <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,8,22,0.08),rgba(5,8,22,0.92))]" />
             <div className="absolute inset-x-0 bottom-0 p-5">
               <p className="text-xs font-semibold uppercase tracking-[0.28em] text-amber-100">
-                Cover desk
+                {heroSlide.eyebrow}
               </p>
               <h2 className="mt-2 text-2xl font-black text-white">
-                Stories move from pitch to print.
+                {heroSlide.title}
               </h2>
             </div>
           </div>

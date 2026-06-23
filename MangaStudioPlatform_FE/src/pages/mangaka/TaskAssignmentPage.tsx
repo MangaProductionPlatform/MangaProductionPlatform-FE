@@ -76,7 +76,10 @@ export default function TaskAssignmentPage() {
   }
 
   useEffect(() => {
+    // Initial backend fetch; state updates happen after the request resolves.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadSeriesAndChapters();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleCreateBasePage = async () => {

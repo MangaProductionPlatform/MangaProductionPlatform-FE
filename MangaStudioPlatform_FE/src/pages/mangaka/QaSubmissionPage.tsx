@@ -1,92 +1,17 @@
-import { useState } from "react";
-import { FileCheck, Send } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Copy, FileCheck, Send } from "lucide-react";
 import { chapterService } from "../../shared/services/chapterService";
+import { mangaErpApi } from "../../shared/services/mangaErpService";
+import type { ChapterDto, MangaSeriesDto } from "../../shared/types/mangaErp";
 
 export default function QaSubmissionPage() {
-  const [chapterId, setChapterId] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [message, setMessage] = useState("");
-
-  const handleSubmitForQa = async () => {
-    if (!chapterId.trim()) {
-      setMessage("Vui lòng nhập Chapter ID thật từ backend.");
-      return;
-    }
-
-    setIsSubmitting(true);
-    setMessage("");
-
-    try {
-      await chapterService.submitForQa(chapterId.trim());
-      setMessage("Gửi Chapter sang Editorial QA thành công.");
-    } catch (err) {
-      setMessage(
-        err instanceof Error
-          ? err.message
-          : "Gửi Chapter sang Editorial QA thất bại."
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  return (
-    <div className="space-y-6">
-      <div className="rounded-[2rem] border border-slate-800 bg-slate-900 p-7">
-        <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-200">
-          Mangaka Workflow
-        </p>
-
-        <h1 className="mt-2 text-3xl font-black text-white">
-          Submit Chapter to Editorial QA
-        </h1>
-
-        <p className="mt-2 text-sm leading-6 text-slate-400">
-          Nhập Chapter ID thật từ backend để gửi chapter sang Editorial QA.
-        </p>
-      </div>
-
-      <section className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
-        <div className="flex items-center gap-3">
-          <FileCheck size={22} className="text-cyan-300" />
-          <h2 className="text-xl font-bold text-white">
-            Submit QA Request
-          </h2>
-        </div>
-
-        <div className="mt-5">
-          <label className="text-sm text-slate-400">
-            Chapter ID
-          </label>
-
-          <input
-            value={chapterId}
-            onChange={(event) => setChapterId(event.target.value)}
-            placeholder="Ví dụ: 2f046169-0b4c-42c3-a1b5-1bc888f9f0d4"
-            className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none"
-          />
-        </div>
-
-        {message && (
-          <div className="mt-5 rounded-xl border border-cyan-500/30 bg-cyan-500/10 p-4 text-sm text-cyan-200">
-            {message}
-          </div>
-        )}
-
-        <button
-          type="button"
-          disabled={isSubmitting}
-          onClick={handleSubmitForQa}
-          className="mt-5 flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 font-semibold text-white hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          <Send size={18} />
-          {isSubmitting ? "Submitting..." : "Submit to Editorial QA"}
-        </button>
-
-        <p className="mt-4 text-xs text-slate-500">
-          API: POST /api/v1/chapters/{"{chapterId}"}/submit-for-qa
-        </p>
-      </section>
-    </div>
-  );
+  const [series,setSeries]=useState<MangaSeriesDto[]>([]); const [seriesId,setSeriesId]=useState("");
+  const [chapters,setChapters]=useState<ChapterDto[]>([]); const [chapterId,setChapterId]=useState("");
+  const [isSubmitting,setIsSubmitting]=useState(false); const [message,setMessage]=useState("");
+  const selectSeries=async(id:string)=>{setSeriesId(id);setChapterId("");if(!id){setChapters([]);return;}try{const result=await mangaErpApi.getChaptersBySeries(id);setChapters(result);setChapterId(result[0]?.id??"");}catch(e){setMessage(e instanceof Error?e.message:"Could not load chapters.");}};
+  useEffect(()=>{void mangaErpApi.getMySeries().then(items=>{setSeries(items);if(items[0])void selectSeries(items[0].id);});},[]);
+  const submit=async()=>{if(!chapterId)return setMessage("Select a Chapter first.");setIsSubmitting(true);setMessage("");try{await chapterService.submitForQa(chapterId);setMessage("Chapter submitted to Editorial QA successfully.");}catch(e){setMessage(e instanceof Error?e.message:"QA submission failed.");}finally{setIsSubmitting(false);}};
+  return <div className="space-y-6"><div className="rounded-2xl border border-slate-800 bg-slate-900 p-7"><p className="text-xs font-semibold uppercase tracking-[.28em] text-cyan-200">Mangaka Workflow</p><h1 className="mt-2 text-3xl font-black text-white">Submit Chapter to Editorial QA</h1><p className="mt-2 text-sm text-slate-400">Select a backend Series and Chapter after all required page layers are approved.</p></div>
+    <section className="rounded-2xl border border-slate-800 bg-slate-900 p-6"><div className="flex items-center gap-3"><FileCheck size={22} className="text-cyan-300"/><h2 className="text-xl font-bold text-white">Submit QA Request</h2></div><div className="mt-5 grid gap-4 md:grid-cols-2"><label className="text-sm text-slate-400">Series<select className="input mt-2" value={seriesId} onChange={e=>void selectSeries(e.target.value)}><option value="">Select Series</option>{series.map(x=><option key={x.id} value={x.id}>{x.title}</option>)}</select></label><label className="text-sm text-slate-400">Chapter<select className="input mt-2" value={chapterId} onChange={e=>setChapterId(e.target.value)}><option value="">Select Chapter</option>{chapters.map(x=><option key={x.id} value={x.id}>Ch. {x.chapterNumber} - {x.title} ({x.status})</option>)}</select></label></div>{chapterId?<div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-cyan-300/20 bg-cyan-300/5 p-3"><code className="break-all text-sm text-cyan-100">{chapterId}</code><button type="button" className="inline-flex items-center gap-2 rounded-lg bg-cyan-300 px-3 py-2 text-sm font-bold text-slate-950" onClick={()=>void navigator.clipboard.writeText(chapterId)}><Copy size={15}/>Copy Chapter ID</button></div>:null}{message?<div className="mt-5 rounded-xl border border-cyan-500/30 bg-cyan-500/10 p-4 text-sm text-cyan-200">{message}</div>:null}<button type="button" disabled={isSubmitting||!chapterId} onClick={()=>void submit()} className="mt-5 flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 font-semibold text-white disabled:opacity-50"><Send size={18}/>{isSubmitting?"Submitting...":"Submit to Editorial QA"}</button><p className="mt-4 text-xs text-slate-500">API: POST /api/v1/chapters/{"{chapterId}"}/submit-for-qa</p></section>
+  </div>;
 }
