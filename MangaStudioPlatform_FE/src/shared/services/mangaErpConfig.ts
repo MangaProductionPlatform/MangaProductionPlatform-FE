@@ -22,4 +22,5 @@ export const SERVICE_BASE_URLS: Record<ServiceName, string> = {
   qa: requiredBaseUrl(),
   segmentation: requiredBaseUrl(),
   publishing: requiredBaseUrl(),
+  ranking: API_BASE_URL,
 };

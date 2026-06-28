@@ -30,6 +30,7 @@ const defaultMenus = [
 const editorMenus = [
   { label: "Dashboard", path: "/app/editor/dashboard", icon: LayoutDashboard },
   { label: "Review Queue", path: "/app/editor/review-queue", icon: ClipboardCheck },
+  { label: "Chapter QA Review", path: "/app/editor/chapter-qa-review", icon: ClipboardCheck },
   { label: "Series Monitoring", path: "/app/editor/series-monitoring", icon: BookOpen },
   { label: "Annotations", path: "/app/editor/annotations", icon: PenTool },
   { label: "Publishing Queue", path: "/app/editor/publishing-queue", icon: FileText },
@@ -45,6 +46,8 @@ const boardMenus = [
   { label: "Publishing Schedule", path: "/app/board/publishing-schedule", icon: FileText },
   { label: "Ranking & Analytics", path: "/app/board/ranking-analytics", icon: Trophy },
   { label: "Cancellation Review", path: "/app/board/cancellation-review", icon: PenTool },
+  { label: "Publishing Management", path: "/app/board/publishing-management", icon: FileText },
+  { label: "Ranking Votes", path: "/app/board/ranking-votes", icon: Trophy },
   { label: "Reports", path: "/app/board/reports", icon: FileText },
   { label: "Notifications", path: "/app/board/notifications", icon: Bell },
   { label: "Profile", path: "/app/board/profile", icon: User },

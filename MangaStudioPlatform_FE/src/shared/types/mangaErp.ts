@@ -7,6 +7,7 @@ export type ServiceName =
   | "qa"
   | "segmentation"
   | "publishing";
+  | "ranking";
 
 export type ApiErrorBody = {
   message?: string;

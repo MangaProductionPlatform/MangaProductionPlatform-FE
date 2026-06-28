@@ -68,7 +68,9 @@ import TaskAssignmentPage from "../pages/mangaka/TaskAssignmentPage";
 import LayerReviewPage from "../pages/mangaka/LayerReviewPage";
 import QaSubmissionPage from "../pages/mangaka/QaSubmissionPage";
 import MangakaProfilePage from "../pages/mangaka/MangakaProfilePage";
-
+import ChapterQaReviewPage from "../pages/editors/ChapterQaReviewPage";
+import PublishingManagementPage from "../pages/board/PublishingManagementPage";
+import RankingVoteManagementPage from "../pages/board/RankingVoteManagementPage";
 
 export function AppRouter() {
   return (
@@ -91,6 +93,7 @@ export function AppRouter() {
         <Route path="editor/review-queue" element={<ReviewQueuePage />} />
         <Route path="editor/series-monitoring" element={<SeriesMonitoringPage />} />
         <Route path="editor/annotations" element={<AnnotationsPage />} />
+        <Route path="editor/chapter-qa-review" element={<ChapterQaReviewPage />} />
         <Route path="editor/publishing-queue" element={<PublishingQueuePage />} />
         <Route path="editor/ranking-reports" element={<RankingReportsPage />} />
         <Route path="editor/notifications" element={<EditorNotificationsPage />} />
@@ -101,6 +104,8 @@ export function AppRouter() {
         <Route path="board/publishing-schedule" element={<PublishingSchedulePage />} />
         <Route path="board/ranking-analytics" element={<RankingAnalyticsPage />} />
         <Route path="board/cancellation-review" element={<CancellationReviewPage />} />
+        <Route path="board/publishing-management" element={<PublishingManagementPage />} />
+        <Route path="board/ranking-votes" element={<RankingVoteManagementPage />} />
         <Route path="board/reports" element={<ReportsPage />} />
         <Route path="board/notifications" element={<BoardNotificationsPage />} />
         <Route path="board/profile" element={<BoardProfilePage />} />
