@@ -3,7 +3,7 @@ import { request } from "./httpClient";
 export type SubmitLayerPayload = {
   LayerType: "LineArt" | "Color" | "Background";
   FileUrlOriginal: string;
-  FileUrlOptimized: string;
+  FileUrlOptimized?: string | null;
 };
 
 export type ReviewLayerPayload = {

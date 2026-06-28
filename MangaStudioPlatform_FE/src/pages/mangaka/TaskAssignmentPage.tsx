@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { BookOpen, ClipboardCheck, Plus, RefreshCw, Send } from "lucide-react";
+import { BookOpen, ClipboardCheck, Plus, RefreshCw, Send, Wand2 } from "lucide-react";
 import { chapterService } from "../../shared/services/chapterService";
 import { mangaErpApi } from "../../shared/services/mangaErpService";
 import type { ChapterDto, MangaSeriesDto } from "../../shared/types/mangaErp";
@@ -11,9 +11,17 @@ export default function TaskAssignmentPage() {
   const [chapterId, setChapterId] = useState("");
   const [pageNumber, setPageNumber] = useState(1);
   const [assistantId, setAssistantId] = useState("");
+  const [taskDescription, setTaskDescription] = useState("");
+  const [taskType, setTaskType] = useState("Background");
+  const [regionMask, setRegionMask] = useState("");
+  const [samFile, setSamFile] = useState<File | null>(null);
+  const [samEmbedding, setSamEmbedding] = useState<Awaited<ReturnType<typeof mangaErpApi.getSamEmbedding>> | null>(null);
+  const [clickX, setClickX] = useState("0");
+  const [clickY, setClickY] = useState("0");
   const [isLoading, setIsLoading] = useState(false);
   const [isCreatingPage, setIsCreatingPage] = useState(false);
   const [isAssigning, setIsAssigning] = useState(false);
+  const [isSamBusy, setIsSamBusy] = useState(false);
   const [message, setMessage] = useState("");
 
   const selectedChapter = chapters.find((item) => item.id === chapterId);
@@ -122,6 +130,7 @@ export default function TaskAssignmentPage() {
       await chapterService.activatePageTask(chapterId, {
         PageNumber: pageNumber,
         AssignedAssistantId: assistantId.trim(),
+        Description: taskDescription.trim() || null,
       });
 
       setMessage("Phân công task cho Assistant thành công.");
@@ -131,6 +140,78 @@ export default function TaskAssignmentPage() {
       );
     } finally {
       setIsAssigning(false);
+    }
+  };
+
+  const handleCreateSamEmbedding = async () => {
+    if (!samFile) {
+      setMessage("Select a page image before requesting SAM embedding.");
+      return;
+    }
+
+    setIsSamBusy(true);
+    setMessage("");
+
+    try {
+      const embedding = await mangaErpApi.getSamEmbedding(samFile);
+      setSamEmbedding(embedding);
+      setMessage("SAM embedding created. Click coordinates can now predict a region.");
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "Could not create SAM embedding.");
+    } finally {
+      setIsSamBusy(false);
+    }
+  };
+
+  const handlePredictSamRegion = async () => {
+    if (!samEmbedding) {
+      setMessage("Create SAM embedding first.");
+      return;
+    }
+
+    setIsSamBusy(true);
+    setMessage("");
+
+    try {
+      const mask = await mangaErpApi.predictSamMask({
+        ...samEmbedding,
+        x: Number(clickX),
+        y: Number(clickY),
+      });
+      setRegionMask(JSON.stringify(mask.maskRle ?? { bbox: mask.bbox, score: mask.score }));
+      setMessage("SAM region predicted. Save the region before assigning the task.");
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "Could not predict SAM region.");
+    } finally {
+      setIsSamBusy(false);
+    }
+  };
+
+  const handleSaveRegion = async () => {
+    if (!chapterId) {
+      setMessage("Select a backend chapter first.");
+      return;
+    }
+
+    if (!regionMask.trim()) {
+      setMessage("Region mask JSON is required.");
+      return;
+    }
+
+    setIsSamBusy(true);
+    setMessage("");
+
+    try {
+      await mangaErpApi.setPageRegion(chapterId, {
+        pageNumber,
+        regionMask: regionMask.trim(),
+        taskType,
+      });
+      setMessage("SAM region and task type saved for this page.");
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "Could not save SAM region.");
+    } finally {
+      setIsSamBusy(false);
     }
   };
 
@@ -297,8 +378,95 @@ export default function TaskAssignmentPage() {
             </div>
           </div>
 
+          <div className="mt-5 rounded-xl border border-slate-800 bg-slate-950 p-4">
+            <div className="flex items-center gap-2">
+              <Wand2 size={18} className="text-cyan-300" />
+              <h3 className="font-semibold text-white">SAM region</h3>
+            </div>
+
+            <div className="mt-4 grid gap-3 md:grid-cols-2">
+              <label className="text-sm text-slate-400">
+                Page image
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  onChange={(event) => setSamFile(event.target.files?.[0] ?? null)}
+                  className="mt-2 block w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-slate-100"
+                />
+              </label>
+
+              <label className="text-sm text-slate-400">
+                Task type
+                <select
+                  value={taskType}
+                  onChange={(event) => setTaskType(event.target.value)}
+                  className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none"
+                >
+                  <option value="General">General</option>
+                  <option value="Background">Background</option>
+                  <option value="Shading">Shading</option>
+                  <option value="Inking">Inking</option>
+                  <option value="Effect">Effect</option>
+                  <option value="Coloring">Coloring</option>
+                </select>
+              </label>
+
+              <input
+                type="number"
+                value={clickX}
+                onChange={(event) => setClickX(event.target.value)}
+                placeholder="Click X"
+                className="rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none"
+              />
+
+              <input
+                type="number"
+                value={clickY}
+                onChange={(event) => setClickY(event.target.value)}
+                placeholder="Click Y"
+                className="rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none"
+              />
+            </div>
+
+            <textarea
+              value={regionMask}
+              onChange={(event) => setRegionMask(event.target.value)}
+              placeholder="Region mask JSON from SAM"
+              className="mt-3 h-28 w-full rounded-xl border border-slate-700 bg-slate-950 p-4 text-slate-100 outline-none"
+            />
+
+            <div className="mt-3 grid gap-2 md:grid-cols-3">
+              <button
+                type="button"
+                disabled={isSamBusy || !samFile}
+                onClick={() => void handleCreateSamEmbedding()}
+                className="rounded-xl border border-white/10 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 disabled:opacity-60"
+              >
+                Create embedding
+              </button>
+              <button
+                type="button"
+                disabled={isSamBusy || !samEmbedding}
+                onClick={() => void handlePredictSamRegion()}
+                className="rounded-xl border border-cyan-300/30 px-3 py-2 text-sm font-semibold text-cyan-100 hover:bg-cyan-300/10 disabled:opacity-60"
+              >
+                Predict region
+              </button>
+              <button
+                type="button"
+                disabled={isSamBusy || !chapterId || !regionMask.trim()}
+                onClick={() => void handleSaveRegion()}
+                className="rounded-xl bg-cyan-600 px-3 py-2 text-sm font-semibold text-white hover:bg-cyan-500 disabled:opacity-60"
+              >
+                Save region
+              </button>
+            </div>
+          </div>
+
           <textarea
             placeholder="Mô tả yêu cầu layer cho Assistant..."
+            value={taskDescription}
+            onChange={(event) => setTaskDescription(event.target.value)}
             className="mt-5 h-32 w-full rounded-xl border border-slate-700 bg-slate-950 p-4 text-slate-100 outline-none"
           />
 

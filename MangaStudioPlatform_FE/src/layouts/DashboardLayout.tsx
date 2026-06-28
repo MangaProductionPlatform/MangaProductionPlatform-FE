@@ -113,7 +113,7 @@ export default function DashboardLayout() {
   const menus =
   role === "editor"
     ? editorMenus
-    : role === "editorial_board"
+    : role === "editorial_board" || role === "editor_in_chief"
     ? boardMenus
     : role === "mangaka"
     ? mangakaMenus
@@ -124,6 +124,8 @@ export default function DashboardLayout() {
     ? "Editor Workspace"
     : role === "editorial_board"
       ? "Editorial Board"
+      : role === "editor_in_chief"
+        ? "Editor-in-Chief"
       : role === "mangaka"
         ? "Mangaka Workspace"
         : "Creator command center";

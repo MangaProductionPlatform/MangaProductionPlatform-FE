@@ -43,7 +43,7 @@ export default function LoginPage() {
         return;
       }
 
-      if (account.role === "editorial_board") {
+      if (account.role === "editorial_board" || account.role === "editor_in_chief") {
         navigate("/app/board/dashboard");
         return;
       }

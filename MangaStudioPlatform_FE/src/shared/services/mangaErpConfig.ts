@@ -20,5 +20,6 @@ export const SERVICE_BASE_URLS: Record<ServiceName, string> = {
   chapter: requiredBaseUrl(),
   task: requiredBaseUrl(),
   qa: requiredBaseUrl(),
+  segmentation: requiredBaseUrl(),
   publishing: requiredBaseUrl(),
 };

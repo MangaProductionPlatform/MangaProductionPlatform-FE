@@ -3,6 +3,8 @@ import type {
   ActivateAccountPayload,
   ActivateAccountResult,
   AdminUserDto,
+  CastSubmissionVotePayload,
+  CastSubmissionVoteResult,
   CreateChapterPayload,
   CreateSubmissionPayload,
   CurrentUser,
@@ -14,9 +16,16 @@ import type {
   ProvisionAccountPayload,
   ProvisionAccountResult,
   QaBugPinDto,
+  QaSessionDto,
   RequestRevisionPayload,
+  ResolveSubmissionConflictPayload,
+  ResolveSubmissionConflictResult,
   ReviewSubmissionPayload,
+  SamEmbeddingResponse,
+  SamMaskResponse,
+  SamPredictMaskPayload,
   SchedulePublicationPayload,
+  SetPageRegionPayload,
   SubmissionDetailDto,
   SubmissionSummaryDto,
   StudioInvitationDto,
@@ -196,11 +205,28 @@ export const mangaErpApi = {
     return mapSubmissionDetail(data);
   },
 
-  async approveSubmission(id: string, assignedEditorId: string) {
+  async approveSubmission(id: string) {
     return request<void>("submission", `/api/v1/submissions/${id}/approve`, {
       method: "POST",
-      body: JSON.stringify({ assignedEditorId }),
     });
+  },
+
+  async castSubmissionVote(id: string, payload: CastSubmissionVotePayload) {
+    return request<CastSubmissionVoteResult>("submission", `/api/v1/submissions/${id}/vote`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async resolveSubmissionConflict(id: string, payload: ResolveSubmissionConflictPayload) {
+    return request<ResolveSubmissionConflictResult>(
+      "submission",
+      `/api/v1/submissions/${id}/resolve-conflict`,
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    );
   },
 
   async rejectSubmission(id: string, payload: ReviewSubmissionPayload) {
@@ -276,6 +302,30 @@ export const mangaErpApi = {
     });
   },
 
+  async setPageRegion(chapterId: string, payload: SetPageRegionPayload) {
+    return request("chapter", `/api/v1/chapters/${chapterId}/pages/region`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async getSamEmbedding(file: File) {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    return request<SamEmbeddingResponse>("segmentation", "/api/segmentation/embedding", {
+      method: "POST",
+      body: formData,
+    });
+  },
+
+  async predictSamMask(payload: SamPredictMaskPayload) {
+    return request<SamMaskResponse>("segmentation", "/api/segmentation/predict", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
   async submitChapterForQA(chapterId: string) {
     return request<void>("chapter", `/api/v1/chapters/${chapterId}/submit-for-qa`, { method: "POST" });
   },
@@ -289,6 +339,10 @@ export const mangaErpApi = {
 
   async getQaPins(chapterId: string) {
     return request<QaBugPinDto[]>("qa", `/api/v1/qa/chapters/${chapterId}/pins`);
+  },
+
+  async getQaSession(chapterId: string) {
+    return request<QaSessionDto>("qa", `/api/v1/qa/chapters/${chapterId}/session`);
   },
 
   async sendQaFeedback(chapterId: string, batchToken: string) {

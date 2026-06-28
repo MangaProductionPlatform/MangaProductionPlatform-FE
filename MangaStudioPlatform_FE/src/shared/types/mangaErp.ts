@@ -5,6 +5,7 @@ export type ServiceName =
   | "chapter"
   | "task"
   | "qa"
+  | "segmentation"
   | "publishing";
 
 export type ApiErrorBody = {
@@ -29,6 +30,7 @@ export type AppRole =
   | "assistant"
   | "editor"
   | "editorial_board"
+  | "editor_in_chief"
   | "admin";
 
 export type ProvisionRole =
@@ -106,6 +108,7 @@ export type ChapterDto = {
   chapterNumber: number;
   totalPages: number;
   status: string;
+  coverImageUrl?: string | null;
   assignedEditorId?: string | null;
   scheduledPublishAt?: string | null;
   publishedAt?: string | null;
@@ -121,6 +124,7 @@ export type PageTaskDto = {
   status: string;
   assignedAssistantId?: string | null;
   previewCompositeUrl?: string | null;
+  description?: string | null;
   createdAt?: string;
   updatedAt?: string;
 };
@@ -166,6 +170,12 @@ export type SubmissionDetailDto = SubmissionSummaryDto & {
   coverImageUrl?: string | null;
   manuscriptUrl?: string | null;
   submitterId: string;
+  submitter?: {
+    userId: string;
+    fullName?: string | null;
+    penName?: string | null;
+    personalEmail?: string | null;
+  } | null;
   editorRecommendationMessage?: string | null;
   assignedEditorId?: string | null;
   reviewedByUserId?: string | null;
@@ -177,11 +187,37 @@ export type CreateChapterPayload = {
   chapterNumber: number;
   totalPages: number;
   assignedEditorId?: string | null;
+  coverImageUrl?: string | null;
 };
 
 export type ActivatePagePayload = {
   pageNumber: number;
   assignedAssistantId: string;
+  description?: string | null;
+};
+
+export type SetPageRegionPayload = {
+  pageNumber: number;
+  regionMask: string;
+  taskType: string;
+};
+
+export type SamEmbeddingResponse = {
+  embedding: string;
+  shape: number[];
+  dtype: string;
+  imageSize: number[];
+};
+
+export type SamPredictMaskPayload = SamEmbeddingResponse & {
+  x: number;
+  y: number;
+};
+
+export type SamMaskResponse = {
+  maskRle?: unknown;
+  score: number;
+  bbox: number[];
 };
 
 export type RecommendSubmissionPayload = {
@@ -224,6 +260,35 @@ export type RevisionFeedbackPinPayload = {
 export type RequestRevisionPayload = {
   reason: string;
   pins?: RevisionFeedbackPinPayload[];
+};
+
+export type SubmissionVoteType = "APPROVE" | "REJECT" | "REQ_REVISION";
+
+export type CastSubmissionVotePayload = {
+  voteType: SubmissionVoteType;
+  comment?: string | null;
+  feedbackPins?: RevisionFeedbackPinPayload[];
+};
+
+export type CastSubmissionVoteResult = {
+  submissionId: string;
+  submissionStatus: string;
+  totalVotesInRound: number;
+  aggregationOutcome?: string | null;
+  roundNumber: number;
+};
+
+export type ResolveSubmissionConflictPayload = {
+  finalDecision: SubmissionVoteType;
+  feedbackMessage: string;
+};
+
+export type ResolveSubmissionConflictResult = {
+  submissionId: string;
+  newStatus: string;
+  finalDecision: string;
+  feedbackMessage: string;
+  resolvedAt: string;
 };
 
 export type FeedbackPinDto = {
@@ -275,6 +340,17 @@ export type QaBugPinDto = {
   status: string;
   resolvedAt?: string | null;
   createdAt: string;
+};
+
+export type QaSessionDto = {
+  id: string;
+  chapterId: string;
+  editorId: string;
+  status: string;
+  isApproved: boolean;
+  approvedAt?: string | null;
+  createdAt: string;
+  completedAt?: string | null;
 };
 
 export type ImportVotePayload = {
