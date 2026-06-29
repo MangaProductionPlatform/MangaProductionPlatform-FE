@@ -210,8 +210,8 @@ export default function LayerReviewPage() {
 
           <div className="mt-5 space-y-3">
             {isLoading && (
-              <div className="rounded-xl border border-slate-800 bg-slate-950 p-4 text-slate-300">
-                Loading tasks...
+              <div className="shimmer-box rounded-xl border border-slate-800 bg-slate-900 p-4 text-slate-300">
+              Loading tasks...
               </div>
             )}
 

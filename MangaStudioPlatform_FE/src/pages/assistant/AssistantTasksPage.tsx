@@ -97,8 +97,8 @@ export default function AssistantTasksPage() {
       </div>
 
       {isLoading && (
-        <div className="rounded-xl border border-slate-800 bg-slate-900 p-4 text-slate-300">
-          Loading tasks...
+        <div className="shimmer-box rounded-xl border border-slate-800 bg-slate-900 p-4 text-slate-300">
+        Loading tasks...
         </div>
       )}
 
@@ -121,7 +121,7 @@ export default function AssistantTasksPage() {
           return (
             <div
               key={taskId}
-              className="rounded-2xl border border-slate-800 bg-slate-900 p-5"
+              className="fade-slide-up glow-card rounded-2xl border border-slate-800 bg-slate-900 p-5"
             >
               <div className="flex items-start justify-between gap-4">
                 <div>
@@ -147,8 +147,9 @@ export default function AssistantTasksPage() {
                   </p>
                 </div>
 
-                <span className="rounded-lg bg-cyan-500/10 px-3 py-2 text-sm text-cyan-300">
-                  {task.taskStatus ?? "Unknown"}
+                <span className="inline-flex items-center gap-2 rounded-lg bg-cyan-500/10 px-3 py-2 text-sm text-cyan-300">
+                <span className="pulse-dot h-2 w-2 rounded-full bg-cyan-300" />
+                   {task.taskStatus ?? "Unknown"}
                 </span>
               </div>
 

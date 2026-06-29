@@ -190,7 +190,7 @@ export default function AssistantTaskDetailPage() {
               {pins.map((pin) => (
                 <div
                   key={pin.id ?? pin.pinId}
-                  className="absolute flex h-6 w-6 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white"
+                  className="pulse-dot absolute flex h-6 w-6 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white shadow-lg shadow-red-500/40"
                   style={{
                     left: `${pin.coordinateX}%`,
                     top: `${pin.coordinateY}%`,
@@ -222,7 +222,7 @@ export default function AssistantTaskDetailPage() {
                 pins.map((pin) => (
                   <div
                     key={pin.id ?? pin.pinId}
-                    className="rounded-xl border border-red-500/20 bg-slate-950 p-4"
+                    className="fade-slide-up glow-card rounded-xl border border-red-500/20 bg-slate-950 p-4"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div>
