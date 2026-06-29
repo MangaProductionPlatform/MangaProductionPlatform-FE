@@ -1,7 +1,7 @@
 import { request } from "./httpClient";
 
 export type SubmitLayerPayload = {
-  LayerType: "LineArt" | "Color" | "Background";
+  LayerType: "LineArt" | "Color" | "Background" | "Text";
   FileUrlOriginal: string;
   FileUrlOptimized?: string | null;
 };

@@ -6,7 +6,7 @@ export type ServiceName =
   | "task"
   | "qa"
   | "segmentation"
-  | "publishing";
+  | "publishing"
   | "ranking";
 
 export type ApiErrorBody = {
