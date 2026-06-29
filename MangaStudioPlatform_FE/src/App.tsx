@@ -1,6 +1,6 @@
 import { AppProviders } from "./app/providers";
 import { AppRouter } from "./app/router";
-import "./shared/styles/workflowEffects.css";
+import "./styles/workflowEffects.css";
 
 
 export default function App() {
