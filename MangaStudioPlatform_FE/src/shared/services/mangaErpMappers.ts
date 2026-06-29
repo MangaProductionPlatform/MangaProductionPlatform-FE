@@ -11,6 +11,7 @@ export function normalizeRole(role: string): AppRole {
     Assistant: "assistant",
     TantouEditor: "editor",
     EditorialBoard: "editorial_board",
+    EditorInChief: "editor_in_chief",
     Admin: "admin",
   };
 
@@ -50,6 +51,7 @@ export function mapSubmissionDetail(item: Record<string, unknown>): SubmissionDe
     coverImageUrl: pick<string | null | undefined>(item, "coverImageUrl"),
     manuscriptUrl: pick<string | null | undefined>(item, "manuscriptUrl"),
     submitterId: pick<string>(item, "submitterId"),
+    submitter: pick<SubmissionDetailDto["submitter"]>(item, "submitter"),
     editorRecommendationMessage: pick<string | null | undefined>(item, "editorRecommendationMessage"),
     assignedEditorId: pick<string | null | undefined>(item, "assignedEditorId"),
     reviewedByUserId: pick<string | null | undefined>(item, "reviewedByUserId"),
@@ -72,6 +74,7 @@ export function mapChapter(item: Record<string, unknown>, knownSeriesId?: string
     chapterNumber: Number(pick<number>(item, "chapterNumber")),
     totalPages: Number(pick<number>(item, "totalPages")),
     status: pick<string>(item, "status"),
+    coverImageUrl: pick<string | null | undefined>(item, "coverImageUrl"),
     assignedEditorId: pick<string | null | undefined>(item, "assignedEditorId"),
     scheduledPublishAt: pick<string | null | undefined>(item, "scheduledPublishAt"),
     publishedAt: pick<string | null | undefined>(item, "publishedAt"),
@@ -84,6 +87,7 @@ export function mapChapter(item: Record<string, unknown>, knownSeriesId?: string
       status: pick<string>(pageTask, "status") ?? pick<string>(pageTask, "taskStatus"),
       assignedAssistantId: pick<string | null | undefined>(pageTask, "assignedAssistantId"),
       previewCompositeUrl: pick<string | null | undefined>(pageTask, "previewCompositeUrl"),
+      description: pick<string | null | undefined>(pageTask, "description"),
       createdAt: pick<string>(pageTask, "createdAt"),
       updatedAt: pick<string>(pageTask, "updatedAt"),
     })),

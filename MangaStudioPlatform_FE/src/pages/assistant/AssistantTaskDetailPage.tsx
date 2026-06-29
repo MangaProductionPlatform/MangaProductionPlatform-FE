@@ -20,7 +20,7 @@ export default function AssistantTaskDetailPage() {
       return;
     }
 
-    if (!fileUrlOriginal.trim() || !fileUrlOptimized.trim()) {
+    if (!fileUrlOriginal.trim()) {
       setMessage("Vui lòng nhập đầy đủ File URL Original và File URL Optimized.");
       return;
     }
@@ -32,7 +32,7 @@ export default function AssistantTaskDetailPage() {
       await taskService.submitLayer(id, {
         LayerType: layerType,
         FileUrlOriginal: fileUrlOriginal.trim(),
-        FileUrlOptimized: fileUrlOptimized.trim(),
+        FileUrlOptimized: fileUrlOptimized.trim() || null,
       });
 
       setMessage("Submit layer thành công.");

@@ -5,7 +5,8 @@ export type CreateChapterPayload = {
   Title: string;
   ChapterNumber: number;
   TotalPages: number;
-  AssignedEditorId: string;
+  AssignedEditorId?: string | null;
+  CoverImageUrl?: string | null;
 };
 
 export type CreateBasePagePayload = {
@@ -15,6 +16,13 @@ export type CreateBasePagePayload = {
 export type ActivatePageTaskPayload = {
   PageNumber: number;
   AssignedAssistantId: string;
+  Description?: string | null;
+};
+
+export type SetPageRegionPayload = {
+  PageNumber: number;
+  RegionMask: string;
+  TaskType: string;
 };
 
 export const chapterService = {
@@ -40,6 +48,13 @@ export const chapterService = {
 
   activatePageTask(chapterId: string, payload: ActivatePageTaskPayload) {
     return request("chapter", `/api/v1/chapters/${chapterId}/pages/activate`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  setPageRegion(chapterId: string, payload: SetPageRegionPayload) {
+    return request("chapter", `/api/v1/chapters/${chapterId}/pages/region`, {
       method: "POST",
       body: JSON.stringify(payload),
     });

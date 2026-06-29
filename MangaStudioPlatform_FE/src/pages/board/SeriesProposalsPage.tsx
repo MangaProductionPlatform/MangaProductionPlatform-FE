@@ -1,18 +1,34 @@
 import type { ReactNode } from "react";
-import { useEffect, useState } from "react";
-import { CheckCircle2, Eye, MessageSquare, RefreshCw, XCircle } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { CheckCircle2, Eye, Gavel, MessageSquare, RefreshCw, XCircle } from "lucide-react";
 import { mangaErpApi } from "../../shared/services/mangaErpService";
-import type { SubmissionDetailDto, SubmissionSummaryDto } from "../../shared/types/mangaErp";
+import type {
+  CurrentUser,
+  SubmissionDetailDto,
+  SubmissionSummaryDto,
+  SubmissionVoteType,
+} from "../../shared/types/mangaErp";
 import { useToast } from "../../shared/components/toastContext";
 
 type BoardAction = "approve" | "revision" | "reject";
+
+const voteTypeByAction: Record<BoardAction, SubmissionVoteType> = {
+  approve: "APPROVE",
+  revision: "REQ_REVISION",
+  reject: "REJECT",
+};
+
+const actionLabel: Record<BoardAction, string> = {
+  approve: "Approve",
+  revision: "Request revision",
+  reject: "Reject",
+};
 
 export default function SeriesProposalsPage() {
   const toast = useToast();
   const [queue, setQueue] = useState<SubmissionSummaryDto[]>([]);
   const [selected, setSelected] = useState<SubmissionDetailDto | null>(null);
   const [reason, setReason] = useState("");
-  const [assignedEditorId, setAssignedEditorId] = useState("");
   const [pinPage, setPinPage] = useState("");
   const [pinX, setPinX] = useState("0.5");
   const [pinY, setPinY] = useState("0.5");
@@ -20,6 +36,14 @@ export default function SeriesProposalsPage() {
   const [pinCategory, setPinCategory] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [runningAction, setRunningAction] = useState<BoardAction | null>(null);
+  const [lastVoteResult, setLastVoteResult] = useState<string | null>(null);
+
+  const currentUser = useMemo(
+    () => JSON.parse(localStorage.getItem("currentUser") || "null") as CurrentUser | null,
+    [],
+  );
+  const isEditorialBoard = currentUser?.role === "editorial_board";
+  const isEditorInChief = currentUser?.role === "editor_in_chief";
 
   const loadQueue = async () => {
     setIsLoading(true);
@@ -32,8 +56,8 @@ export default function SeriesProposalsPage() {
     } catch (err) {
       setQueue([]);
       toast.error(
-        "Could not load Board queue",
-        err instanceof Error ? err.message : "Please check your Editorial Board session.",
+        "Could not load proposal queue",
+        err instanceof Error ? err.message : "Please check your Board session.",
       );
     } finally {
       setIsLoading(false);
@@ -41,40 +65,15 @@ export default function SeriesProposalsPage() {
   };
 
   useEffect(() => {
-    let ignore = false;
-
-    async function loadInitialQueue() {
-      try {
-        const result = await mangaErpApi.getSubmissionQueue();
-        if (!ignore) {
-          setQueue(result);
-        }
-      } catch (err) {
-        if (!ignore) {
-          setQueue([]);
-          toast.error(
-            "Could not load Board queue",
-            err instanceof Error ? err.message : "Please check your Editorial Board session.",
-          );
-        }
-      } finally {
-        if (!ignore) {
-          setIsLoading(false);
-        }
-      }
-    }
-
-    void loadInitialQueue();
-    return () => {
-      ignore = true;
-    };
-  }, [toast]);
+    void loadQueue();
+  }, []);
 
   const openSubmission = async (id: string) => {
     try {
       const detail = await mangaErpApi.getSubmission(id);
       setSelected(detail);
       setReason(detail.feedbackMessage ?? "");
+      setLastVoteResult(null);
     } catch (err) {
       toast.error(
         "Could not open submission",
@@ -83,9 +82,22 @@ export default function SeriesProposalsPage() {
     }
   };
 
+  const buildFeedbackPins = () =>
+    pinComment.trim()
+      ? [
+          {
+            pageIdentifier: pinPage.trim() || "cover",
+            coordinateX: Number(pinX),
+            coordinateY: Number(pinY),
+            comment: pinComment.trim(),
+            category: pinCategory,
+          },
+        ]
+      : [];
+
   const runAction = async (action: BoardAction) => {
     if (!selected) {
-      toast.error("Select a submission", "Open one proposal before sending an action.");
+      toast.error("Select a submission", "Open one proposal before sending a decision.");
       return;
     }
 
@@ -93,37 +105,35 @@ export default function SeriesProposalsPage() {
       toast.error("Reason required", "Enter a revision or rejection reason.");
       return;
     }
-    if (action === "approve" && !assignedEditorId.trim()) {
-      toast.error("Editor required", "Backend requires the Tantou Editor user ID when approving.");
+
+    if (!isEditorialBoard && !isEditorInChief) {
+      toast.error("Unsupported role", "This page accepts Editorial Board or Editor-in-Chief accounts.");
+      return;
+    }
+
+    if (isEditorInChief && selected.status !== "Conflict_Escalated") {
+      toast.error("No conflict to resolve", "Editor-in-Chief can only decide escalated submissions.");
       return;
     }
 
     setRunningAction(action);
     try {
-      if (action === "approve") {
-        await mangaErpApi.approveSubmission(selected.id, assignedEditorId.trim());
-        toast.success("Submission approved", "A series record was created by the backend.");
-      }
-
-      if (action === "revision") {
-        await mangaErpApi.requestSubmissionRevision(selected.id, {
-          reason: reason.trim(),
-          pins: pinComment.trim() ? [{
-            pageIdentifier: pinPage.trim() || "cover",
-            coordinateX: Number(pinX),
-            coordinateY: Number(pinY),
-            comment: pinComment.trim(),
-            category: pinCategory,
-          }] : [],
+      if (isEditorInChief) {
+        const result = await mangaErpApi.resolveSubmissionConflict(selected.id, {
+          finalDecision: voteTypeByAction[action],
+          feedbackMessage: action === "approve" ? reason.trim() || "Approved by Editor-in-Chief." : reason.trim(),
         });
-        toast.success("Revision requested", "The author can revise and resubmit.");
-      }
-
-      if (action === "reject") {
-        await mangaErpApi.rejectSubmission(selected.id, {
-          reason: reason.trim(),
+        toast.success("Conflict resolved", `${actionLabel[action]} saved as final decision.`);
+        setLastVoteResult(`Final decision: ${result.finalDecision}. New status: ${result.newStatus}.`);
+      } else {
+        const result = await mangaErpApi.castSubmissionVote(selected.id, {
+          voteType: voteTypeByAction[action],
+          comment: reason.trim() || null,
+          feedbackPins: action === "revision" ? buildFeedbackPins() : [],
         });
-        toast.success("Rejected", "The EB rejection was saved.");
+        const outcome = result.aggregationOutcome ?? `Waiting for more votes (${result.totalVotesInRound}/3)`;
+        toast.success("Vote submitted", outcome);
+        setLastVoteResult(`${outcome}. Current status: ${result.submissionStatus}. Round ${result.roundNumber}.`);
       }
 
       await loadQueue();
@@ -131,7 +141,7 @@ export default function SeriesProposalsPage() {
       setSelected(refreshed);
     } catch (err) {
       toast.error(
-        "Submission action failed",
+        isEditorInChief ? "Conflict decision failed" : "Vote failed",
         err instanceof Error ? err.message : "Please check submission status and your role.",
       );
     } finally {
@@ -144,11 +154,13 @@ export default function SeriesProposalsPage() {
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-200">
-            Editorial Board
+            {isEditorInChief ? "Editor-in-Chief" : "Editorial Board"}
           </p>
           <h2 className="mt-2 text-3xl font-black text-white">Series proposals</h2>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
-            Series submissions waiting for Editorial Board review.
+            {isEditorInChief
+              ? "Escalated conflicts and active proposals from the backend queue."
+              : "Submissions you can vote on in the current Editorial Board round."}
           </p>
         </div>
         <button
@@ -165,21 +177,18 @@ export default function SeriesProposalsPage() {
         <div className="space-y-3">
           {isLoading ? (
             <div className="rounded-lg border border-white/10 bg-slate-900/75 p-5 text-sm text-slate-300">
-              Loading Board queue from backend...
+              Loading proposal queue from backend...
             </div>
           ) : null}
 
           {!isLoading && queue.length === 0 ? (
             <div className="rounded-lg border border-white/10 bg-slate-900/75 p-5 text-sm text-slate-300">
-              No submissions waiting for Board review.
+              No proposals are available for your role.
             </div>
           ) : null}
 
           {queue.map((item) => (
-            <article
-              key={item.id}
-              className="rounded-lg border border-white/10 bg-slate-900/75 p-4"
-            >
+            <article key={item.id} className="rounded-lg border border-white/10 bg-slate-900/75 p-4">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div>
                   <span className="rounded-md border border-cyan-300/20 bg-cyan-300/10 px-2 py-1 text-xs font-semibold text-cyan-100">
@@ -202,7 +211,9 @@ export default function SeriesProposalsPage() {
         </div>
 
         <aside className="rounded-lg border border-white/10 bg-slate-900/75 p-5">
-          <h3 className="text-lg font-bold text-white">Board decision</h3>
+          <h3 className="text-lg font-bold text-white">
+            {isEditorInChief ? "Final decision" : "Board vote"}
+          </h3>
           {selected ? (
             <div className="mt-4 space-y-4">
               <div className="rounded-lg border border-white/10 bg-slate-950/60 p-4">
@@ -211,9 +222,9 @@ export default function SeriesProposalsPage() {
                 <p className="mt-2 text-sm leading-6 text-slate-300">
                   {selected.description || "No description."}
                 </p>
-                {selected.editorRecommendationMessage ? (
-                  <p className="mt-3 rounded-lg border border-cyan-300/20 bg-cyan-300/10 p-3 text-sm leading-6 text-cyan-50">
-                    {selected.editorRecommendationMessage}
+                {selected.submitter ? (
+                  <p className="mt-3 text-xs text-slate-400">
+                    Author: {selected.submitter.penName || selected.submitter.fullName || selected.submitter.userId}
                   </p>
                 ) : null}
                 {selected.manuscriptUrl ? (
@@ -228,43 +239,72 @@ export default function SeriesProposalsPage() {
                 ) : null}
               </div>
 
+              {lastVoteResult ? (
+                <div className="rounded-lg border border-emerald-300/20 bg-emerald-300/10 p-3 text-sm text-emerald-100">
+                  {lastVoteResult}
+                </div>
+              ) : null}
+
+              {isEditorInChief && selected.status !== "Conflict_Escalated" ? (
+                <div className="rounded-lg border border-amber-300/20 bg-amber-300/10 p-3 text-sm text-amber-100">
+                  This proposal is not escalated.
+                </div>
+              ) : null}
+
               <textarea
                 className="input min-h-32 resize-y"
                 value={reason}
                 onChange={(event) => setReason(event.target.value)}
-                placeholder="Revision or rejection reason"
+                placeholder={isEditorInChief ? "Final decision message" : "Vote comment"}
               />
 
-              <input
-                className="input"
-                value={assignedEditorId}
-                onChange={(event) => setAssignedEditorId(event.target.value)}
-                placeholder="Tantou Editor user ID (required for approval)"
-              />
-
-              <div className="space-y-2 rounded-lg border border-white/10 bg-slate-950/40 p-3">
-                <p className="text-xs font-semibold uppercase tracking-[.16em] text-slate-400">Optional revision pin</p>
-                <input className="input" value={pinPage} onChange={e => setPinPage(e.target.value)} placeholder="Page identifier, e.g. cover or page-3" />
-                <div className="grid grid-cols-2 gap-2"><input className="input" type="number" step="0.01" value={pinX} onChange={e => setPinX(e.target.value)} placeholder="X"/><input className="input" type="number" step="0.01" value={pinY} onChange={e => setPinY(e.target.value)} placeholder="Y"/></div>
-                <select className="input" value={pinCategory} onChange={e => setPinCategory(Number(e.target.value))}><option value={0}>Visual</option><option value={1}>Content</option><option value={2}>Typo</option></select>
-                <textarea className="input min-h-20" value={pinComment} onChange={e => setPinComment(e.target.value)} placeholder="Pin comment (leave empty for no pin)" />
-              </div>
+              {!isEditorInChief ? (
+                <div className="space-y-2 rounded-lg border border-white/10 bg-slate-950/40 p-3">
+                  <p className="text-xs font-semibold uppercase tracking-[.16em] text-slate-400">
+                    Optional revision pin
+                  </p>
+                  <input
+                    className="input"
+                    value={pinPage}
+                    onChange={(event) => setPinPage(event.target.value)}
+                    placeholder="Page identifier"
+                  />
+                  <div className="grid grid-cols-2 gap-2">
+                    <input className="input" type="number" step="0.01" value={pinX} onChange={(event) => setPinX(event.target.value)} placeholder="X" />
+                    <input className="input" type="number" step="0.01" value={pinY} onChange={(event) => setPinY(event.target.value)} placeholder="Y" />
+                  </div>
+                  <select className="input" value={pinCategory} onChange={(event) => setPinCategory(Number(event.target.value))}>
+                    <option value={0}>Visual</option>
+                    <option value={1}>Content</option>
+                    <option value={2}>Typo</option>
+                  </select>
+                  <textarea
+                    className="input min-h-20"
+                    value={pinComment}
+                    onChange={(event) => setPinComment(event.target.value)}
+                    placeholder="Pin comment"
+                  />
+                </div>
+              ) : null}
 
               <ActionButton
                 icon={<CheckCircle2 size={16} />}
-                label="Approve and create series"
+                label={isEditorInChief ? "Resolve as approve" : "Vote approve"}
+                disabled={isEditorInChief && selected.status !== "Conflict_Escalated"}
                 loading={runningAction === "approve"}
                 onClick={() => void runAction("approve")}
               />
               <ActionButton
-                icon={<MessageSquare size={16} />}
-                label="Request revision"
+                icon={isEditorInChief ? <Gavel size={16} /> : <MessageSquare size={16} />}
+                label={isEditorInChief ? "Resolve as revision" : "Vote revision"}
+                disabled={isEditorInChief && selected.status !== "Conflict_Escalated"}
                 loading={runningAction === "revision"}
                 onClick={() => void runAction("revision")}
               />
               <ActionButton
                 icon={<XCircle size={16} />}
-                label="Reject"
+                label={isEditorInChief ? "Resolve as reject" : "Vote reject"}
+                disabled={isEditorInChief && selected.status !== "Conflict_Escalated"}
                 loading={runningAction === "reject"}
                 onClick={() => void runAction("reject")}
               />
@@ -282,17 +322,19 @@ function ActionButton({
   icon,
   label,
   loading,
+  disabled,
   onClick,
 }: {
   icon: ReactNode;
   label: string;
   loading: boolean;
+  disabled?: boolean;
   onClick: () => void;
 }) {
   return (
     <button
       type="button"
-      disabled={loading}
+      disabled={disabled || loading}
       onClick={onClick}
       className="flex w-full items-center gap-3 rounded-lg border border-white/10 bg-white/5 p-3 text-left text-sm font-bold text-white hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
     >
