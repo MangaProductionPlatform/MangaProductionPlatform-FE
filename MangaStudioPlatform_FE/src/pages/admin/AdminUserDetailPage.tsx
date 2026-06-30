@@ -7,7 +7,7 @@ import { useToast } from "../../shared/components/toastContext";
 
 const roles = [
   [0, "Admin"], [1, "EditorialBoard"], [2, "TantouEditor"],
-  [3, "Mangaka"], [4, "Assistant"], [99, "Reader"],
+  [3, "Mangaka"], [4, "Assistant"], [5, "EditorInChief"], [99, "Reader"],
 ] as const;
 const statuses = [[0, "PendingActivation"], [1, "Active"], [2, "Suspended"], [3, "Deactivated"]] as const;
 

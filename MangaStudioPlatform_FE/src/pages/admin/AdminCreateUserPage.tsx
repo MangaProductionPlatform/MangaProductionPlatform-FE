@@ -11,6 +11,7 @@ const provisionRoles: { value: ProvisionRole; label: string }[] = [
   { value: 2, label: "Tantou Editor" },
   { value: 3, label: "Mangaka" },
   { value: 4, label: "Assistant" },
+  { value: 5, label: "Editor-in-Chief" },
 ];
 
 export default function AdminCreateUserPage() {
@@ -69,11 +70,6 @@ export default function AdminCreateUserPage() {
       return;
     }
 
-    if (role === 3 && !managingTantouId) {
-      toast.error("Tantou editor required", "Select the editor who manages this Mangaka.");
-      return;
-    }
-
     setIsSubmitting(true);
     try {
       const result = await mangaErpApi.provisionAccount({
@@ -81,7 +77,7 @@ export default function AdminCreateUserPage() {
         personalEmail: personalEmail.trim(),
         phoneNumber: phoneNumber.trim() || null,
         role,
-        managingTantouId: role === 3 ? managingTantouId : null,
+        managingTantouId: role === 3 && managingTantouId ? managingTantouId : null,
       });
 
       toast.success(
@@ -207,8 +203,8 @@ export default function AdminCreateUserPage() {
             </select>
             {!isLoadingEditors && tantouUsers.length === 0 ? (
               <p className="mt-2 text-xs text-amber-200">
-                Mangaka requires a managing Tantou Editor. Change Role to
-                Tantou Editor, create that account first, then return here.
+                Mangaka can be created without a managing Tantou Editor. Admin
+                can assign one later from the account detail page.
               </p>
             ) : null}
           </Field>
