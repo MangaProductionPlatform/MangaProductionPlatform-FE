@@ -3,6 +3,7 @@ import { Copy, FileCheck, Send } from "lucide-react";
 import { chapterService } from "../../shared/services/chapterService";
 import { mangaErpApi } from "../../shared/services/mangaErpService";
 import type { ChapterDto, MangaSeriesDto } from "../../shared/types/mangaErp";
+import "./QaSubmissionPage.css";
 
 export default function QaSubmissionPage() {
   const [series,setSeries]=useState<MangaSeriesDto[]>([]); const [seriesId,setSeriesId]=useState("");

@@ -1,0 +1,33 @@
+.qa-submission-page {
+  animation: qaSubmitIn 0.35s ease both;
+}
+
+.qa-submit-card {
+  transition: transform 0.25s ease, border-color 0.25s ease;
+}
+
+.qa-submit-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(52, 211, 153, 0.55);
+}
+
+.qa-submit-button {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.qa-submit-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px rgba(16, 185, 129, 0.15);
+}
+
+@keyframes qaSubmitIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

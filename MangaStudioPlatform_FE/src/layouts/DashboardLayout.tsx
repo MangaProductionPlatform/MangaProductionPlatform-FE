@@ -56,9 +56,11 @@ const boardMenus = [
 export default function DashboardLayout() {
   const navigate = useNavigate();
   const toast = useToast();
+
   const currentUser = JSON.parse(localStorage.getItem("currentUser") || "null") as
     | { role?: string }
     | null;
+
   const role = currentUser?.role;
 
   if (!currentUser) {
@@ -66,72 +68,36 @@ export default function DashboardLayout() {
   }
 
   const mangakaMenus = [
-  {
-    label: "Dashboard",
-    path: "/app/mangaka/dashboard",
-    icon: LayoutDashboard,
-  },
-  {
-    label: "Series Submissions",
-    path: "/app/mangaka/submissions",
-    icon: FileText,
-  },
-  {
-    label: "My Series",
-    path: "/app/mangaka/series",
-    icon: BookOpen,
-  },
-  {
-    label: "Studio Assistants",
-    path: "/app/mangaka/assistants",
-    icon: User,
-  },
-  {
-    label: "Chapter Management",
-    path: "/app/mangaka/chapters",
-    icon: BookOpen,
-  },
-  {
-    label: "Task Assignment",
-    path: "/app/mangaka/task-assignment",
-    icon: ClipboardCheck,
-  },
-  {
-    label: "Layer Review",
-    path: "/app/mangaka/layer-review",
-    icon: PenTool,
-  },
-  {
-    label: "Submit QA",
-    path: "/app/mangaka/qa-submission",
-    icon: FileText,
-  },
-  {
-    label: "Profile",
-    path: "/app/mangaka/profile",
-    icon: User,
-  },
+    { label: "Dashboard", path: "/app/mangaka/dashboard", icon: LayoutDashboard },
+    { label: "Series Submissions", path: "/app/mangaka/submissions", icon: FileText },
+    { label: "My Series", path: "/app/mangaka/series", icon: BookOpen },
+    { label: "Studio Assistants", path: "/app/mangaka/assistants", icon: User },
+    { label: "Chapter Management", path: "/app/mangaka/chapters", icon: BookOpen },
+    { label: "Task Assignment", path: "/app/mangaka/task-assignment", icon: ClipboardCheck },
+    { label: "Layer Review", path: "/app/mangaka/layer-review", icon: PenTool },
+    { label: "Submit QA", path: "/app/mangaka/qa-submission", icon: FileText },
+    { label: "Profile", path: "/app/mangaka/profile", icon: User },
   ];
 
   const menus =
-  role === "editor"
-    ? editorMenus
-    : role === "editorial_board" || role === "editor_in_chief"
-    ? boardMenus
-    : role === "mangaka"
-    ? mangakaMenus
-    : defaultMenus;
+    role === "editor"
+      ? editorMenus
+      : role === "editorial_board" || role === "editor_in_chief"
+        ? boardMenus
+        : role === "mangaka"
+          ? mangakaMenus
+          : defaultMenus;
 
   const workspaceLabel =
-  role === "editor"
-    ? "Editor Workspace"
-    : role === "editorial_board"
-      ? "Editorial Board"
-      : role === "editor_in_chief"
-        ? "Editor-in-Chief"
-      : role === "mangaka"
-        ? "Mangaka Workspace"
-        : "Creator command center";
+    role === "editor"
+      ? "Editor Workspace"
+      : role === "editorial_board"
+        ? "Editorial Board"
+        : role === "editor_in_chief"
+          ? "Editor-in-Chief"
+          : role === "mangaka"
+            ? "Mangaka Workspace"
+            : "Creator command center";
 
   const handleLogout = () => {
     clearAuthSession();
@@ -147,6 +113,7 @@ export default function DashboardLayout() {
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-300 via-rose-400 to-cyan-300 text-sm font-black text-slate-950">
               M
             </div>
+
             <div>
               <h1 className="text-lg font-bold leading-tight">Manga Studio</h1>
               <p className="text-xs text-slate-400">{workspaceLabel}</p>
@@ -157,11 +124,13 @@ export default function DashboardLayout() {
             <p className="text-xs uppercase tracking-[0.24em] text-amber-100/80">
               Active role
             </p>
+
             <div className="mt-3 flex items-center justify-between gap-3">
               <div>
                 <p className="font-semibold text-white">{role ?? "Mangaka"}</p>
                 <p className="text-xs text-slate-400">{workspaceLabel}</p>
               </div>
+
               <Settings size={18} className="text-amber-200" />
             </div>
           </div>
@@ -176,15 +145,15 @@ export default function DashboardLayout() {
                   to={item.path}
                   end={"end" in item ? item.end : undefined}
                   className={({ isActive }) =>
-                    `flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition ${
+                    `group flex items-center gap-3 rounded-xl px-3.5 py-3 text-sm transition-all duration-200 ${
                       isActive
-                        ? "border border-white/10 bg-white text-slate-950 shadow-lg shadow-cyan-500/10"
-                        : "text-slate-300 hover:bg-white/10 hover:text-white"
+                        ? "border border-cyan-200/70 bg-cyan-300 text-slate-950 font-extrabold shadow-lg shadow-cyan-500/20 [&_svg]:text-slate-950"
+                        : "text-slate-300 font-semibold hover:bg-white/10 hover:text-white hover:translate-x-1 [&_svg]:text-slate-300 hover:[&_svg]:text-white"
                     }`
                   }
                 >
-                  <Icon size={18} />
-                  {item.label}
+                  <Icon size={18} className="shrink-0 transition-colors" />
+                  <span className="truncate">{item.label}</span>
                 </NavLink>
               );
             })}
@@ -206,11 +175,13 @@ export default function DashboardLayout() {
                 <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-300 via-rose-400 to-cyan-300 text-sm font-black text-slate-950">
                   M
                 </div>
+
                 <div>
                   <p className="font-semibold">Manga Studio</p>
                   <p className="text-xs text-slate-400">{workspaceLabel}</p>
                 </div>
               </NavLink>
+
               <button
                 type="button"
                 onClick={handleLogout}
