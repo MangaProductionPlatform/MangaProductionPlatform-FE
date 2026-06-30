@@ -37,7 +37,8 @@ export type ProvisionRole =
   | 1
   | 2
   | 3
-  | 4;
+  | 4
+  | 5;
 
 export type AdminUserDto = {
   userId: string;

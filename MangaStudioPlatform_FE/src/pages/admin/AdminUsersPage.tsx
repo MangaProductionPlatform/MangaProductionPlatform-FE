@@ -92,7 +92,7 @@ export default function AdminUsersPage() {
 
       <section className="flex flex-wrap gap-3 rounded-lg border border-white/10 bg-slate-900/75 p-4">
         <select className="input max-w-56" value={roleFilter} onChange={e => setRoleFilter(e.target.value)}>
-          <option value="">All roles</option><option value="0">Admin</option><option value="1">Editorial Board</option><option value="2">Tantou Editor</option><option value="3">Mangaka</option><option value="4">Assistant</option><option value="99">Reader</option>
+          <option value="">All roles</option><option value="0">Admin</option><option value="1">Editorial Board</option><option value="2">Tantou Editor</option><option value="3">Mangaka</option><option value="4">Assistant</option><option value="5">Editor-in-Chief</option><option value="99">Reader</option>
         </select>
         <select className="input max-w-56" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
           <option value="">All statuses</option><option value="0">Pending activation</option><option value="1">Active</option><option value="2">Suspended</option><option value="3">Deactivated</option>
