@@ -1,0 +1,29 @@
+.primary-workflow-btn{
+
+    transition:.25s;
+
+}
+
+.primary-workflow-btn:hover{
+
+    transform:translateY(-2px);
+
+}
+
+.primary-workflow-btn:active{
+
+    transform:scale(.97);
+
+}
+
+.secondary-workflow-btn{
+
+    transition:.25s;
+
+}
+
+.secondary-workflow-btn:hover{
+
+    border-color:#06b6d4;
+
+}

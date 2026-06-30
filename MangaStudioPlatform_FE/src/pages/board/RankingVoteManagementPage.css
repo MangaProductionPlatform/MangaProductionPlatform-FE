@@ -1,0 +1,20 @@
+.vote-card{
+    transition:.3s;
+}
+
+.vote-card:hover{
+    transform:translateY(-5px);
+}
+
+.vote-bar{
+    height:10px;
+    border-radius:20px;
+}
+
+.vote-member{
+    transition:.2s;
+}
+
+.vote-member:hover{
+    background:#0f172a;
+}

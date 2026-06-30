@@ -1,0 +1,19 @@
+.publish-card{
+    transition:.3s;
+}
+
+.publish-card:hover{
+    transform:translateY(-4px);
+}
+
+.schedule-chip{
+    border-radius:30px;
+}
+
+.publish-button{
+    transition:.25s;
+}
+
+.publish-button:hover{
+    transform:scale(1.04);
+}

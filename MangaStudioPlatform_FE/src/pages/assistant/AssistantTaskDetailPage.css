@@ -1,0 +1,26 @@
+.upload-box{
+    transition:.3s;
+}
+
+.upload-box:hover{
+    border-color:#22d3ee;
+    background:#0f172a;
+}
+
+.preview-image{
+    border-radius:14px;
+    overflow:hidden;
+}
+
+.preview-image img{
+    width:100%;
+    object-fit:cover;
+}
+
+.submit-button{
+    transition:.25s;
+}
+
+.submit-button:hover{
+    transform:translateY(-2px);
+}

@@ -3,6 +3,7 @@ import { BookOpen, ClipboardCheck, Plus, RefreshCw, Send, Wand2 } from "lucide-r
 import { chapterService } from "../../shared/services/chapterService";
 import { mangaErpApi } from "../../shared/services/mangaErpService";
 import type { ChapterDto, MangaSeriesDto } from "../../shared/types/mangaErp";
+import "./LayerReviewPage.css";
 
 export default function TaskAssignmentPage() {
   const [seriesList, setSeriesList] = useState<MangaSeriesDto[]>([]);

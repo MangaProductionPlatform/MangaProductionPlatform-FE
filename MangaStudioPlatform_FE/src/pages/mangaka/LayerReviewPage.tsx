@@ -9,6 +9,7 @@ import {
 import { taskService } from "../../shared/services/taskService";
 import { mangaErpApi } from "../../shared/services/mangaErpService";
 import type { ChapterDto, MangaSeriesDto } from "../../shared/types/mangaErp";
+import "./LayerReviewPage.css";
 
 type ChapterTask = {
   id?: string;

@@ -1,0 +1,36 @@
+.pin-marker{
+    animation:pulse 2s infinite;
+}
+
+.feedback-card{
+    transition:.3s;
+}
+
+.feedback-card:hover{
+    transform:translateY(-3px);
+}
+
+.qa-panel{
+    animation:fadeIn .4s;
+}
+
+@keyframes pulse{
+    0%{
+        transform:scale(1);
+    }
+    50%{
+        transform:scale(1.2);
+    }
+    100%{
+        transform:scale(1);
+    }
+}
+
+@keyframes fadeIn{
+    from{
+        opacity:0;
+    }
+    to{
+        opacity:1;
+    }
+}

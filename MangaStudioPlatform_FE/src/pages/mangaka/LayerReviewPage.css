@@ -1,0 +1,20 @@
+.layer-preview{
+    border-radius:18px;
+    overflow:hidden;
+}
+
+.layer-preview img{
+    width:100%;
+}
+
+.review-button{
+    transition:.25s;
+}
+
+.review-button:hover{
+    transform:scale(1.05);
+}
+
+.comment-box textarea{
+    resize:vertical;
+}

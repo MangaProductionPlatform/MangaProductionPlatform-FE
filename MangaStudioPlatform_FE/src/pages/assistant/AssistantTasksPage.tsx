@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { ArrowRight, ClipboardList, Clock, Filter } from "lucide-react";
 import { Link } from "react-router-dom";
 import { taskService } from "../../shared/services/taskService";
+import "./AssistantTasksPage.css";
 
 type AssistantTask = {
   pageTaskId: string;

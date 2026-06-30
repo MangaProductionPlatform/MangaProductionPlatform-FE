@@ -1,0 +1,21 @@
+.image-viewer{
+
+    border-radius:20px;
+
+    overflow:hidden;
+
+}
+
+.image-viewer img{
+
+    width:100%;
+
+    transition:.35s;
+
+}
+
+.image-viewer:hover img{
+
+    transform:scale(1.08);
+
+}

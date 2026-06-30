@@ -10,6 +10,7 @@ import {
 import { Link, useParams } from "react-router-dom";
 import { taskService } from "../../shared/services/taskService";
 import { qaService, type QaPin } from "../../shared/services/qaService";
+import "./AssistantTaskDetailPage.css";
 
 type LayerType = "LineArt" | "Color" | "Background" | "Text";
 

@@ -10,6 +10,7 @@ import {
   qaService,
   type QaIssueType,
 } from "../../shared/services/qaService";
+import "./ChapterQaReviewPage.css";
 
 const issueTypes: QaIssueType[] = ["Lineart", "Coloring", "Text", "Layout"];
 

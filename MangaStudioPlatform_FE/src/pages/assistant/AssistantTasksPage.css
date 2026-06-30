@@ -1,0 +1,31 @@
+.page-transition {
+    animation: fadeUp .35s ease;
+}
+
+.task-card {
+    transition: all .25s ease;
+}
+
+.task-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 15px 35px rgba(0,0,0,.25);
+}
+
+.status-chip {
+    transition: .2s;
+}
+
+.status-chip:hover {
+    transform: scale(1.05);
+}
+
+@keyframes fadeUp {
+    from{
+        opacity:0;
+        transform:translateY(12px);
+    }
+    to{
+        opacity:1;
+        transform:translateY(0);
+    }
+}

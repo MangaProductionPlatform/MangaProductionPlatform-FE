@@ -68,47 +68,47 @@ export default function DashboardLayout() {
   const mangakaMenus = [
   {
     label: "Dashboard",
-    path: "/mangaka/dashboard",
+    path: "/app/mangaka/dashboard",
     icon: LayoutDashboard,
   },
   {
     label: "Series Submissions",
-    path: "/mangaka/submissions",
+    path: "/app/mangaka/submissions",
     icon: FileText,
   },
   {
     label: "My Series",
-    path: "/mangaka/series",
+    path: "/app/mangaka/series",
     icon: BookOpen,
   },
   {
     label: "Studio Assistants",
-    path: "/mangaka/assistants",
+    path: "/app/mangaka/assistants",
     icon: User,
   },
   {
     label: "Chapter Management",
-    path: "/mangaka/chapters",
+    path: "/app/mangaka/chapters",
     icon: BookOpen,
   },
   {
     label: "Task Assignment",
-    path: "/mangaka/task-assignment",
+    path: "/app/mangaka/task-assignment",
     icon: ClipboardCheck,
   },
   {
     label: "Layer Review",
-    path: "/mangaka/layer-review",
+    path: "/app/mangaka/layer-review",
     icon: PenTool,
   },
   {
     label: "Submit QA",
-    path: "/mangaka/qa-submission",
+    path: "/app/mangaka/qa-submission",
     icon: FileText,
   },
   {
     label: "Profile",
-    path: "/mangaka/profile",
+    path: "/app/mangaka/profile",
     icon: User,
   },
   ];

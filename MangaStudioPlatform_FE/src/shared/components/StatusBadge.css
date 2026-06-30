@@ -1,0 +1,36 @@
+.status-badge{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+
+    padding:6px 12px;
+
+    border-radius:999px;
+
+    font-weight:600;
+}
+
+.status-assigned{
+    background:#0f3d55;
+    color:#67e8f9;
+}
+
+.status-progress{
+    background:#4c1d95;
+    color:#c4b5fd;
+}
+
+.status-review{
+    background:#78350f;
+    color:#fde68a;
+}
+
+.status-approved{
+    background:#14532d;
+    color:#86efac;
+}
+
+.status-rejected{
+    background:#7f1d1d;
+    color:#fecaca;
+}

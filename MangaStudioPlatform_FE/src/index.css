@@ -1,45 +1,225 @@
 @import "tailwindcss";
 
+/* ===========================
+   Base
+=========================== */
+
 html {
   scroll-behavior: smooth;
 }
 
-* {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
+}
+
+:root {
+  font-family: Inter, "Segoe UI", Arial, sans-serif;
+  color-scheme: dark;
 }
 
 body {
   margin: 0;
   min-height: 100vh;
   font-family: Inter, "Segoe UI", Arial, sans-serif;
+  color: #e2e8f0;
   background:
     radial-gradient(circle at top left,
       rgba(244, 114, 182, 0.12),
       transparent 28%),
     radial-gradient(circle at top right,
-      rgba(34, 211, 238, 0.1),
+      rgba(34, 211, 238, 0.10),
       transparent 26%),
-    linear-gradient(180deg, #020617 0%, #050816 100%);
-  color: #e2e8f0;
+    linear-gradient(
+      180deg,
+      #020617 0%,
+      #050816 45%,
+      #081122 100%
+    );
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
 }
 
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+textarea,
+select {
+  font-family: inherit;
+}
+
+/* ===========================
+   Scrollbar
+=========================== */
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0f172a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* Firefox */
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #475569 #0f172a;
+}
+
+/* ===========================
+   Text Selection
+=========================== */
+
+::selection {
+  background: rgba(34, 211, 238, .35);
+  color: white;
+}
+
+/* ===========================
+   Form Components
+=========================== */
+
 .input {
   width: 100%;
-  border-radius: 0.75rem;
+  padding: .875rem 1rem;
+  border-radius: .85rem;
   border: 1px solid #334155;
-  background: #020617;
-  padding: 0.875rem 1rem;
+  background: rgba(2, 6, 23, .85);
   color: white;
   outline: none;
+  transition: .25s;
 }
 
 .input::placeholder {
   color: #64748b;
 }
 
+.input:focus {
+  border-color: #22d3ee;
+  box-shadow:
+    0 0 0 3px rgba(34,211,238,.15),
+    0 0 20px rgba(34,211,238,.12);
+}
+
+/* ===========================
+   Card
+=========================== */
+
+.glass-card {
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 1.25rem;
+  background: rgba(15,23,42,.55);
+  backdrop-filter: blur(18px);
+  box-shadow:
+    0 10px 40px rgba(0,0,0,.25);
+}
+
+.panel {
+  border-radius: 1rem;
+  border: 1px solid rgba(255,255,255,.08);
+  background: rgba(15,23,42,.75);
+}
+
+/* ===========================
+   Button
+=========================== */
+
+.btn-primary {
+  padding: .75rem 1.4rem;
+  border: none;
+  border-radius: .9rem;
+  color: white;
+  cursor: pointer;
+  transition: .25s;
+
+  background: linear-gradient(
+      135deg,
+      #06b6d4,
+      #3b82f6
+  );
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow:
+      0 12px 30px rgba(59,130,246,.35);
+}
+
+.btn-danger {
+  padding: .75rem 1.4rem;
+  border: none;
+  border-radius: .9rem;
+  cursor: pointer;
+  transition: .25s;
+
+  background: linear-gradient(
+      135deg,
+      #ef4444,
+      #dc2626
+  );
+
+  color: white;
+}
+
+.btn-danger:hover {
+  transform: translateY(-2px);
+}
+
+/* ===========================
+   Badge
+=========================== */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: .35rem .75rem;
+  border-radius: 999px;
+  font-size: .8rem;
+  font-weight: 600;
+}
+
+.badge-success {
+  background: rgba(34,197,94,.15);
+  color: #4ade80;
+}
+
+.badge-warning {
+  background: rgba(245,158,11,.15);
+  color: #fbbf24;
+}
+
+.badge-danger {
+  background: rgba(239,68,68,.15);
+  color: #f87171;
+}
+
+.badge-info {
+  background: rgba(59,130,246,.15);
+  color: #60a5fa;
+}
+
+/* ===========================
+   Fade
+=========================== */
+
 @keyframes fade-in-up {
+
   from {
     opacity: 0;
     transform: translateY(16px);
@@ -49,173 +229,257 @@ body {
     opacity: 1;
     transform: translateY(0);
   }
+
 }
 
 .fade-in-up {
-  animation: fade-in-up 0.9s ease both;
+  animation: fade-in-up .8s ease both;
 }
+
+/* ===========================
+   Glow
+=========================== */
 
 @keyframes pulse-glow {
 
-  0%,
-  100% {
-    opacity: 0.25;
-    transform: scale(0.95);
+  0%,100%{
+    opacity:.25;
+    transform:scale(.95);
   }
 
-  50% {
-    opacity: 0.6;
-    transform: scale(1.05);
+  50%{
+    opacity:.6;
+    transform:scale(1.05);
   }
+
 }
 
-.pulse-glow {
-  animation: pulse-glow 6s ease-in-out infinite;
+.pulse-glow{
+    animation:pulse-glow 6s ease-in-out infinite;
 }
+
+/* ===========================
+   Floating
+=========================== */
 
 @keyframes float-slow {
 
-  0%,
-  100% {
-    transform: translateY(0px) scale(1);
+  0%,100%{
+    transform:translateY(0);
   }
 
-  50% {
-    transform: translateY(-18px) scale(1.03);
+  50%{
+    transform:translateY(-18px);
   }
+
 }
 
 @keyframes float-medium {
 
-  0%,
-  100% {
-    transform: translateY(0px) translateX(0px);
+  0%,100%{
+    transform:translateY(0);
   }
 
-  50% {
-    transform: translateY(16px) translateX(-10px);
+  50%{
+    transform:translateY(15px);
   }
+
 }
 
 @keyframes float-fast {
 
-  0%,
-  100% {
-    transform: translateY(0px) translateX(0px);
+  0%,100%{
+    transform:translateY(0);
   }
 
-  50% {
-    transform: translateY(-12px) translateX(8px);
+  50%{
+    transform:translateY(-10px);
   }
+
 }
 
-@keyframes reveal-up {
-  from {
-    opacity: 0;
-    transform: translateY(24px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.float-slow{
+  animation:float-slow 10s ease-in-out infinite;
 }
 
-@keyframes cover-marquee {
-  from {
-    transform: translateX(0);
-  }
-
-  to {
-    transform: translateX(calc(-50% - 0.5rem));
-  }
+.float-medium{
+  animation:float-medium 12s ease-in-out infinite;
 }
+
+.float-fast{
+  animation:float-fast 8s ease-in-out infinite;
+}
+
+/* ===========================
+   Hero Background
+=========================== */
 
 @keyframes hero-pan {
-  0%, 100% {
-    transform: scale(1.04) translate3d(0, 0, 0);
+
+  0%,100%{
+    transform:scale(1.04);
   }
 
-  50% {
-    transform: scale(1.12) translate3d(-2%, -1.5%, 0);
-  }
-}
-
-@keyframes hero-slide {
-  from {
-    opacity: 0;
-    transform: scale(1.1);
+  50%{
+    transform:scale(1.1) translateX(-2%);
   }
 
-  to {
-    opacity: 0.65;
-    transform: scale(1.04);
-  }
 }
 
-.float-slow {
-  animation: float-slow 10s ease-in-out infinite;
+.hero-pan{
+    animation:hero-pan 14s ease-in-out infinite;
 }
 
-.float-medium {
-  animation: float-medium 12s ease-in-out infinite;
+/* ===========================
+   Marquee
+=========================== */
+
+@keyframes cover-marquee{
+
+    from{
+        transform:translateX(0);
+    }
+
+    to{
+        transform:translateX(calc(-50% - .5rem));
+    }
+
 }
 
-.float-fast {
-  animation: float-fast 9s ease-in-out infinite;
+.cover-marquee{
+    mask-image:linear-gradient(
+        90deg,
+        transparent,
+        black 8%,
+        black 92%,
+        transparent
+    );
 }
 
-.reveal-up {
-  animation: reveal-up 0.8s ease both;
+.cover-marquee-track{
+    animation:cover-marquee 18s linear infinite;
 }
 
-.cover-marquee-track {
-  animation: cover-marquee 18s linear infinite;
-  will-change: transform;
+.cover-marquee-track > article{
+    transition:.35s;
 }
 
-.cover-marquee-track > article {
-  transition: transform 350ms ease, filter 350ms ease;
+.cover-marquee-track > article:hover{
+    transform:translateY(-8px) scale(1.03);
+    filter:brightness(1.08);
 }
 
-.cover-marquee-track > article:hover {
-  filter: brightness(1.08) saturate(1.08);
-  transform: translateY(-8px) scale(1.025);
+/* ===========================
+   Responsive
+=========================== */
+
+@media (prefers-reduced-motion: reduce){
+
+    *,
+    *::before,
+    *::after{
+        animation:none!important;
+        transition:none!important;
+    }
+
 }
 
-.hero-pan {
-  animation: hero-pan 14s ease-in-out infinite;
-  will-change: transform;
+@media (max-width:640px){
+
+    .cover-marquee-track{
+        animation-duration:14s;
+    }
+
+}
+.page-shell {
+  animation: fade-in-up 0.6s ease both;
 }
 
-.hero-slide {
-  animation: hero-slide 900ms ease-out both;
+.page-header {
+  margin-bottom: 1.5rem;
 }
 
-.cover-marquee {
-  mask-image: linear-gradient(90deg, transparent, black 9%, black 91%, transparent);
+.page-kicker {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #67e8f9;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .float-slow,
-  .float-medium,
-  .float-fast,
-  .pulse-glow {
-    animation: none;
-  }
-
-  .hero-pan {
-    animation: none;
-  }
-
-
-  .hero-slide {
-    animation: none;
-  }
+.page-title {
+  margin-top: 0.35rem;
+  font-size: clamp(1.8rem, 3vw, 2.6rem);
+  font-weight: 800;
+  color: white;
 }
 
-@media (max-width: 640px) {
-  .cover-marquee-track {
-    animation-duration: 14s;
-  }
+.page-description {
+  margin-top: 0.5rem;
+  max-width: 720px;
+  color: #94a3b8;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.stat-card {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1.25rem;
+  background: rgba(15, 23, 42, 0.72);
+  padding: 1.25rem;
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.24);
+}
+
+.stat-label {
+  font-size: 0.85rem;
+  color: #94a3b8;
+}
+
+.stat-value {
+  margin-top: 0.5rem;
+  font-size: 2rem;
+  font-weight: 800;
+  color: white;
+}
+
+.content-card {
+  margin-top: 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1.25rem;
+  background: rgba(15, 23, 42, 0.68);
+  padding: 1.25rem;
+}
+
+.table-card {
+  width: 100%;
+  overflow: hidden;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.manga-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.manga-table th {
+  background: rgba(30, 41, 59, 0.9);
+  padding: 0.9rem;
+  text-align: left;
+  font-size: 0.8rem;
+  color: #cbd5e1;
+}
+
+.manga-table td {
+  padding: 0.9rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  color: #e2e8f0;
+}
+
+.manga-table tr:hover {
+  background: rgba(255, 255, 255, 0.04);
 }

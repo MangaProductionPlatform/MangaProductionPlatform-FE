@@ -1,0 +1,24 @@
+.assignment-card{
+    transition:.3s;
+}
+
+.assignment-card:hover{
+    transform:translateY(-5px);
+}
+
+.chapter-preview{
+    border-radius:16px;
+    overflow:hidden;
+}
+
+.chapter-preview img{
+    width:100%;
+}
+
+.assistant-item{
+    transition:.2s;
+}
+
+.assistant-item:hover{
+    background:#1e293b;
+}

@@ -4,6 +4,7 @@ import {
   publishingService,
   type ReleaseType,
 } from "../../shared/services/publishingService";
+import "./PublishingManagementPage.css";
 
 export default function PublishingManagementPage() {
   const [chapterId, setChapterId] = useState("");
