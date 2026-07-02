@@ -3,6 +3,7 @@ import { CheckCircle2, CircleDashed, FileCheck2, Send } from "lucide-react";
 import { useToast } from "../../shared/components/toastContext";
 import { mangaErpApi } from "../../shared/services/mangaErpService";
 import type { ChapterDto, MangaSeriesDto, PageTaskDto, QaBugPinDto } from "../../shared/types/mangaErp";
+import "./QaSubmissionPage.css";
 
 const isApproved = (status: string) => ["approved", "accepted", "complete", "completed"].includes(status.toLowerCase());
 
@@ -75,7 +76,7 @@ export default function QaSubmissionPage() {
     finally { setIsSubmitting(false); }
   };
 
-  return <div className="space-y-6">
+  return <div className="qa-submission-page space-y-6">
     <header><p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-200">Mangaka · MF2/MF3 handoff</p><h1 className="mt-2 text-3xl font-black text-white">QA Submission & Corrections</h1><p className="mt-2 text-sm text-slate-400">Submit a completed chapter, receive the Editor feedback batch, and replace corrected layers on their existing page tasks.</p></header>
     <section className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
       <div className="grid gap-4 md:grid-cols-2"><label className="text-sm text-slate-400">Series<select className="input mt-2" value={seriesId} onChange={(event) => void changeSeries(event.target.value)}><option value="">Select series</option>{series.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select></label><label className="text-sm text-slate-400">Chapter<select className="input mt-2" value={chapterId} onChange={(event) => void loadTasks(event.target.value)}><option value="">Select chapter</option>{chapters.map((item) => <option key={item.id} value={item.id}>Ch. {item.chapterNumber} — {item.title} ({item.status})</option>)}</select></label></div>

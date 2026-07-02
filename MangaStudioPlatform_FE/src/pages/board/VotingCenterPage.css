@@ -1,0 +1,43 @@
+.voting-center-page {
+  animation: voting-center-in 0.45s ease-out both;
+  min-height: 24rem;
+  position: relative;
+}
+
+.voting-center-page > * {
+  min-height: 22rem;
+  background: linear-gradient(145deg, rgb(15 23 42 / 0.96), rgb(69 26 3 / 0.14));
+  box-shadow: 0 18px 44px rgb(2 6 23 / 0.22);
+  transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+}
+
+.voting-center-page > *:hover {
+  transform: translateY(-2px);
+  border-color: rgb(245 158 11 / 0.28);
+  box-shadow: 0 14px 34px rgb(245 158 11 / 0.06);
+}
+
+.voting-center-page button {
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.voting-center-page button:not(:disabled):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgb(245 158 11 / 0.12);
+}
+
+.voting-center-page [class*=border-dashed] {
+  border-color: rgb(245 158 11 / 0.2);
+}
+
+@keyframes voting-center-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

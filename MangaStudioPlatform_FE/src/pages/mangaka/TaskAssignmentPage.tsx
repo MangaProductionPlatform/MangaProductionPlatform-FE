@@ -3,6 +3,7 @@ import { BookOpen, ClipboardCheck, Plus, RefreshCw, Send, Wand2 } from "lucide-r
 import { useToast } from "../../shared/components/toastContext";
 import { mangaErpApi } from "../../shared/services/mangaErpService";
 import type { ChapterDto, MangaSeriesDto } from "../../shared/types/mangaErp";
+import "./TaskAssignmentPage.css";
 
 export default function TaskAssignmentPage() {
   const toast = useToast();
@@ -211,7 +212,7 @@ export default function TaskAssignmentPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="task-assignment-page space-y-6">
       <div className="rounded-[2rem] border border-slate-800 bg-slate-900 p-7">
         <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-200">
           Mangaka Workflow

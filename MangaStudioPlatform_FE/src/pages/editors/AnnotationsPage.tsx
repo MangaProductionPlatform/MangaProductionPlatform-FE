@@ -3,6 +3,7 @@ import { CheckCircle2, MessageSquareWarning, RefreshCw, Send } from "lucide-reac
 import { mangaErpApi } from "../../shared/services/mangaErpService";
 import type { ChapterDto, PageTaskDto, QaBugPinDto, QaSessionDto } from "../../shared/types/mangaErp";
 import { useToast } from "../../shared/components/toastContext";
+import "./ChapterQaReviewPage.css";
 
 const isResolved = (status: string) => ["resolved", "closed", "fixed"].includes(status.toLowerCase());
 
@@ -85,7 +86,7 @@ export default function AnnotationsPage() {
     finally { setBusy(false); }
   };
 
-  return <div className="space-y-6">
+  return <div className="chapter-qa-review-page space-y-6">
     <header><p className="text-xs font-semibold uppercase tracking-[.28em] text-cyan-200">Tantou Editor · MF3</p><h1 className="mt-2 text-3xl font-black text-white">Editorial QA Review</h1><p className="mt-2 text-sm text-slate-400">Inspect visual and content quality, send all detected issues as one feedback batch, and approve only when every issue is resolved.</p></header>
     <section className="rounded-2xl border border-white/10 bg-slate-900/75 p-5">
       <div className="rounded-lg border border-dashed border-slate-700 bg-slate-950 p-3 text-xs text-slate-500">TODO: The official backend contract does not expose an incoming QA queue endpoint. Open a completed chapter using its ID.</div><div className="mt-4 grid gap-3 md:grid-cols-[1fr_auto]"><label className="text-sm text-slate-400">Completed chapter ID<input className="input mt-2" value={chapterId} onChange={(event) => setChapterId(event.target.value)} placeholder="Enter chapter ID submitted for QA" /></label><button disabled={busy} className="btn-secondary self-end inline-flex items-center justify-center gap-2" onClick={() => void load(chapterId)}><RefreshCw size={16} className={busy ? "animate-spin" : ""} />Load QA review</button></div>

@@ -1,0 +1,65 @@
+.layer-review-page {
+  animation: layer-review-in 0.45s ease-out both;
+  position: relative;
+}
+
+.layer-review-page > header {
+  padding: 1.5rem;
+  border: 1px solid rgb(51 65 85 / 0.72);
+  border-radius: 1rem;
+  background: linear-gradient(135deg, rgb(15 23 42 / 0.94), rgb(8 47 73 / 0.28));
+}
+
+.layer-review-page section {
+  background: linear-gradient(145deg, rgb(15 23 42 / 0.94), rgb(2 6 23 / 0.84));
+  backdrop-filter: blur(14px);
+}
+
+.layer-review-page [class*="border-dashed"] {
+  overflow: hidden;
+  background-image: linear-gradient(145deg, rgb(2 6 23 / 0.92), rgb(15 23 42 / 0.76));
+}
+
+.layer-review-page section {
+  transition: border-color 0.22s ease, box-shadow 0.22s ease;
+}
+
+.layer-review-page section:hover {
+  border-color: rgb(34 211 238 / 0.25);
+  box-shadow: 0 14px 34px rgb(8 145 178 / 0.07);
+}
+
+.layer-review-page button {
+  transition: transform 0.18s ease, filter 0.18s ease;
+}
+
+.layer-review-page button:not(:disabled):hover {
+  transform: translateY(-2px);
+  filter: brightness(1.08);
+}
+
+.layer-review-page :is(input, select, textarea):focus {
+  border-color: rgb(34 211 238 / 0.7);
+  box-shadow: 0 0 0 3px rgb(34 211 238 / 0.1);
+}
+
+.layer-review-page img {
+  transition: transform 0.35s ease, filter 0.35s ease;
+}
+
+.layer-review-page img:hover {
+  transform: scale(1.025);
+  filter: contrast(1.03);
+}
+
+@keyframes layer-review-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

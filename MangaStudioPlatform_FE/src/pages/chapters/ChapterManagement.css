@@ -1,0 +1,59 @@
+.chapter-management-page {
+  animation: chapter-management-in 0.45s ease-out both;
+  position: relative;
+}
+
+.chapter-management-page :is(article, aside > section, form) {
+  background: linear-gradient(145deg, rgb(15 23 42 / 0.95), rgb(2 6 23 / 0.84));
+  backdrop-filter: blur(12px);
+}
+
+.chapter-management-page article article {
+  border-left: 3px solid rgb(34 211 238 / 0.35);
+}
+
+.chapter-management-page .chapter-upload-box {
+  min-height: 8rem;
+  transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.chapter-management-page :is(article, aside > section, form) {
+  transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+}
+
+.chapter-management-page :is(article, aside > section, form):hover {
+  transform: translateY(-2px);
+  border-color: rgb(34 211 238 / 0.26);
+  box-shadow: 0 16px 38px rgb(8 145 178 / 0.08);
+}
+
+.chapter-management-page button {
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.chapter-management-page button:not(:disabled):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgb(34 211 238 / 0.12);
+}
+
+.chapter-management-page :is(input, select, textarea):focus {
+  border-color: rgb(34 211 238 / 0.7);
+  box-shadow: 0 0 0 3px rgb(34 211 238 / 0.1);
+}
+
+.chapter-management-page .chapter-upload-box:hover {
+  border-color: rgb(34 211 238 / 0.65);
+  box-shadow: 0 0 26px rgb(34 211 238 / 0.08);
+}
+
+@keyframes chapter-management-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

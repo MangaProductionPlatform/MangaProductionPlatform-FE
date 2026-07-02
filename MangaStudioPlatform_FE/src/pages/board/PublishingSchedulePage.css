@@ -1,0 +1,56 @@
+.publishing-schedule-page {
+  animation: publishing-schedule-in 0.45s ease-out both;
+}
+
+.publishing-schedule-page :is(input, select) {
+  min-height: 3rem;
+  color-scheme: dark;
+  transition: border-color 0.22s ease, box-shadow 0.22s ease, background-color 0.22s ease;
+}
+
+.publishing-schedule-page section [class*="rounded-2xl"] {
+  border-color: rgb(51 65 85 / 0.78);
+  background: rgb(2 6 23 / 0.68);
+}
+
+.publishing-schedule-page section [class*="text-xs"] {
+  letter-spacing: 0.08em;
+}
+
+.publishing-schedule-page :is(input, select):focus {
+  border-color: rgb(34 211 238 / 0.72);
+  box-shadow: 0 0 0 3px rgb(34 211 238 / 0.1);
+}
+
+.publishing-schedule-page select:hover {
+  border-color: rgb(34 211 238 / 0.4);
+}
+
+.publishing-schedule-page button[class*=bg-cyan] {
+  box-shadow: 0 0 20px rgb(34 211 238 / 0.08);
+}
+
+.publishing-schedule-page button[class*=bg-emerald] {
+  box-shadow: 0 0 20px rgb(16 185 129 / 0.1);
+}
+
+.publishing-schedule-page [class*=border-dashed] {
+  transition: border-color 0.22s ease, background-color 0.22s ease;
+}
+
+.publishing-schedule-page [class*=border-dashed]:hover {
+  border-color: rgb(34 211 238 / 0.35);
+  background: rgb(8 145 178 / 0.05);
+}
+
+@keyframes publishing-schedule-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

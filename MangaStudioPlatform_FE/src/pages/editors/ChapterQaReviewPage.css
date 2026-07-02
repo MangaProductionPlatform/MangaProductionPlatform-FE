@@ -1,0 +1,74 @@
+.chapter-qa-review-page {
+  animation: chapter-qa-in 0.45s ease-out both;
+  position: relative;
+}
+
+.chapter-qa-review-page > header {
+  padding: 1.5rem;
+  border: 1px solid rgb(245 158 11 / 0.18);
+  border-radius: 1rem;
+  background: linear-gradient(135deg, rgb(15 23 42 / 0.96), rgb(69 26 3 / 0.22));
+}
+
+.chapter-qa-review-page section,
+.chapter-qa-review-page section > div {
+  backdrop-filter: blur(14px);
+}
+
+.chapter-qa-review-page article {
+  position: relative;
+  padding-left: 1.25rem;
+  transition: border-color 0.18s ease, transform 0.18s ease;
+}
+
+.chapter-qa-review-page article::before {
+  position: absolute;
+  inset: 1rem auto 1rem 0;
+  width: 3px;
+  border-radius: 999px;
+  background: rgb(245 158 11);
+  content: "";
+}
+
+.chapter-qa-review-page section {
+  transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+}
+
+.chapter-qa-review-page section:hover {
+  border-color: rgb(245 158 11 / 0.28);
+  box-shadow: 0 16px 38px rgb(245 158 11 / 0.06);
+}
+
+.chapter-qa-review-page button {
+  transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+}
+
+.chapter-qa-review-page button:not(:disabled):hover {
+  transform: translateY(-2px);
+  filter: brightness(1.07);
+}
+
+.chapter-qa-review-page :is(input, select, textarea):focus {
+  border-color: rgb(34 211 238 / 0.72);
+  box-shadow: 0 0 0 3px rgb(34 211 238 / 0.1);
+}
+
+.chapter-qa-review-page article:hover {
+  border-color: rgb(245 158 11 / 0.25);
+}
+
+.chapter-qa-review-page span[class*=text-emerald] {
+  text-shadow: 0 0 14px rgb(16 185 129 / 0.3);
+}
+
+@keyframes chapter-qa-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

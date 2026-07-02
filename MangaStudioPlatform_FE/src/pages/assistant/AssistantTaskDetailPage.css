@@ -1,0 +1,62 @@
+.assistant-task-detail-page {
+  animation: assistant-task-detail-in 0.45s ease-out both;
+  position: relative;
+}
+
+.assistant-task-detail-page header {
+  background: linear-gradient(135deg, rgb(15 23 42 / 0.96), rgb(8 47 73 / 0.34));
+  box-shadow: 0 18px 48px rgb(2 6 23 / 0.28);
+}
+
+.assistant-task-detail-page section {
+  background: linear-gradient(145deg, rgb(15 23 42 / 0.96), rgb(2 6 23 / 0.88));
+}
+
+.assistant-task-detail-page section:last-child {
+  border-color: rgb(34 211 238 / 0.2);
+}
+
+.assistant-task-detail-page :is(input, select) {
+  min-height: 3rem;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
+}
+
+.assistant-task-detail-page :is(header, section) {
+  transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+}
+
+.assistant-task-detail-page section:hover {
+  transform: translateY(-2px);
+  border-color: rgb(34 211 238 / 0.28);
+  box-shadow: 0 14px 34px rgb(8 145 178 / 0.08);
+}
+
+.assistant-task-detail-page button {
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.assistant-task-detail-page button:not(:disabled):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 9px 24px rgb(34 211 238 / 0.16);
+}
+
+.assistant-task-detail-page :is(input, select):focus {
+  border-color: rgb(34 211 238 / 0.75);
+  box-shadow: 0 0 0 3px rgb(34 211 238 / 0.1);
+}
+
+.assistant-task-detail-page dd.text-rose-200 {
+  text-shadow: 0 0 14px rgb(244 63 94 / 0.14);
+}
+
+@keyframes assistant-task-detail-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

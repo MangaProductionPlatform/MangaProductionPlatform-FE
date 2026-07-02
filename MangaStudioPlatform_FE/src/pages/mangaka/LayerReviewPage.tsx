@@ -3,10 +3,11 @@ import { CheckCircle2, Eye, MessageSquare, RefreshCw, RotateCcw } from "lucide-r
 import { useToast } from "../../shared/components/toastContext";
 import { mangaErpApi } from "../../shared/services/mangaErpService";
 import type { ChapterDto, MangaSeriesDto, PageTaskDto } from "../../shared/types/mangaErp";
+import "./LayerReviewPage.css";
 
 export default function LayerReviewPage() {
   const toast = useToast();
-  const role = (JSON.parse(localStorage.getItem("currentUser") || "null") as { role?: string } | null)?.role;
+  const role = (JSON.parse(localStorage.getItem("currentUser") || "null") as { role?: string; } | null)?.role;
   const [series, setSeries] = useState<MangaSeriesDto[]>([]);
   const [seriesId, setSeriesId] = useState("");
   const [chapters, setChapters] = useState<ChapterDto[]>([]);
@@ -85,7 +86,7 @@ export default function LayerReviewPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="layer-review-page space-y-6">
       <header>
         <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-200">{role === "mangaka" ? "Mangaka" : "Editor"} workflow</p>
         <h1 className="mt-2 text-3xl font-black text-white">Page Layer Review</h1>

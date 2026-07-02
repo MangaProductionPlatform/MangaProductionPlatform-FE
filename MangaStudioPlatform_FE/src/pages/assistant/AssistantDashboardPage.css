@@ -1,0 +1,54 @@
+.assistant-dashboard-page {
+  animation: assistant-dashboard-in 0.45s ease-out both;
+  position: relative;
+}
+
+.assistant-dashboard-page > header {
+  padding: 1.5rem;
+  border: 1px solid rgb(34 211 238 / 0.16);
+  border-radius: 1rem;
+  background: linear-gradient(135deg, rgb(15 23 42 / 0.96), rgb(8 47 73 / 0.28));
+}
+
+.assistant-dashboard-page article {
+  background: linear-gradient(145deg, rgb(15 23 42 / 0.96), rgb(2 6 23 / 0.86));
+  backdrop-filter: blur(12px);
+}
+
+.assistant-dashboard-page article {
+  transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+}
+
+.assistant-dashboard-page article:hover {
+  transform: translateY(-2px);
+  border-color: rgb(34 211 238 / 0.28);
+  box-shadow: 0 14px 34px rgb(8 145 178 / 0.08);
+}
+
+.assistant-dashboard-page button {
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.assistant-dashboard-page button:not(:disabled):hover {
+  transform: translateY(-2px);
+}
+
+.assistant-dashboard-page button:first-child:hover {
+  box-shadow: 0 8px 20px rgb(34 211 238 / 0.16);
+}
+
+.assistant-dashboard-page article + div {
+  border-color: rgb(51 65 85);
+}
+
+@keyframes assistant-dashboard-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

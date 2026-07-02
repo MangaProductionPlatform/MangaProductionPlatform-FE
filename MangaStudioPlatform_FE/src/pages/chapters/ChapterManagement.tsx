@@ -4,6 +4,7 @@ import { ClipboardList, Copy, FileText, Send, Upload, UserPlus } from "lucide-re
 import { mangaErpApi } from "../../shared/services/mangaErpService";
 import type { ChapterDto, MangaSeriesDto } from "../../shared/types/mangaErp";
 import { useToast } from "../../shared/components/toastContext";
+import "./ChapterManagement.css";
 
 type ChapterLike = ChapterDto & {
   chapterId?: string;
@@ -293,7 +294,7 @@ export default function ChapterManagementPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="chapter-management-page space-y-6">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-200">
@@ -650,7 +651,7 @@ export default function ChapterManagementPage() {
                 placeholder="Assigned Tantou Editor ID"
               />
 
-              <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-cyan-300/30 bg-cyan-300/5 p-5 text-center">
+              <div className="chapter-upload-box flex flex-col items-center justify-center rounded-lg border border-dashed border-cyan-300/30 bg-cyan-300/5 p-5 text-center">
                 <FileText className="text-cyan-200" size={28} />
 
                 <span className="mt-2 text-sm font-semibold text-white">
