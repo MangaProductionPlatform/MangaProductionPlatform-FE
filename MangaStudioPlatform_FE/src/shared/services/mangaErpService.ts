@@ -13,6 +13,7 @@ import type {
   InviteAssistantPayload,
   ListUsersResult,
   PageTaskDto,
+  ReviewPageTaskPayload,
   ProvisionAccountPayload,
   ProvisionAccountResult,
   QaBugPinDto,
@@ -26,6 +27,7 @@ import type {
   SamPredictMaskPayload,
   SchedulePublicationPayload,
   SetPageRegionPayload,
+  SubmitPageLayerPayload,
   SubmissionDetailDto,
   SubmissionSummaryDto,
   StudioInvitationDto,
@@ -38,6 +40,7 @@ import { request } from "./httpClient";
 import { API_BASE_URL, SERVICE_BASE_URLS } from "./mangaErpConfig";
 import {
   mapChapter,
+  mapPageTask,
   mapSeries,
   mapSubmissionDetail,
   mapSubmissionSummary,
@@ -298,12 +301,45 @@ export const mangaErpApi = {
   async addBasePage(chapterId: string, pageNumber: number) {
     return request("chapter", `/api/v1/chapters/${chapterId}/pages`, {
       method: "POST",
-      body: JSON.stringify({ pageNumber }),
+      body: JSON.stringify({ PageNumber: pageNumber }),
     });
   },
 
   async setPageRegion(chapterId: string, payload: SetPageRegionPayload) {
     return request("chapter", `/api/v1/chapters/${chapterId}/pages/region`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async getAssignedPageTasks(status?: string) {
+    const query = status ? `?status=${encodeURIComponent(status)}` : "";
+    const data = await request<Record<string, unknown>[] | { items?: Record<string, unknown>[]; Items?: Record<string, unknown>[] }>(
+      "task",
+      `/api/v1/tasks/assigned${query}`,
+    );
+    const items = Array.isArray(data) ? data : data.items ?? data.Items ?? [];
+    return items.map(mapPageTask);
+  },
+
+  async getChapterPageTasks(chapterId: string) {
+    const data = await request<Record<string, unknown>[] | { items?: Record<string, unknown>[]; Items?: Record<string, unknown>[] }>(
+      "task",
+      `/api/v1/tasks/chapter/${chapterId}`,
+    );
+    const items = Array.isArray(data) ? data : data.items ?? data.Items ?? [];
+    return items.map(mapPageTask);
+  },
+
+  async submitPageTaskLayer(pageTaskId: string, payload: SubmitPageLayerPayload) {
+    return request("task", `/api/v1/tasks/${pageTaskId}/layers`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async reviewPageTask(pageTaskId: string, payload: ReviewPageTaskPayload) {
+    return request("task", `/api/v1/tasks/${pageTaskId}/review`, {
       method: "POST",
       body: JSON.stringify(payload),
     });
@@ -338,10 +374,12 @@ export const mangaErpApi = {
   },
 
   async getQaPins(chapterId: string) {
+    // TODO(backend-confirmation): This read endpoint is required by the MF3 UI but is not listed in the official Workflow 3 contract.
     return request<QaBugPinDto[]>("qa", `/api/v1/qa/chapters/${chapterId}/pins`);
   },
 
   async getQaSession(chapterId: string) {
+    // TODO(backend-confirmation): Confirm this session read endpoint before treating it as an official Workflow 3 contract.
     return request<QaSessionDto>("qa", `/api/v1/qa/chapters/${chapterId}/session`);
   },
 
@@ -361,6 +399,7 @@ export const mangaErpApi = {
   },
 
   async schedulePublication(payload: SchedulePublicationPayload) {
+    // TODO(backend-confirmation): Confirm the exact schedule payload fields; the official contract names the endpoint but does not define its body.
     return request<void>("publishing", "/api/v1/publishing/schedule", {
       method: "POST",
       body: JSON.stringify(payload),

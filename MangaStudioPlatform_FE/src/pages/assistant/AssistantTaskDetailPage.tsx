@@ -1,197 +1,67 @@
-import { useState } from "react";
-import { Upload, Send, FileImage, ArrowLeft } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ArrowLeft, FileImage, Send } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
-import { taskService } from "../../shared/services/taskService";
+import { useToast } from "../../shared/components/toastContext";
+import { mangaErpApi } from "../../shared/services/mangaErpService";
+import type { PageTaskDto, SubmitPageLayerPayload } from "../../shared/types/mangaErp";
 
-type LayerType = "LineArt" | "Color" | "Background";
+const layerTypes: SubmitPageLayerPayload["LayerType"][] = ["LineArt", "Color", "Background"];
 
 export default function AssistantTaskDetailPage() {
   const { id } = useParams();
-
-  const [layerType, setLayerType] = useState<LayerType>("LineArt");
+  const toast = useToast();
+  const [task, setTask] = useState<PageTaskDto | null>(null);
+  const [layerType, setLayerType] = useState<SubmitPageLayerPayload["LayerType"]>("LineArt");
   const [fileUrlOriginal, setFileUrlOriginal] = useState("");
   const [fileUrlOptimized, setFileUrlOptimized] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [message, setMessage] = useState("");
+  const [isLoadingTask, setIsLoadingTask] = useState(Boolean(id));
 
-  const handleSubmitLayer = async () => {
-    if (!id) {
-      setMessage("Không tìm thấy pageTaskId.");
+  useEffect(() => {
+    if (!id) return;
+    void mangaErpApi.getAssignedPageTasks()
+      .then((items) => {
+        const match = items.find((item) => item.id === id) ?? null;
+        setTask(match);
+        if (!match) toast.error("Task not found", "This task is no longer in your assigned work.");
+      })
+      .catch((error: unknown) => {
+        setTask(null);
+        toast.error("Could not load task details", error instanceof Error ? error.message : "Unknown error");
+      })
+      .finally(() => setIsLoadingTask(false));
+  }, [id, toast]);
+
+  const submit = async () => {
+    if (!id || !fileUrlOriginal.trim() || !fileUrlOptimized.trim()) {
+      toast.error("Layer URLs are required", "Enter both the original artwork URL and optimized preview URL.");
       return;
     }
-
-    if (!fileUrlOriginal.trim()) {
-      setMessage("Vui lòng nhập đầy đủ File URL Original và File URL Optimized.");
-      return;
-    }
-
     setIsSubmitting(true);
-    setMessage("");
-
     try {
-      await taskService.submitLayer(id, {
+      await mangaErpApi.submitPageTaskLayer(id, {
         LayerType: layerType,
         FileUrlOriginal: fileUrlOriginal.trim(),
-        FileUrlOptimized: fileUrlOptimized.trim() || null,
+        FileUrlOptimized: fileUrlOptimized.trim(),
       });
-
-      setMessage("Submit layer thành công.");
+      toast.success(task?.status.toLowerCase() === "revisionrequired" ? "Corrected layer resubmitted" : "Layer submitted", "The Mangaka can now review this page task.");
       setFileUrlOriginal("");
       setFileUrlOptimized("");
-    } catch (err) {
-      setMessage(
-        err instanceof Error ? err.message : "Submit layer thất bại."
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
+    } catch (error) {
+      toast.error("Could not submit layer", error instanceof Error ? error.message : "Unknown error");
+    } finally { setIsSubmitting(false); }
   };
 
-  return (
-    <div className="space-y-6">
-      <Link
-        to="/assistant/tasks"
-        className="inline-flex items-center gap-2 text-sm text-cyan-300 hover:text-cyan-200"
-      >
-        <ArrowLeft size={16} />
-        Back to My Tasks
-      </Link>
-
-      <div className="rounded-[2rem] border border-slate-800 bg-slate-900 p-7">
-        <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-200">
-          Assistant Task Detail
-        </p>
-
-        <h1 className="mt-2 text-3xl font-black text-white">
-          Upload Artwork Layer
-        </h1>
-
-        <p className="mt-2 text-sm leading-6 text-slate-400">
-          Assistant nộp layer đã hoàn thành cho task:
-          <span className="ml-2 text-cyan-300">{id}</span>
-        </p>
-      </div>
-
-      <div className="grid gap-6 xl:grid-cols-[1fr_0.8fr]">
-        <section className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
-          <h2 className="text-xl font-bold text-white">
-            Task Information
-          </h2>
-
-          <div className="mt-5 grid gap-4 md:grid-cols-2">
-            <InfoItem label="Page Task ID" value={id ?? "N/A"} />
-            <InfoItem label="Layer Type" value={layerType} />
-            <InfoItem label="Status" value="Assigned / In Progress" />
-            <InfoItem label="API" value="POST /api/v1/tasks/{pageTaskId}/layers" />
-          </div>
-
-          <div className="mt-6 rounded-xl border border-slate-700 bg-slate-950 p-5">
-            <div className="flex items-center gap-3 text-slate-300">
-              <FileImage size={20} className="text-cyan-300" />
-              Base page preview placeholder
-            </div>
-
-            <div className="mt-4 h-64 rounded-xl border border-dashed border-slate-700 bg-slate-900/70" />
-          </div>
-        </section>
-
-        <section className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
-          <h2 className="text-xl font-bold text-white">
-            Submit Layer
-          </h2>
-
-          <p className="mt-2 text-sm text-slate-400">
-            Payload: LayerType, FileUrlOriginal, FileUrlOptimized
-          </p>
-
-          <div className="mt-5 space-y-4">
-            <div>
-              <label className="text-sm text-slate-400">
-                Layer Type
-              </label>
-
-              <select
-                value={layerType}
-                onChange={(event) =>
-                  setLayerType(event.target.value as LayerType)
-                }
-                className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none"
-              >
-                <option value="LineArt">LineArt</option>
-                <option value="Color">Color</option>
-                <option value="Background">Background</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="text-sm text-slate-400">
-                File URL Original
-              </label>
-
-              <input
-                value={fileUrlOriginal}
-                onChange={(event) => setFileUrlOriginal(event.target.value)}
-                placeholder="https://..."
-                className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="text-sm text-slate-400">
-                File URL Optimized
-              </label>
-
-              <input
-                value={fileUrlOptimized}
-                onChange={(event) => setFileUrlOptimized(event.target.value)}
-                placeholder="https://..."
-                className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="text-sm text-slate-400">
-                Upload file demo
-              </label>
-
-              <label className="mt-2 flex cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-slate-700 bg-slate-950 p-8 text-center hover:border-cyan-400">
-                <Upload size={28} className="text-cyan-300" />
-
-                <span className="mt-3 text-sm text-slate-300">
-                  Click to upload artwork layer
-                </span>
-
-                <input type="file" className="hidden" />
-              </label>
-            </div>
-
-            {message && (
-              <div className="rounded-xl border border-cyan-500/30 bg-cyan-500/10 p-3 text-sm text-cyan-200">
-                {message}
-              </div>
-            )}
-
-            <button
-              type="button"
-              disabled={isSubmitting}
-              onClick={handleSubmitLayer}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-600 px-5 py-3 font-semibold text-white hover:bg-cyan-500 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <Send size={18} />
-              {isSubmitting ? "Submitting..." : "Submit Layer"}
-            </button>
-          </div>
-        </section>
-      </div>
+  return <div className="space-y-6">
+    <Link to="/assistant/tasks" className="inline-flex items-center gap-2 text-sm text-cyan-300 hover:text-cyan-200"><ArrowLeft size={16} />Back to tasks</Link>
+    <header className="rounded-2xl border border-slate-800 bg-slate-900 p-7"><p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-200">Assistant · MF2</p><h1 className="mt-2 text-3xl font-black text-white">Submit Artwork Layer</h1><p className="mt-2 text-sm text-slate-400">{isLoadingTask ? "Loading task details…" : task ? `${task.chapterTitle ?? "Chapter"} · Page ${task.pageNumber}` : `Task ${id ?? "not found"}`}</p></header>
+    <div className="grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
+      <section className="rounded-2xl border border-slate-800 bg-slate-900 p-6"><h2 className="flex items-center gap-2 text-lg font-bold text-white"><FileImage size={20} className="text-cyan-300" />Assignment</h2><dl className="mt-5 space-y-4 text-sm"><Info label="Status" value={task?.status ?? "Assigned"} /><Info label="Page" value={task ? String(task.pageNumber) : "—"} />{task?.rejectionNote ? <Info label="Revision alert" value={task.rejectionNote} alert /> : null}</dl></section>
+      <section className="rounded-2xl border border-slate-800 bg-slate-900 p-6"><h2 className="text-lg font-bold text-white">Layer submission</h2><p className="mt-2 text-sm text-slate-400">Submitting again replaces the previous layer for this page task.</p><div className="mt-5 space-y-4"><label className="block text-sm text-slate-400">Layer type<select className="input mt-2" value={layerType} onChange={(event) => setLayerType(event.target.value as SubmitPageLayerPayload["LayerType"])}>{layerTypes.map((type) => <option key={type}>{type}</option>)}</select></label><label className="block text-sm text-slate-400">Original artwork URL<input className="input mt-2" value={fileUrlOriginal} onChange={(event) => setFileUrlOriginal(event.target.value)} placeholder="https://storage.example/page-layer.psd" /></label><label className="block text-sm text-slate-400">Optimized preview URL<input className="input mt-2" value={fileUrlOptimized} onChange={(event) => setFileUrlOptimized(event.target.value)} placeholder="https://storage.example/page-preview.webp" /></label><button type="button" onClick={() => void submit()} disabled={isSubmitting} className="flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-600 px-5 py-3 font-semibold text-white hover:bg-cyan-500 disabled:opacity-50"><Send size={18} />{isSubmitting ? "Submitting…" : "Submit layer"}</button></div></section>
     </div>
-  );
+  </div>;
 }
 
-function InfoItem({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-xl border border-slate-800 bg-slate-950 p-4">
-      <p className="text-xs text-slate-500">{label}</p>
-      <p className="mt-2 break-all font-semibold text-white">{value}</p>
-    </div>
-  );
+function Info({ label, value, alert = false }: { label: string; value: string; alert?: boolean }) {
+  return <div className={`rounded-xl border p-4 ${alert ? "border-rose-400/20 bg-rose-500/10" : "border-slate-800 bg-slate-950"}`}><dt className="text-xs text-slate-500">{label}</dt><dd className={`mt-1 ${alert ? "text-rose-200" : "text-slate-200"}`}>{value}</dd></div>;
 }

@@ -1,177 +1,89 @@
-import { useEffect, useState } from "react";
-import { ArrowRight, ClipboardList, Clock, Filter } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { ArrowRight, ClipboardList, Clock, Filter, RefreshCw } from "lucide-react";
 import { Link } from "react-router-dom";
-import { taskService } from "../../shared/services/taskService";
+import { useToast } from "../../shared/components/toastContext";
+import { mangaErpApi } from "../../shared/services/mangaErpService";
+import type { PageTaskDto } from "../../shared/types/mangaErp";
 
-type AssistantTask = {
-  pageTaskId: string;
-  chapterId?: string;
-  chapterTitle?: string;
-  chapterNumber?: number;
-  pageNumber?: number;
-  taskStatus?: string;
-  currentLayerType?: string | null;
-  currentLayerVersion?: number | null;
-  updatedAt?: string;
-};
-
-const taskStatuses = [
-  "All",
-  "Incomplete",
-  "Reviewing",
-  "RevisionRequired",
-  "Submitted",
-];
+const filters = ["All", "Incomplete", "Submitted", "Reviewing", "RevisionRequired", "Approved"];
 
 export default function AssistantTasksPage() {
-  const [status, setStatus] = useState("All");
-  const [tasks, setTasks] = useState<AssistantTask[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
+  const toast = useToast();
+  const [filter, setFilter] = useState("All");
+  const [tasks, setTasks] = useState<PageTaskDto[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const loadTasks = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      setTasks(await mangaErpApi.getAssignedPageTasks(filter === "All" ? undefined : filter));
+    } catch (error) {
+      setTasks([]);
+      toast.error("Could not load assigned tasks", error instanceof Error ? error.message : "Unknown error");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [filter, toast]);
 
   useEffect(() => {
-    async function loadTasks() {
-      setIsLoading(true);
-      setError("");
-
-      try {
-        const result =
-          status === "All"
-            ? await taskService.getAssignedTasks()
-            : await taskService.getAssignedTasks(status);
-
-        const list = Array.isArray(result)
-          ? result
-          : (result as { items?: AssistantTask[] }).items ?? [];
-
-        setTasks(list as AssistantTask[]);
-      } catch (err) {
-        setTasks([]);
-        setError(
-          err instanceof Error
-            ? err.message
-            : "Không thể tải danh sách task"
-        );
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
+    // The request owns the loading/data state transition after mount or filter changes.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadTasks();
-  }, [status]);
+  }, [loadTasks]);
 
   return (
     <div className="space-y-6">
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-200">
-          Assistant
-        </p>
+      <header>
+        <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-200">Assistant workflow</p>
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h1 className="text-3xl font-black text-white">My Page Tasks</h1>
+            <p className="mt-2 text-sm text-slate-400">Open an assigned page, submit its layer artwork, and follow review feedback.</p>
+          </div>
+          <button type="button" onClick={() => void loadTasks()} disabled={isLoading} className="btn-secondary inline-flex items-center gap-2">
+            <RefreshCw size={16} className={isLoading ? "animate-spin" : ""} /> Refresh
+          </button>
+        </div>
+      </header>
 
-        <h1 className="mt-2 text-3xl font-black text-white">
-          My Assigned Tasks
-        </h1>
-
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
-          Danh sách task được phân công cho Assistant từ API GET
-          /api/v1/tasks/assigned.
-        </p>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-slate-800 bg-slate-900 p-4">
-        <Filter size={18} className="text-cyan-300" />
-
-        {taskStatuses.map((statusItem) => (
-          <button
-            key={statusItem}
-            type="button"
-            onClick={() => setStatus(statusItem)}
-            className={`rounded-xl border px-4 py-2 text-sm ${
-              status === statusItem
-                ? "border-cyan-400 bg-cyan-400/10 text-cyan-200"
-                : "border-slate-700 text-slate-300 hover:border-cyan-400 hover:text-cyan-200"
-            }`}
-          >
-            {statusItem}
+      <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-800 bg-slate-900 p-4">
+        <Filter size={18} className="mr-1 text-cyan-300" />
+        {filters.map((item) => (
+          <button key={item} type="button" onClick={() => setFilter(item)} className={`rounded-xl border px-3 py-2 text-sm transition ${filter === item ? "border-cyan-400 bg-cyan-400/10 text-cyan-200" : "border-slate-700 text-slate-300 hover:border-cyan-400/60"}`}>
+            {item}
           </button>
         ))}
       </div>
 
-      {isLoading && (
-        <div className="rounded-xl border border-slate-800 bg-slate-900 p-4 text-slate-300">
-          Loading tasks...
+      {isLoading ? (
+        <div className="rounded-2xl border border-slate-800 bg-slate-900 p-8 text-center text-slate-400">Loading assigned page tasks…</div>
+      ) : tasks.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-slate-700 bg-slate-900 p-10 text-center">
+          <ClipboardList className="mx-auto text-slate-500" size={32} />
+          <p className="mt-3 font-semibold text-white">No {filter === "All" ? "assigned" : filter.toLowerCase()} tasks</p>
+          <p className="mt-1 text-sm text-slate-400">New work assigned by a mangaka will appear here.</p>
         </div>
-      )}
-
-      {error && (
-        <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-red-300">
-          {error}
-        </div>
-      )}
-
-      {!isLoading && !error && tasks.length === 0 && (
-        <div className="rounded-xl border border-slate-800 bg-slate-900 p-4 text-slate-400">
-          Không có task nào ở trạng thái {status}.
-        </div>
-      )}
-
-      <div className="grid gap-4">
-        {tasks.map((task) => {
-          const taskId = task.pageTaskId;
-
-          return (
-            <div
-              key={taskId}
-              className="rounded-2xl border border-slate-800 bg-slate-900 p-5"
-            >
-              <div className="flex items-start justify-between gap-4">
+      ) : (
+        <div className="grid gap-4">
+          {tasks.map((task) => (
+            <article key={task.id} className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
+              <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
-                  <div className="flex items-center gap-2">
-                    <ClipboardList size={18} className="text-cyan-300" />
-
-                    <h2 className="font-bold text-white">
-                      {task.chapterTitle ?? "Untitled Chapter"}
-                    </h2>
-                  </div>
-
-                  <p className="mt-2 text-slate-400">
-                    Chapter {task.chapterNumber ?? "N/A"} · Page{" "}
-                    {task.pageNumber ?? "N/A"}
-                  </p>
-
-                  <p className="mt-1 text-slate-400">
-                    Layer: {task.currentLayerType ?? "No layer submitted yet"}
-                  </p>
-
-                  <p className="mt-1 break-all text-xs text-slate-500">
-                    Task ID: {task.pageTaskId}
-                  </p>
+                  <div className="flex items-center gap-2"><ClipboardList size={18} className="text-cyan-300" /><h2 className="font-bold text-white">{task.chapterTitle ?? `Chapter ${task.chapterNumber ?? ""}`}</h2></div>
+                  <p className="mt-2 text-sm text-slate-400">Page {task.pageNumber} · {task.currentLayerType ?? "Layer not submitted"}{task.currentLayerVersion ? ` · v${task.currentLayerVersion}` : ""}</p>
+                  {task.description ? <p className="mt-2 text-sm text-slate-300">{task.description}</p> : null}
+                  {task.rejectionNote ? <p className="mt-3 rounded-lg border border-rose-400/20 bg-rose-500/10 p-3 text-sm text-rose-200">Changes requested: {task.rejectionNote}</p> : null}
                 </div>
-
-                <span className="rounded-lg bg-cyan-500/10 px-3 py-2 text-sm text-cyan-300">
-                  {task.taskStatus ?? "Unknown"}
-                </span>
+                <span className="rounded-lg bg-cyan-500/10 px-3 py-2 text-sm text-cyan-300">{task.status}</span>
               </div>
-
-              <div className="mt-4 flex items-center justify-between">
-                <div className="flex items-center gap-2 text-sm text-slate-500">
-                  <Clock size={16} />
-                  {task.updatedAt
-                    ? new Date(task.updatedAt).toLocaleString()
-                    : "No updated time"}
-                </div>
-
-                <Link
-                  to={`/assistant/tasks/${taskId}`}
-                  className="flex items-center gap-2 rounded-xl bg-cyan-600 px-4 py-2 text-sm font-semibold text-white hover:bg-cyan-500"
-                >
-                  Open Task
-                  <ArrowRight size={16} />
-                </Link>
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                <span className="flex items-center gap-2 text-sm text-slate-500"><Clock size={15} />{task.updatedAt ? new Date(task.updatedAt).toLocaleString() : "Not updated yet"}</span>
+                <Link to={`/assistant/tasks/${task.id}`} className="inline-flex items-center gap-2 rounded-xl bg-cyan-600 px-4 py-2 text-sm font-semibold text-white hover:bg-cyan-500">Open task <ArrowRight size={16} /></Link>
               </div>
-            </div>
-          );
-        })}
-      </div>
+            </article>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

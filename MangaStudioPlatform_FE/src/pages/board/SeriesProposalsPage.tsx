@@ -65,7 +65,10 @@ export default function SeriesProposalsPage() {
   };
 
   useEffect(() => {
+    // Initial backend fetch; state updates occur as the request resolves.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadQueue();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const openSubmission = async (id: string) => {

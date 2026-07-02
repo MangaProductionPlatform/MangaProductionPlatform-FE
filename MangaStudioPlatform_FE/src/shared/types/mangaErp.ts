@@ -121,13 +121,33 @@ export type ChapterDto = {
 
 export type PageTaskDto = {
   id: string;
+  chapterId?: string;
+  chapterTitle?: string;
+  chapterNumber?: number;
   pageNumber: number;
   status: string;
   assignedAssistantId?: string | null;
   previewCompositeUrl?: string | null;
   description?: string | null;
+  currentLayerType?: string | null;
+  currentLayerVersion?: number | null;
+  fileUrlOriginal?: string | null;
+  fileUrlOptimized?: string | null;
+  submissionNote?: string | null;
+  rejectionNote?: string | null;
   createdAt?: string;
   updatedAt?: string;
+};
+
+export type SubmitPageLayerPayload = {
+  LayerType: "LineArt" | "Color" | "Background";
+  FileUrlOriginal: string;
+  FileUrlOptimized: string;
+};
+
+export type ReviewPageTaskPayload = {
+  IsAccepted: boolean;
+  RejectionNote: string;
 };
 
 export type RankingBoardItemDto = {
@@ -183,18 +203,16 @@ export type SubmissionDetailDto = SubmissionSummaryDto & {
 };
 
 export type CreateChapterPayload = {
-  seriesId: string;
-  title: string;
-  chapterNumber: number;
-  totalPages: number;
-  assignedEditorId?: string | null;
-  coverImageUrl?: string | null;
+  SeriesId: string;
+  Title: string;
+  ChapterNumber: number;
+  TotalPages: number;
+  AssignedEditorId: string;
 };
 
 export type ActivatePagePayload = {
-  pageNumber: number;
-  assignedAssistantId: string;
-  description?: string | null;
+  PageNumber: number;
+  AssignedAssistantId: string;
 };
 
 export type SetPageRegionPayload = {
@@ -238,9 +256,11 @@ export type UpdateProfilePayload = {
 export type SchedulePublicationPayload = {
   chapterId: string;
   seriesId: string;
-  issueType: string;
+  issueType: PublicationType;
   scheduledPublishAt: string;
 };
+
+export type PublicationType = "Weekly" | "Monthly" | "Special";
 
 export type UpdateAdminAccountPayload = {
   fullName: string;
@@ -343,14 +363,29 @@ export type QaBugPinDto = {
   createdAt: string;
 };
 
-export type QaSessionDto = {
-  id: string;
-  chapterId: string;
-  editorId: string;
+export type QaPinDto = {
+  pinId: string;
+  pageTaskId: string;
+  coordinateX: number;
+  coordinateY: number;
+  issueType: string;
+  noteMessage: string;
   status: string;
-  isApproved: boolean;
-  approvedAt?: string | null;
   createdAt: string;
+};
+
+export type QaSessionDto = {
+  chapterId: string;
+  batchToken: string;
+  totalPins: number;
+  resolvedPins: number;
+  pendingPins: number;
+  status: string;
+  id?: string;
+  editorId?: string;
+  isApproved?: boolean;
+  approvedAt?: string | null;
+  createdAt?: string;
   completedAt?: string | null;
 };
 
