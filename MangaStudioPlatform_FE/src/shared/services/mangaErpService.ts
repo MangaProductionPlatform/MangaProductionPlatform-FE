@@ -143,6 +143,9 @@ export const mangaErpApi = {
 
   async getMySeries() {
     const data = await request<Record<string, unknown>[]>("series", "/api/v1/series/my");
+    if (!Array.isArray(data)) {
+      throw new Error("The Series service returned an unexpected response.");
+    }
     return data.map(mapSeries);
   },
 
@@ -283,6 +286,9 @@ export const mangaErpApi = {
     const data = await request<Record<string, unknown>[]>("chapter",
       `/api/v1/chapters/series/${seriesId}`,
     );
+    if (!Array.isArray(data)) {
+      throw new Error("The Chapter service returned an unexpected response.");
+    }
     return data.map((chapter) => mapChapter(chapter, seriesId));
   },
 
@@ -318,7 +324,10 @@ export const mangaErpApi = {
       "task",
       `/api/v1/tasks/assigned${query}`,
     );
-    const items = Array.isArray(data) ? data : data.items ?? data.Items ?? [];
+    const items = Array.isArray(data) ? data : data.items ?? data.Items;
+    if (!Array.isArray(items)) {
+      throw new Error("The Task service returned an unexpected response.");
+    }
     return items.map(mapPageTask);
   },
 
@@ -327,7 +336,10 @@ export const mangaErpApi = {
       "task",
       `/api/v1/tasks/chapter/${chapterId}`,
     );
-    const items = Array.isArray(data) ? data : data.items ?? data.Items ?? [];
+    const items = Array.isArray(data) ? data : data.items ?? data.Items;
+    if (!Array.isArray(items)) {
+      throw new Error("The Task service returned an unexpected response.");
+    }
     return items.map(mapPageTask);
   },
 

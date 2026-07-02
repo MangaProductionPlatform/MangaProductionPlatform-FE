@@ -4,7 +4,11 @@ import { ClipboardList, Copy, FileText, Send, Upload, UserPlus } from "lucide-re
 import { mangaErpApi } from "../../shared/services/mangaErpService";
 import type { ChapterDto, MangaSeriesDto } from "../../shared/types/mangaErp";
 import { useToast } from "../../shared/components/toastContext";
+import { evaluateChapterQaReadiness } from "../../shared/utils/chapterQaReadiness";
 import "./ChapterManagement.css";
+
+const guidPattern =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 type ChapterLike = ChapterDto & {
   chapterId?: string;
@@ -20,6 +24,15 @@ function getChapterId(chapter: ChapterLike | null | undefined) {
     chapter?.Id ??
     ""
   );
+}
+
+async function loadChapterWorkspace(chapterId: string) {
+  const [chapter, tasks] = await Promise.all([
+    mangaErpApi.getChapter(chapterId),
+    mangaErpApi.getChapterPageTasks(chapterId),
+  ]);
+
+  return { ...chapter, pageTasks: tasks };
 }
 
 export default function ChapterManagementPage() {
@@ -43,6 +56,18 @@ export default function ChapterManagementPage() {
   const currentUser = JSON.parse(localStorage.getItem("currentUser") || "null") as
     | { userId?: string }
     | null;
+  const assignedEditorIdError =
+    assignedEditorId.trim() && !guidPattern.test(assignedEditorId.trim())
+      ? "Enter a valid Tantou Editor GUID."
+      : "";
+  const assistantIdError =
+    assistantId.trim() && !guidPattern.test(assistantId.trim())
+      ? "Enter a valid Assistant GUID."
+      : "";
+  const selectedChapterReadiness = evaluateChapterQaReadiness(
+    selectedChapter,
+    selectedChapter?.pageTasks ?? [],
+  );
 
   useEffect(() => {
     let ignore = false;
@@ -78,7 +103,7 @@ export default function ChapterManagementPage() {
         setDetailChapterId(firstChapterId);
 
         if (firstChapterId) {
-          const detail = await mangaErpApi.getChapter(firstChapterId);
+          const detail = await loadChapterWorkspace(firstChapterId);
           if (!ignore) setSelectedChapter(detail);
         } else {
           setSelectedChapter(null);
@@ -128,7 +153,7 @@ export default function ChapterManagementPage() {
         setSelectedChapter(null);
 
         if (firstChapterId) {
-          const detail = await mangaErpApi.getChapter(firstChapterId);
+          const detail = await loadChapterWorkspace(firstChapterId);
           if (!ignore) setSelectedChapter(detail);
         }
       } catch (err) {
@@ -159,7 +184,7 @@ export default function ChapterManagementPage() {
 
     async function loadChapterDetail() {
       try {
-        const result = await mangaErpApi.getChapter(detailChapterId);
+        const result = await loadChapterWorkspace(detailChapterId);
 
         if (!ignore) setSelectedChapter(result);
       } catch (err) {
@@ -191,6 +216,11 @@ export default function ChapterManagementPage() {
 
     if (!assignedEditorId.trim()) {
       toast.error("Editor ID required", "Assign a Tantou Editor when creating the chapter.");
+      return;
+    }
+
+    if (assignedEditorIdError) {
+      toast.error("Invalid Editor ID", assignedEditorIdError);
       return;
     }
 
@@ -241,6 +271,11 @@ export default function ChapterManagementPage() {
       return;
     }
 
+    if (assistantIdError) {
+      toast.error("Invalid Assistant ID", assistantIdError);
+      return;
+    }
+
     setIsActivatingPage(true);
 
     try {
@@ -251,7 +286,7 @@ export default function ChapterManagementPage() {
 
       toast.success("Page task activated", `Page ${pageNumber} was assigned in the backend.`);
 
-      const detail = await mangaErpApi.getChapter(detailChapterId);
+      const detail = await loadChapterWorkspace(detailChapterId);
       setSelectedChapter(detail);
     } catch (err) {
       toast.error(
@@ -263,8 +298,8 @@ export default function ChapterManagementPage() {
     }
   };
 
-  const handleSubmitForQA = async () => {
-    if (!detailChapterId) {
+  const handleSubmitForQA = async (requestedChapterId = detailChapterId) => {
+    if (!requestedChapterId) {
       toast.error("No chapter selected", "Select a backend chapter before submitting QA.");
       return;
     }
@@ -274,14 +309,31 @@ export default function ChapterManagementPage() {
       return;
     }
 
+    if (isSubmittingQA) return;
+
     setIsSubmittingQA(true);
 
     try {
-      await mangaErpApi.submitChapterForQA(detailChapterId);
+      const chapter = await loadChapterWorkspace(requestedChapterId);
+      const readiness = evaluateChapterQaReadiness(
+        chapter,
+        chapter.pageTasks ?? [],
+      );
+
+      if (!readiness.isReady) {
+        toast.error(
+          "Chapter is not ready for QA",
+          readiness.issues.join(" "),
+        );
+        return;
+      }
+
+      await mangaErpApi.submitChapterForQA(requestedChapterId);
 
       toast.success("Submitted for QA", "The backend accepted the QA submission.");
 
-      const detail = await mangaErpApi.getChapter(detailChapterId);
+      setDetailChapterId(requestedChapterId);
+      const detail = await loadChapterWorkspace(requestedChapterId);
       setSelectedChapter(detail);
     } catch (err) {
       toast.error(
@@ -312,14 +364,39 @@ export default function ChapterManagementPage() {
 
         <button
           type="button"
-          disabled={isSubmittingQA || !detailChapterId}
-          onClick={handleSubmitForQA}
+          disabled={
+            isSubmittingQA ||
+            !detailChapterId ||
+            !currentUser?.userId ||
+            !selectedChapterReadiness.isReady
+          }
+          onClick={() => void handleSubmitForQA()}
+          title={
+            selectedChapterReadiness.isReady
+              ? "Submit this chapter to QA"
+              : selectedChapterReadiness.issues.join(" ")
+          }
           className="inline-flex items-center justify-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-bold text-slate-950 hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-60"
         >
           <Send size={16} />
           {isSubmittingQA ? "Submitting..." : "Submit for QA"}
         </button>
       </div>
+
+      {!isLoading &&
+      selectedChapter &&
+      !selectedChapterReadiness.isReady ? (
+        <div className="rounded-xl border border-amber-400/20 bg-amber-500/10 p-4">
+          <p className="text-sm font-semibold text-amber-100">
+            QA submission is unavailable for the selected chapter.
+          </p>
+          <ul className="mt-2 space-y-1 text-sm text-amber-200/80">
+            {selectedChapterReadiness.issues.map((issue) => (
+              <li key={issue}>• {issue}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
 
       <section className="grid gap-5 xl:grid-cols-[1fr_24rem]">
         <article className="rounded-lg border border-white/10 bg-slate-900/75 p-5">
@@ -412,39 +489,6 @@ export default function ChapterManagementPage() {
                         Detail
                       </button>
 
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (!chapterId) {
-                            toast.error("Missing chapter ID", "Backend did not return a valid chapter ID.");
-                            return;
-                          }
-
-                          setDetailChapterId(chapterId);
-
-                          void mangaErpApi
-                            .submitChapterForQA(chapterId)
-                            .then(() =>
-                              toast.success(
-                                "Submitted for QA",
-                                "The backend accepted the QA submission.",
-                              ),
-                            )
-                            .catch((err) =>
-                              toast.error(
-                                "Could not submit for QA",
-                                err instanceof Error
-                                  ? err.message
-                                  : "Please check your role and page status.",
-                              ),
-                            );
-                        }}
-                        disabled={!currentUser?.userId || !chapterId}
-                        className="inline-flex items-center gap-2 rounded-lg border border-cyan-300/30 bg-cyan-300/10 px-3 py-2 text-sm font-semibold text-cyan-100 hover:bg-cyan-300/15 disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        <Send size={15} />
-                        Submit QA
-                      </button>
                     </div>
                   </article>
                 );
@@ -566,14 +610,30 @@ export default function ChapterManagementPage() {
 
               <input
                 required
-                className="input"
+                className={`input ${
+                  assistantIdError ? "border-rose-400/70" : ""
+                }`}
                 value={assistantId}
                 onChange={(event) => setAssistantId(event.target.value)}
-                placeholder="Assistant user ID"
+                placeholder="Assistant user GUID"
+                aria-invalid={Boolean(assistantIdError)}
               />
 
+              <p
+                className={`text-xs ${
+                  assistantIdError ? "text-rose-300" : "text-slate-500"
+                }`}
+              >
+                {assistantIdError ||
+                  "Use the Assistant user GUID supplied by your studio administrator."}
+              </p>
+
               <button
-                disabled={isActivatingPage}
+                disabled={
+                  isActivatingPage ||
+                  !assistantId.trim() ||
+                  Boolean(assistantIdError)
+                }
                 className="inline-flex items-center justify-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-bold text-slate-950 hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <UserPlus size={16} />
@@ -645,11 +705,23 @@ export default function ChapterManagementPage() {
 
               <input
                 required
-                className="input"
+                className={`input ${
+                  assignedEditorIdError ? "border-rose-400/70" : ""
+                }`}
                 value={assignedEditorId}
                 onChange={(event) => setAssignedEditorId(event.target.value)}
-                placeholder="Assigned Tantou Editor ID"
+                placeholder="Assigned Tantou Editor GUID"
+                aria-invalid={Boolean(assignedEditorIdError)}
               />
+
+              <p
+                className={`text-xs ${
+                  assignedEditorIdError ? "text-rose-300" : "text-slate-500"
+                }`}
+              >
+                {assignedEditorIdError ||
+                  "Use the Tantou Editor user GUID supplied by your administrator."}
+              </p>
 
               <div className="chapter-upload-box flex flex-col items-center justify-center rounded-lg border border-dashed border-cyan-300/30 bg-cyan-300/5 p-5 text-center">
                 <FileText className="text-cyan-200" size={28} />
@@ -664,7 +736,11 @@ export default function ChapterManagementPage() {
               </div>
 
               <button
-                disabled={isSubmitting}
+                disabled={
+                  isSubmitting ||
+                  !assignedEditorId.trim() ||
+                  Boolean(assignedEditorIdError)
+                }
                 className="inline-flex items-center justify-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-bold text-slate-950 hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <Upload size={16} />

@@ -22,6 +22,26 @@ async function parseErrorBody(response: Response): Promise<ApiErrorBody> {
   }
 }
 
+function statusMessage(status: number) {
+  if (status === 401) {
+    return "Your session has expired. Please sign in again.";
+  }
+
+  if (status === 403) {
+    return "You do not have permission to perform this action.";
+  }
+
+  if (status === 404) {
+    return "The requested workflow record could not be found.";
+  }
+
+  if (status >= 500) {
+    return "The server could not complete the request. Please try again.";
+  }
+
+  return `The request failed with status ${status}.`;
+}
+
 export async function request<T>(
   service: ServiceName,
   path: string,
@@ -36,10 +56,18 @@ export async function request<T>(
     headers.set(key, value);
   });
 
-  const response = await fetch(`${SERVICE_BASE_URLS[service]}${path}`, {
-    ...init,
-    headers,
-  });
+  let response: Response;
+
+  try {
+    response = await fetch(`${SERVICE_BASE_URLS[service]}${path}`, {
+      ...init,
+      headers,
+    });
+  } catch {
+    throw new Error(
+      "Could not connect to the server. Check your network and try again.",
+    );
+  }
 
   if (!response.ok) {
     const body = await parseErrorBody(response);
@@ -56,7 +84,7 @@ export async function request<T>(
         body.message ||
         body.title ||
         body.error ||
-        `API error ${response.status}`,
+        statusMessage(response.status),
     );
   }
 
@@ -64,5 +92,12 @@ export async function request<T>(
     return undefined as T;
   }
   const text = await response.text();
-  return (text ? JSON.parse(text) : undefined) as T;
+
+  if (!text) return undefined as T;
+
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    throw new Error("The server returned an unreadable response.");
+  }
 }

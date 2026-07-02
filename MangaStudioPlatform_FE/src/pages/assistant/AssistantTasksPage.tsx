@@ -8,8 +8,10 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useToast } from "../../shared/components/toastContext";
+import { WorkflowStatusBadge } from "../../shared/components/WorkflowStatusBadge";
 import { mangaErpApi } from "../../shared/services/mangaErpService";
 import type { PageTaskDto } from "../../shared/types/mangaErp";
+import { getWorkflowStatusMeta } from "../../shared/utils/workflowStatus";
 import "./AssistantTasksPage.css";
 
 const filters = [
@@ -26,18 +28,23 @@ export default function AssistantTasksPage() {
   const [filter, setFilter] = useState("All");
   const [tasks, setTasks] = useState<PageTaskDto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const loadTasks = useCallback(async () => {
     setIsLoading(true);
+    setErrorMessage("");
 
     try {
       const status = filter === "All" ? undefined : filter;
       setTasks(await mangaErpApi.getAssignedPageTasks(status));
     } catch (error) {
       setTasks([]);
+      const detail =
+        error instanceof Error ? error.message : "Unknown error";
+      setErrorMessage(detail);
       toast.error(
         "Could not load assigned tasks",
-        error instanceof Error ? error.message : "Unknown error",
+        detail,
       );
     } finally {
       setIsLoading(false);
@@ -105,6 +112,20 @@ export default function AssistantTasksPage() {
         <div className="assistant-tasks-loading rounded-2xl border border-slate-800 bg-slate-900 p-8 text-center text-slate-400">
           Loading assigned page tasks…
         </div>
+      ) : errorMessage ? (
+        <div className="rounded-2xl border border-rose-400/20 bg-rose-500/10 p-6 text-center">
+          <p className="font-semibold text-rose-100">
+            Assigned tasks could not be loaded
+          </p>
+          <p className="mt-2 text-sm text-rose-200/70">{errorMessage}</p>
+          <button
+            type="button"
+            onClick={() => void loadTasks()}
+            className="mt-4 rounded-xl border border-rose-300/25 px-4 py-2 text-sm font-semibold text-rose-100"
+          >
+            Try again
+          </button>
+        </div>
       ) : tasks.length === 0 ? (
         <div className="assistant-tasks-empty rounded-2xl border border-dashed border-slate-700 bg-slate-900 p-10 text-center">
           <ClipboardList className="mx-auto text-slate-500" size={32} />
@@ -150,9 +171,25 @@ export default function AssistantTasksPage() {
                   ) : null}
                 </div>
 
-                <span className="task-status-badge rounded-lg bg-cyan-500/10 px-3 py-2 text-sm text-cyan-300">
-                  {task.status}
-                </span>
+                <WorkflowStatusBadge
+                  status={task.status}
+                  className="task-status-badge rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+
+              <div className="mt-5">
+                <div className="flex items-center justify-between text-xs text-slate-500">
+                  <span>Production progress</span>
+                  <span>{getWorkflowStatusMeta(task.status).progress}%</span>
+                </div>
+                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-800">
+                  <div
+                    className="task-progress-bar h-full rounded-full"
+                    style={{
+                      width: `${getWorkflowStatusMeta(task.status).progress}%`,
+                    }}
+                  />
+                </div>
               </div>
 
               <div className="mt-4 flex flex-wrap items-center justify-between gap-3">

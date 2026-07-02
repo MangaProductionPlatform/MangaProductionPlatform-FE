@@ -62,6 +62,9 @@ export default function DashboardLayout() {
     return <Navigate to="/login" replace />;
   }
 
+  const homePath =
+    role === "mangaka" ? "/mangaka/dashboard" : "/app/dashboard";
+
   const mangakaMenus = [
   {
     label: "Dashboard",
@@ -140,7 +143,7 @@ export default function DashboardLayout() {
     <div className="min-h-screen bg-[#050816] text-slate-100">
       <div className="flex min-h-screen">
         <aside className="sticky top-0 hidden h-screen w-72 shrink-0 flex-col overflow-hidden border-r border-white/10 bg-slate-950/85 p-5 backdrop-blur-xl lg:flex">
-          <NavLink to="/app/dashboard" className="flex shrink-0 items-center gap-3">
+          <NavLink to={homePath} className="flex shrink-0 items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-300 via-rose-400 to-cyan-300 text-sm font-black text-slate-950">
               M
             </div>
@@ -199,7 +202,7 @@ export default function DashboardLayout() {
         <main className="min-w-0 flex-1">
           <header className="sticky top-0 z-30 border-b border-white/10 bg-slate-950/70 px-4 py-4 backdrop-blur-xl lg:hidden">
             <div className="flex items-center justify-between gap-3">
-              <NavLink to="/app/dashboard" className="flex items-center gap-3">
+              <NavLink to={homePath} className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-300 via-rose-400 to-cyan-300 text-sm font-black text-slate-950">
                   M
                 </div>

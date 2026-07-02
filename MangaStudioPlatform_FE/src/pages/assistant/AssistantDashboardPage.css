@@ -15,6 +15,57 @@
   backdrop-filter: blur(12px);
 }
 
+.assistant-dashboard-page .assistant-stat-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.assistant-dashboard-page .assistant-stat-card::after {
+  position: absolute;
+  inset: auto -1rem -2rem auto;
+  width: 6rem;
+  height: 6rem;
+  border-radius: 999px;
+  background: currentColor;
+  content: "";
+  filter: blur(45px);
+  opacity: 0.12;
+}
+
+.assistant-dashboard-page .stat-amber {
+  color: rgb(251 191 36);
+}
+
+.assistant-dashboard-page .stat-violet {
+  color: rgb(167 139 250);
+}
+
+.assistant-dashboard-page .stat-rose {
+  color: rgb(251 113 133);
+}
+
+.assistant-dashboard-page .stat-blue {
+  color: rgb(96 165 250);
+}
+
+.assistant-dashboard-page .assistant-stat-card p,
+.assistant-dashboard-page .assistant-stat-card span {
+  position: relative;
+  z-index: 1;
+}
+
+.assistant-dashboard-page .assistant-quick-action,
+.assistant-dashboard-page .today-task-card {
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.assistant-dashboard-page .assistant-quick-action:hover,
+.assistant-dashboard-page .today-task-card:hover {
+  transform: translateY(-2px);
+  border-color: rgb(34 211 238 / 0.28);
+  box-shadow: 0 12px 30px rgb(2 6 23 / 0.32);
+}
+
 .assistant-dashboard-page article {
   transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
 }
@@ -39,6 +90,24 @@
 
 .assistant-dashboard-page article + div {
   border-color: rgb(51 65 85);
+}
+
+.assistant-dashboard-page .assistant-dashboard-empty {
+  background-image: radial-gradient(
+    circle at 50% 0%,
+    rgb(34 211 238 / 0.07),
+    transparent 58%
+  );
+}
+
+.assistant-dashboard-page .assistant-dashboard-loading {
+  animation: invitation-loading-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes invitation-loading-pulse {
+  50% {
+    border-color: rgb(34 211 238 / 0.3);
+  }
 }
 
 @keyframes assistant-dashboard-in {

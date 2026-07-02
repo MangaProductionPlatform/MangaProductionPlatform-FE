@@ -49,6 +49,84 @@
   text-shadow: 0 0 14px rgb(244 63 94 / 0.14);
 }
 
+.assistant-task-detail-page .task-progress > div {
+  position: relative;
+  padding-top: 1.15rem;
+  color: rgb(100 116 139);
+  font-size: 0.75rem;
+  text-align: center;
+}
+
+.assistant-task-detail-page .task-progress > div::before {
+  position: absolute;
+  top: 0.25rem;
+  right: 50%;
+  left: -50%;
+  height: 1px;
+  background: rgb(51 65 85);
+  content: "";
+}
+
+.assistant-task-detail-page .task-progress > div:first-child::before {
+  display: none;
+}
+
+.assistant-task-detail-page .task-progress span {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  z-index: 1;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 999px;
+  background: rgb(51 65 85);
+  transform: translateX(-50%);
+}
+
+.assistant-task-detail-page .task-progress .is-active {
+  color: rgb(165 243 252);
+}
+
+.assistant-task-detail-page .task-progress .is-active::before,
+.assistant-task-detail-page .task-progress .is-active span {
+  background: rgb(34 211 238);
+  box-shadow: 0 0 12px rgb(34 211 238 / 0.35);
+}
+
+.assistant-task-detail-page .artwork-preview-card {
+  min-width: 0;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.assistant-task-detail-page .artwork-preview-card:hover {
+  border-color: rgb(34 211 238 / 0.3);
+  box-shadow: 0 12px 30px rgb(2 6 23 / 0.32);
+}
+
+.assistant-task-detail-page .artwork-preview-card img {
+  transition: transform 0.3s ease;
+}
+
+.assistant-task-detail-page .artwork-preview-card:hover img {
+  transform: scale(1.02);
+}
+
+.assistant-task-detail-page .submission-success {
+  animation: assistant-success-in 0.3s ease-out both;
+}
+
+@keyframes assistant-success-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 @keyframes assistant-task-detail-in {
   from {
     opacity: 0;

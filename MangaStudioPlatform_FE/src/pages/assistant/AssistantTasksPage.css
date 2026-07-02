@@ -16,7 +16,6 @@
 }
 
 .assistant-tasks-page .task-status-badge {
-  border: 1px solid rgb(34 211 238 / 0.16);
   letter-spacing: 0.025em;
 }
 
@@ -51,6 +50,12 @@
   animation: assistant-loading-pulse 1.5s ease-in-out infinite;
 }
 
+.assistant-tasks-page .task-progress-bar {
+  background: linear-gradient(90deg, rgb(8 145 178), rgb(34 211 238));
+  box-shadow: 0 0 12px rgb(34 211 238 / 0.28);
+  transition: width 0.35s ease;
+}
+
 @keyframes assistant-tasks-in {
   from {
     opacity: 0;
@@ -63,4 +68,9 @@
   }
 }
 
-@keyframes assistant-loading-pulse { 50% { border-color: rgb(34 211 238 / 0.35); color: rgb(165 243 252); } }
+@keyframes assistant-loading-pulse {
+  50% {
+    border-color: rgb(34 211 238 / 0.35);
+    color: rgb(165 243 252);
+  }
+}

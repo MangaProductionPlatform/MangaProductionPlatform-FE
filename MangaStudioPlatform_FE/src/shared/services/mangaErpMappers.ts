@@ -19,16 +19,26 @@ export function normalizeRole(role: string): AppRole {
 }
 
 export function mapSeries(item: Record<string, unknown>): MangaSeriesDto {
+  if (!item || typeof item !== "object" || Array.isArray(item)) {
+    throw new Error("The Series service returned an invalid series record.");
+  }
+
+  const id = pick<string>(item, "id");
+
+  if (typeof id !== "string" || !id.trim()) {
+    throw new Error("The Series service returned a series without an ID.");
+  }
+
   return {
-    id: pick<string>(item, "id"),
-    title: pick<string>(item, "title"),
+    id,
+    title: pick<string>(item, "title") || "Untitled series",
     description: pick<string | null | undefined>(item, "description"),
     genre: pick<string | null | undefined>(item, "genre"),
     coverImageUrl: pick<string | null | undefined>(item, "coverImageUrl"),
-    status: pick<string>(item, "status"),
+    status: pick<string>(item, "status") || "Unknown",
     authorId: pick<string | null | undefined>(item, "authorId"),
     submissionId: pick<string | null | undefined>(item, "submissionId"),
-    createdAt: pick<string>(item, "createdAt"),
+    createdAt: pick<string>(item, "createdAt") || "",
   };
 }
 
@@ -59,21 +69,34 @@ export function mapSubmissionDetail(item: Record<string, unknown>): SubmissionDe
 }
 
 export function mapChapter(item: Record<string, unknown>, knownSeriesId?: string): ChapterDto {
-  const rawPageTasks =
+  if (!item || typeof item !== "object" || Array.isArray(item)) {
+    throw new Error("The Chapter service returned an invalid chapter record.");
+  }
+
+  const rawPageTasksValue =
     pick<Record<string, unknown>[] | null | undefined>(item, "pages") ??
     pick<Record<string, unknown>[] | null | undefined>(item, "pageTasks") ?? [];
+  const rawPageTasks = Array.isArray(rawPageTasksValue)
+    ? rawPageTasksValue
+    : [];
 
-  return {
-    id:
+  const id =
     pick<string>(item, "id") ??
     pick<string>(item, "chapterId") ??
     pick<string>(item, "ChapterId") ??
-    pick<string>(item, "Id"),
+    pick<string>(item, "Id");
+
+  if (typeof id !== "string" || !id.trim()) {
+    throw new Error("The Chapter service returned a chapter without an ID.");
+  }
+
+  return {
+    id,
     seriesId: pick<string>(item, "seriesId") ?? knownSeriesId ?? "",
-    title: pick<string>(item, "title"),
+    title: pick<string>(item, "title") || "Untitled chapter",
     chapterNumber: Number(pick<number>(item, "chapterNumber")),
     totalPages: Number(pick<number>(item, "totalPages")),
-    status: pick<string>(item, "status"),
+    status: pick<string>(item, "status") || "Unknown",
     coverImageUrl: pick<string | null | undefined>(item, "coverImageUrl"),
     assignedEditorId: pick<string | null | undefined>(item, "assignedEditorId"),
     scheduledPublishAt: pick<string | null | undefined>(item, "scheduledPublishAt"),
@@ -86,13 +109,32 @@ export function mapChapter(item: Record<string, unknown>, knownSeriesId?: string
 }
 
 export function mapPageTask(item: Record<string, unknown>): PageTaskDto {
+  if (!item || typeof item !== "object" || Array.isArray(item)) {
+    throw new Error("The Task service returned an invalid task record.");
+  }
+
+  const id = pick<string>(item, "id") ?? pick<string>(item, "pageTaskId");
+  const pageNumber = Number(pick<number>(item, "pageNumber"));
+  const rawStatus =
+    pick<unknown>(item, "status") ?? pick<unknown>(item, "taskStatus");
+
+  if (typeof id !== "string" || !id.trim()) {
+    throw new Error("The Task service returned a task without an ID.");
+  }
+
+  if (!Number.isInteger(pageNumber) || pageNumber < 1) {
+    throw new Error("The Task service returned an invalid page number.");
+  }
+
   return {
-    id: pick<string>(item, "id") ?? pick<string>(item, "pageTaskId"),
+    id,
     chapterId: pick<string | undefined>(item, "chapterId"),
     chapterTitle: pick<string | undefined>(item, "chapterTitle"),
     chapterNumber: Number(pick<number | undefined>(item, "chapterNumber")) || undefined,
-    pageNumber: Number(pick<number>(item, "pageNumber")),
-    status: pick<string>(item, "status") ?? pick<string>(item, "taskStatus") ?? "Unknown",
+    pageNumber,
+    status: typeof rawStatus === "string" && rawStatus.trim()
+      ? rawStatus
+      : "Unknown",
     assignedAssistantId: pick<string | null | undefined>(item, "assignedAssistantId"),
     previewCompositeUrl: pick<string | null | undefined>(item, "previewCompositeUrl"),
     description: pick<string | null | undefined>(item, "description"),

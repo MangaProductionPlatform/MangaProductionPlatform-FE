@@ -55,6 +55,61 @@
   color: rgb(165 243 252);
 }
 
+.task-assignment-page .assignment-summary {
+  background-image: radial-gradient(
+    circle at 100% 0%,
+    rgb(34 211 238 / 0.1),
+    transparent 46%
+  );
+  box-shadow: inset 3px 0 0 rgb(34 211 238 / 0.7);
+}
+
+.task-assignment-page .assignment-summary dt {
+  color: rgb(100 116 139);
+  font-size: 0.75rem;
+}
+
+.task-assignment-page .assignment-summary dd {
+  margin-top: 0.25rem;
+  color: rgb(226 232 240);
+  font-size: 0.875rem;
+}
+
+.task-assignment-page .sam-workspace {
+  background-image: radial-gradient(
+    circle at 0% 0%,
+    rgb(34 211 238 / 0.07),
+    transparent 38%
+  );
+}
+
+.task-assignment-page .sam-upload-area {
+  transition: transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.task-assignment-page .sam-upload-area:hover {
+  transform: translateY(-2px);
+  border-color: rgb(34 211 238 / 0.55);
+  background-color: rgb(6 182 212 / 0.08);
+}
+
+.task-assignment-page .sam-image-container img {
+  transition: filter 0.2s ease;
+}
+
+.task-assignment-page .sam-image-container img.cursor-crosshair:hover {
+  filter: brightness(1.06);
+}
+
+.task-assignment-page .sam-selected-point {
+  box-shadow: 0 0 18px rgb(34 211 238 / 0.25);
+}
+
+.task-assignment-page .sam-mask-preview pre {
+  scrollbar-color: rgb(71 85 105) transparent;
+  scrollbar-width: thin;
+}
+
 @keyframes task-assignment-in {
   from {
     opacity: 0;
