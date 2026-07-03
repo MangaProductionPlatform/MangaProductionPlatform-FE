@@ -6,7 +6,8 @@ export type ServiceName =
   | "task"
   | "qa"
   | "segmentation"
-  | "publishing";
+  | "publishing"
+  | "media";
 
 export type ApiErrorBody = {
   message?: string;
@@ -121,13 +122,43 @@ export type ChapterDto = {
 
 export type PageTaskDto = {
   id: string;
+  chapterId?: string;
+  chapterTitle?: string;
+  chapterNumber?: number;
   pageNumber: number;
   status: string;
   assignedAssistantId?: string | null;
   previewCompositeUrl?: string | null;
   description?: string | null;
+  currentLayerType?: string | null;
+  currentLayerVersion?: number | null;
+  fileUrlOriginal?: string | null;
+  fileUrlOptimized?: string | null;
+  submissionNote?: string | null;
+  rejectionNote?: string | null;
   createdAt?: string;
   updatedAt?: string;
+};
+
+export type LayerType = "LineArt" | "Background" | "Coloring" | "Text" | "Effects" | "Dialogue";
+
+export type SubmitPageLayerPayload = {
+  LayerType: LayerType;
+  FileUrlOriginal: string;
+  FileUrlOptimized?: string | null;
+};
+
+export type ReviewPageTaskPayload = {
+  IsAccepted: boolean;
+  RejectionNote?: string | null;
+};
+
+export type BulkReviewPageTaskPayload = {
+  Reviews: Array<{
+    PageTaskId: string;
+    IsAccepted: boolean;
+    RejectionNote?: string | null;
+  }>;
 };
 
 export type RankingBoardItemDto = {
@@ -143,6 +174,11 @@ export type CreateSubmissionPayload = {
   genre?: string | null;
   coverImageUrl?: string | null;
   manuscriptUrl?: string | null;
+};
+
+export type MediaUploadResult = {
+  url: string;
+  fileKey: string;
 };
 
 export type UpdateSubmissionMetadataPayload = {
@@ -183,24 +219,56 @@ export type SubmissionDetailDto = SubmissionSummaryDto & {
 };
 
 export type CreateChapterPayload = {
-  seriesId: string;
-  title: string;
-  chapterNumber: number;
-  totalPages: number;
-  assignedEditorId?: string | null;
-  coverImageUrl?: string | null;
+  SeriesId: string;
+  Title: string;
+  ChapterNumber: number;
+  TotalPages: number;
+  AssignedEditorId?: string | null;
+  CoverImageUrl?: string | null;
 };
 
 export type ActivatePagePayload = {
-  pageNumber: number;
-  assignedAssistantId: string;
-  description?: string | null;
+  PageNumber: number;
+  AssignedAssistantId: string;
+  Description?: string | null;
+  Deadline?: string | null;
+};
+
+export type BulkActivatePagesPayload = {
+  PageNumbers: number[];
+  AssignedAssistantId: string;
+  Description?: string | null;
+  Deadline?: string | null;
+};
+
+export type ReassignPageTaskPayload = {
+  NewAssistantId: string;
+  Description?: string | null;
+};
+
+export type UpdateTaskDeadlinePayload = {
+  Deadline?: string | null;
 };
 
 export type SetPageRegionPayload = {
   pageNumber: number;
   regionMask: string;
   taskType: string;
+};
+
+export type LayerHistoryDto = {
+  layerId: string;
+  pageTaskId: string;
+  pageNumber: number;
+  layerType: string;
+  fileUrlOriginal: string;
+  fileUrlOptimized: string;
+  version: number;
+  isCurrentVersion: boolean;
+  rejectionNote?: string | null;
+  submittedAt?: string | null;
+  reviewedAt?: string | null;
+  status: string;
 };
 
 export type SamEmbeddingResponse = {
@@ -238,9 +306,11 @@ export type UpdateProfilePayload = {
 export type SchedulePublicationPayload = {
   chapterId: string;
   seriesId: string;
-  issueType: string;
+  issueType: PublicationType;
   scheduledPublishAt: string;
 };
+
+export type PublicationType = "Weekly" | "Monthly" | "Special";
 
 export type UpdateAdminAccountPayload = {
   fullName: string;
@@ -290,6 +360,24 @@ export type ResolveSubmissionConflictResult = {
   finalDecision: string;
   feedbackMessage: string;
   resolvedAt: string;
+};
+
+export type SubmissionVoteDetailDto = {
+  editorId: string;
+  voteType: SubmissionVoteType;
+  comment?: string | null;
+  votedAt: string;
+};
+
+export type SubmissionVotesDto = {
+  submissionId: string;
+  submissionTitle: string;
+  round: number;
+  totalVotes: number;
+  approveCount: number;
+  rejectCount: number;
+  revisionCount: number;
+  votes: SubmissionVoteDetailDto[];
 };
 
 export type FeedbackPinDto = {
@@ -343,14 +431,29 @@ export type QaBugPinDto = {
   createdAt: string;
 };
 
-export type QaSessionDto = {
-  id: string;
-  chapterId: string;
-  editorId: string;
+export type QaPinDto = {
+  pinId: string;
+  pageTaskId: string;
+  coordinateX: number;
+  coordinateY: number;
+  issueType: string;
+  noteMessage: string;
   status: string;
-  isApproved: boolean;
-  approvedAt?: string | null;
   createdAt: string;
+};
+
+export type QaSessionDto = {
+  chapterId: string;
+  batchToken: string;
+  totalPins: number;
+  resolvedPins: number;
+  pendingPins: number;
+  status: string;
+  id?: string;
+  editorId?: string;
+  isApproved?: boolean;
+  approvedAt?: string | null;
+  createdAt?: string;
   completedAt?: string | null;
 };
 

@@ -35,7 +35,7 @@ export default function ChapterTaskSetupPage() {
               <option>Sketch</option>
               <option>Lineart</option>
               <option>Background</option>
-              <option>Color</option>
+              <option>Coloring</option>
               <option>Effect</option>
             </select>
           </div>

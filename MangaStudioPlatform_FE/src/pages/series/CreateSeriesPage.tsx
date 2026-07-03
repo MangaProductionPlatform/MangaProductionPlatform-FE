@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import type { ChangeEvent } from "react";
 import type { FormEvent } from "react";
 import { useState } from "react";
 import { ImagePlus, Send, Upload } from "lucide-react";
@@ -13,6 +14,7 @@ export default function CreateSeriesPage() {
   const [coverImageUrl, setCoverImageUrl] = useState("");
   const [manuscriptUrl, setManuscriptUrl] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploadingManuscript, setIsUploadingManuscript] = useState(false);
 
   const currentUser = JSON.parse(localStorage.getItem("currentUser") || "null") as
     | { userId?: string }
@@ -27,7 +29,7 @@ export default function CreateSeriesPage() {
     }
 
     if (!manuscriptUrl.trim()) {
-      toast.error("Manuscript URL required", "Paste a manuscript URL before submitting.");
+      toast.error("Manuscript image required", "Upload a manuscript image before submitting.");
       return;
     }
 
@@ -47,7 +49,7 @@ export default function CreateSeriesPage() {
       toast.success(
         "Proposal submitted",
         submissionId
-          ? `Submission ID: ${submissionId}. Sent to Tantou Editor review.`
+          ? `Submission ID: ${submissionId}. Sent to Editorial Board review.`
           : "Your proposal was sent to the backend.",
       );
     } catch (err) {
@@ -57,6 +59,26 @@ export default function CreateSeriesPage() {
       );
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleManuscriptUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingManuscript(true);
+    try {
+      const result = await mangaErpApi.uploadImage(file);
+      setManuscriptUrl(result.url);
+      toast.success("Manuscript uploaded", "The uploaded image is ready for submission.");
+    } catch (err) {
+      toast.error(
+        "Could not upload manuscript",
+        err instanceof Error ? err.message : "Please choose a PNG, JPG, JPEG, or WEBP image.",
+      );
+    } finally {
+      setIsUploadingManuscript(false);
+      event.target.value = "";
     }
   };
 
@@ -71,7 +93,7 @@ export default function CreateSeriesPage() {
             Submit a new manga proposal
           </h2>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
-            Define the title, genre, description, cover, and manuscript URL.
+            Define the title, genre, description, cover, and manuscript image.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -164,13 +186,24 @@ export default function CreateSeriesPage() {
 </div>
             </div>
             <div className="mt-5 space-y-3">
-              <input
-                required
-                className="input"
-                value={manuscriptUrl}
-                onChange={(event) => setManuscriptUrl(event.target.value)}
-                placeholder="Manuscript URL required by backend"
-              />
+              {manuscriptUrl ? (
+                <img
+                  src={manuscriptUrl}
+                  alt="Manuscript preview"
+                  className="mx-auto max-h-72 rounded-lg border border-white/10 object-contain shadow-xl shadow-slate-950/30"
+                />
+              ) : null}
+              <label className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-cyan-300/30 bg-cyan-300/10 px-4 py-2.5 text-sm font-semibold text-cyan-100 hover:bg-cyan-300/15">
+                <Upload size={16} />
+                {isUploadingManuscript ? "Uploading..." : manuscriptUrl ? "Replace manuscript image" : "Upload manuscript image"}
+                <input
+                  className="sr-only"
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  disabled={isUploadingManuscript || isSubmitting}
+                  onChange={(event) => void handleManuscriptUpload(event)}
+                />
+              </label>
             </div>
           </section>
         </aside>

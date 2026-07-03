@@ -6,6 +6,7 @@ import type {
   CurrentUser,
   SubmissionDetailDto,
   SubmissionSummaryDto,
+  SubmissionVotesDto,
   SubmissionVoteType,
 } from "../../shared/types/mangaErp";
 import { useToast } from "../../shared/components/toastContext";
@@ -37,6 +38,7 @@ export default function SeriesProposalsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [runningAction, setRunningAction] = useState<BoardAction | null>(null);
   const [lastVoteResult, setLastVoteResult] = useState<string | null>(null);
+  const [voteSummary, setVoteSummary] = useState<SubmissionVotesDto | null>(null);
 
   const currentUser = useMemo(
     () => JSON.parse(localStorage.getItem("currentUser") || "null") as CurrentUser | null,
@@ -65,7 +67,10 @@ export default function SeriesProposalsPage() {
   };
 
   useEffect(() => {
+    // Initial backend fetch; state updates occur as the request resolves.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadQueue();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const openSubmission = async (id: string) => {
@@ -74,6 +79,9 @@ export default function SeriesProposalsPage() {
       setSelected(detail);
       setReason(detail.feedbackMessage ?? "");
       setLastVoteResult(null);
+      setVoteSummary(null);
+      const votes = await mangaErpApi.getSubmissionVotes(id).catch(() => null);
+      setVoteSummary(votes);
     } catch (err) {
       toast.error(
         "Could not open submission",
@@ -139,6 +147,8 @@ export default function SeriesProposalsPage() {
       await loadQueue();
       const refreshed = await mangaErpApi.getSubmission(selected.id).catch(() => null);
       setSelected(refreshed);
+      const votes = await mangaErpApi.getSubmissionVotes(selected.id).catch(() => null);
+      setVoteSummary(votes);
     } catch (err) {
       toast.error(
         isEditorInChief ? "Conflict decision failed" : "Vote failed",
@@ -248,6 +258,33 @@ export default function SeriesProposalsPage() {
               {isEditorInChief && selected.status !== "Conflict_Escalated" ? (
                 <div className="rounded-lg border border-amber-300/20 bg-amber-300/10 p-3 text-sm text-amber-100">
                   This proposal is not escalated.
+                </div>
+              ) : null}
+
+              {voteSummary ? (
+                <div className="rounded-lg border border-white/10 bg-slate-950/50 p-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-xs font-semibold uppercase tracking-[.16em] text-slate-400">
+                      Round {voteSummary.round} votes
+                    </p>
+                    <p className="text-xs text-slate-400">
+                      {voteSummary.totalVotes}/3 | A {voteSummary.approveCount} | R {voteSummary.rejectCount} | Rev {voteSummary.revisionCount}
+                    </p>
+                  </div>
+                  <div className="mt-3 space-y-2">
+                    {voteSummary.votes.map((vote) => (
+                      <div key={`${vote.editorId}-${vote.votedAt}`} className="rounded-md border border-white/10 p-2 text-xs text-slate-300">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <span className="font-bold text-white">{vote.voteType}</span>
+                          <span className="break-all text-slate-500">{vote.editorId}</span>
+                        </div>
+                        {vote.comment ? <p className="mt-1 leading-5">{vote.comment}</p> : null}
+                      </div>
+                    ))}
+                    {!voteSummary.votes.length ? (
+                      <p className="text-xs text-slate-500">No votes recorded for the current round.</p>
+                    ) : null}
+                  </div>
                 </div>
               ) : null}
 

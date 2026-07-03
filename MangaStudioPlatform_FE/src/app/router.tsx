@@ -3,6 +3,7 @@ import AdminLayout from "../layouts/AdminLayout";
 import AssistantLayout from "../layouts/AssistantLayout";
 import DashboardLayout from "../layouts/DashboardLayout";
 import PublicLayout from "../layouts/PublicLayout";
+import { RequireRole } from "../shared/components/RequireRole";
 import AdminAiManagementPage from "../pages/admin/AdminAiManagementPage";
 import AdminCreateUserPage from "../pages/admin/AdminCreateUserPage";
 import AdminDashboardPage from "../pages/admin/AdminDashboardPage";
@@ -87,23 +88,27 @@ export function AppRouter() {
       <Route path="/app" element={<DashboardLayout />}>
         <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<DashboardPage />} />
-        <Route path="editor/dashboard" element={<EditorWorkspacePage />} />
-        <Route path="editor/review-queue" element={<ReviewQueuePage />} />
-        <Route path="editor/series-monitoring" element={<SeriesMonitoringPage />} />
-        <Route path="editor/annotations" element={<AnnotationsPage />} />
-        <Route path="editor/publishing-queue" element={<PublishingQueuePage />} />
-        <Route path="editor/ranking-reports" element={<RankingReportsPage />} />
-        <Route path="editor/notifications" element={<EditorNotificationsPage />} />
-        <Route path="editor/profile" element={<EditorProfilePage />} />
-        <Route path="board/dashboard" element={<BoardDashboardPage />} />
-        <Route path="board/series-proposals" element={<SeriesProposalsPage />} />
-        <Route path="board/voting-center" element={<VotingCenterPage />} />
-        <Route path="board/publishing-schedule" element={<PublishingSchedulePage />} />
-        <Route path="board/ranking-analytics" element={<RankingAnalyticsPage />} />
-        <Route path="board/cancellation-review" element={<CancellationReviewPage />} />
-        <Route path="board/reports" element={<ReportsPage />} />
-        <Route path="board/notifications" element={<BoardNotificationsPage />} />
-        <Route path="board/profile" element={<BoardProfilePage />} />
+        <Route element={<RequireRole roles={["editor"]} />}>
+          <Route path="editor/dashboard" element={<EditorWorkspacePage />} />
+          <Route path="editor/review-queue" element={<ReviewQueuePage />} />
+          <Route path="editor/series-monitoring" element={<SeriesMonitoringPage />} />
+          <Route path="editor/annotations" element={<AnnotationsPage />} />
+          <Route path="editor/publishing-queue" element={<PublishingQueuePage />} />
+          <Route path="editor/ranking-reports" element={<RankingReportsPage />} />
+          <Route path="editor/notifications" element={<EditorNotificationsPage />} />
+          <Route path="editor/profile" element={<EditorProfilePage />} />
+        </Route>
+        <Route element={<RequireRole roles={["editorial_board", "editor_in_chief"]} />}>
+          <Route path="board/dashboard" element={<BoardDashboardPage />} />
+          <Route path="board/series-proposals" element={<SeriesProposalsPage />} />
+          <Route path="board/voting-center" element={<VotingCenterPage />} />
+          <Route path="board/publishing-schedule" element={<PublishingSchedulePage />} />
+          <Route path="board/ranking-analytics" element={<RankingAnalyticsPage />} />
+          <Route path="board/cancellation-review" element={<CancellationReviewPage />} />
+          <Route path="board/reports" element={<ReportsPage />} />
+          <Route path="board/notifications" element={<BoardNotificationsPage />} />
+          <Route path="board/profile" element={<BoardProfilePage />} />
+        </Route>
 
         <Route path="series" element={<SeriesListPage />} />
         <Route path="series/create" element={<CreateSeriesPage />} />
@@ -126,30 +131,34 @@ export function AppRouter() {
         <Route path="profile" element={<ProfilePage />} />
       </Route>
 
-      <Route path="/assistant" element={<AssistantLayout />}>
-        <Route index element={<Navigate to="dashboard" replace />} />
-        <Route path="dashboard" element={<AssistantDashboardPage />} />
-        <Route path="tasks" element={<AssistantTasksPage />} />
-        <Route path="tasks/:id" element={<AssistantTaskDetailPage />} />
-        <Route path="chapters" element={<AssistantChaptersPage />} />
-        <Route path="submissions" element={<AssistantSubmissionsPage />} />
-        <Route path="notifications" element={<AssistantNotificationsPage />} />
-        <Route path="income" element={<AssistantIncomePage />} />
-        <Route path="profile" element={<AssistantProfilePage />} />
+      <Route element={<RequireRole roles={["assistant"]} />}>
+        <Route path="/assistant" element={<AssistantLayout />}>
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<AssistantDashboardPage />} />
+          <Route path="tasks" element={<AssistantTasksPage />} />
+          <Route path="tasks/:id" element={<AssistantTaskDetailPage />} />
+          <Route path="chapters" element={<AssistantChaptersPage />} />
+          <Route path="submissions" element={<AssistantSubmissionsPage />} />
+          <Route path="notifications" element={<AssistantNotificationsPage />} />
+          <Route path="income" element={<AssistantIncomePage />} />
+          <Route path="profile" element={<AssistantProfilePage />} />
+        </Route>
       </Route>
 
-      <Route path="/mangaka" element={<DashboardLayout />}>
-        <Route index element={<Navigate to="dashboard" replace />} />
-        <Route path="dashboard" element={<MangakaDashboardPage />} />
-        <Route path="submissions" element={<SubmissionPage />} />
-        <Route path="series" element={<SeriesListPage />} />
-        <Route path="series/:id" element={<SeriesDetailPage />} />
-        <Route path="assistants" element={<AssistantsPage />} />
-        <Route path="chapters" element={<ChapterManagementPage />} />
-        <Route path="task-assignment" element={<TaskAssignmentPage />} />
-        <Route path="layer-review" element={<LayerReviewPage />} />
-        <Route path="qa-submission" element={<QaSubmissionPage />} />
-        <Route path="profile" element={<MangakaProfilePage />} />
+      <Route element={<RequireRole roles={["mangaka"]} />}>
+        <Route path="/mangaka" element={<DashboardLayout />}>
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<MangakaDashboardPage />} />
+          <Route path="submissions" element={<SubmissionPage />} />
+          <Route path="series" element={<SeriesListPage />} />
+          <Route path="series/:id" element={<SeriesDetailPage />} />
+          <Route path="assistants" element={<AssistantsPage />} />
+          <Route path="chapters" element={<ChapterManagementPage />} />
+          <Route path="task-assignment" element={<TaskAssignmentPage />} />
+          <Route path="layer-review" element={<LayerReviewPage />} />
+          <Route path="qa-submission" element={<QaSubmissionPage />} />
+          <Route path="profile" element={<MangakaProfilePage />} />
+        </Route>
       </Route>
 
 

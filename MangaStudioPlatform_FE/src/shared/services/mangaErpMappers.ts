@@ -1,4 +1,4 @@
-import type { AppRole, ChapterDto, MangaSeriesDto, SubmissionDetailDto, SubmissionSummaryDto } from "../types/mangaErp";
+import type { AppRole, ChapterDto, MangaSeriesDto, PageTaskDto, SubmissionDetailDto, SubmissionSummaryDto } from "../types/mangaErp";
 
 export function pick<T>(value: Record<string, unknown>, key: string): T {
   return (value[key] ?? value[`${key[0].toUpperCase()}${key.slice(1)}`]) as T;
@@ -81,15 +81,28 @@ export function mapChapter(item: Record<string, unknown>, knownSeriesId?: string
     createdAt: pick<string>(item, "createdAt"),
     approvedPages: Number(pick<number>(item, "approvedPages") ?? 0),
     progressPercent: Number(pick<number>(item, "progressPercent") ?? 0),
-    pageTasks: rawPageTasks.map((pageTask) => ({
-      id: pick<string>(pageTask, "id") ?? pick<string>(pageTask, "pageTaskId"),
-      pageNumber: Number(pick<number>(pageTask, "pageNumber")),
-      status: pick<string>(pageTask, "status") ?? pick<string>(pageTask, "taskStatus"),
-      assignedAssistantId: pick<string | null | undefined>(pageTask, "assignedAssistantId"),
-      previewCompositeUrl: pick<string | null | undefined>(pageTask, "previewCompositeUrl"),
-      description: pick<string | null | undefined>(pageTask, "description"),
-      createdAt: pick<string>(pageTask, "createdAt"),
-      updatedAt: pick<string>(pageTask, "updatedAt"),
-    })),
+    pageTasks: rawPageTasks.map(mapPageTask),
+  };
+}
+
+export function mapPageTask(item: Record<string, unknown>): PageTaskDto {
+  return {
+    id: pick<string>(item, "id") ?? pick<string>(item, "pageTaskId"),
+    chapterId: pick<string | undefined>(item, "chapterId"),
+    chapterTitle: pick<string | undefined>(item, "chapterTitle"),
+    chapterNumber: Number(pick<number | undefined>(item, "chapterNumber")) || undefined,
+    pageNumber: Number(pick<number>(item, "pageNumber")),
+    status: pick<string>(item, "status") ?? pick<string>(item, "taskStatus") ?? "Unknown",
+    assignedAssistantId: pick<string | null | undefined>(item, "assignedAssistantId"),
+    previewCompositeUrl: pick<string | null | undefined>(item, "previewCompositeUrl"),
+    description: pick<string | null | undefined>(item, "description"),
+    currentLayerType: pick<string | null | undefined>(item, "currentLayerType"),
+    currentLayerVersion: pick<number | null | undefined>(item, "currentLayerVersion"),
+    fileUrlOriginal: pick<string | null | undefined>(item, "fileUrlOriginal"),
+    fileUrlOptimized: pick<string | null | undefined>(item, "fileUrlOptimized"),
+    submissionNote: pick<string | null | undefined>(item, "submissionNote") ?? pick<string | null | undefined>(item, "note"),
+    rejectionNote: pick<string | null | undefined>(item, "rejectionNote"),
+    createdAt: pick<string | undefined>(item, "createdAt"),
+    updatedAt: pick<string | undefined>(item, "updatedAt"),
   };
 }

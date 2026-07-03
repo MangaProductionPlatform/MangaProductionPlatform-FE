@@ -1,17 +1,17 @@
 import { useEffect, useState } from "react";
 import { BookOpen, ClipboardCheck, Plus, RefreshCw, Send, Wand2 } from "lucide-react";
-import { chapterService } from "../../shared/services/chapterService";
+import { useToast } from "../../shared/components/toastContext";
 import { mangaErpApi } from "../../shared/services/mangaErpService";
 import type { ChapterDto, MangaSeriesDto } from "../../shared/types/mangaErp";
 
 export default function TaskAssignmentPage() {
+  const toast = useToast();
   const [seriesList, setSeriesList] = useState<MangaSeriesDto[]>([]);
   const [selectedSeriesId, setSelectedSeriesId] = useState("");
   const [chapters, setChapters] = useState<ChapterDto[]>([]);
   const [chapterId, setChapterId] = useState("");
   const [pageNumber, setPageNumber] = useState(1);
   const [assistantId, setAssistantId] = useState("");
-  const [taskDescription, setTaskDescription] = useState("");
   const [taskType, setTaskType] = useState("Background");
   const [regionMask, setRegionMask] = useState("");
   const [samFile, setSamFile] = useState<File | null>(null);
@@ -52,11 +52,9 @@ export default function TaskAssignmentPage() {
     } catch (err) {
       setChapters([]);
       setChapterId("");
-      setMessage(
-        err instanceof Error
-          ? err.message
-          : "Không thể tải danh sách chapter từ backend."
-      );
+      const detail = err instanceof Error ? err.message : "Could not load chapters.";
+      setMessage(detail);
+      toast.error("Could not load chapter workspace", detail);
     } finally {
       setIsLoading(false);
     }
@@ -73,11 +71,9 @@ export default function TaskAssignmentPage() {
     } catch (err) {
       setChapters([]);
       setChapterId("");
-      setMessage(
-        err instanceof Error
-          ? err.message
-          : "Không thể tải chapter theo series."
-      );
+      const detail = err instanceof Error ? err.message : "Could not load chapters.";
+      setMessage(detail);
+      toast.error("Could not load series chapters", detail);
     } finally {
       setIsLoading(false);
     }
@@ -100,13 +96,13 @@ export default function TaskAssignmentPage() {
     setMessage("");
 
     try {
-      await chapterService.createBasePage(chapterId, pageNumber);;
-
-      setMessage("Tạo base page thành công. Bây giờ có thể Activate & Assign Task.");
+      await mangaErpApi.addBasePage(chapterId, pageNumber);
+      setMessage("");
+      toast.success("Base page created", `Page ${pageNumber} is ready for task assignment.`);
     } catch (err) {
-      setMessage(
-        err instanceof Error ? err.message : "Tạo base page thất bại."
-      );
+      const detail = err instanceof Error ? err.message : "Unknown error";
+      setMessage(detail);
+      toast.error("Could not create base page", detail);
     } finally {
       setIsCreatingPage(false);
     }
@@ -127,17 +123,16 @@ export default function TaskAssignmentPage() {
     setMessage("");
 
     try {
-      await chapterService.activatePageTask(chapterId, {
+      await mangaErpApi.activatePage(chapterId, {
         PageNumber: pageNumber,
         AssignedAssistantId: assistantId.trim(),
-        Description: taskDescription.trim() || null,
       });
-
-      setMessage("Phân công task cho Assistant thành công.");
+      setMessage("");
+      toast.success("Page task assigned", `Page ${pageNumber} is now in the Assistant task inbox.`);
     } catch (err) {
-      setMessage(
-        err instanceof Error ? err.message : "Phân công task thất bại."
-      );
+      const detail = err instanceof Error ? err.message : "Unknown error";
+      setMessage(detail);
+      toast.error("Could not assign page task", detail);
     } finally {
       setIsAssigning(false);
     }
@@ -462,13 +457,6 @@ export default function TaskAssignmentPage() {
               </button>
             </div>
           </div>
-
-          <textarea
-            placeholder="Mô tả yêu cầu layer cho Assistant..."
-            value={taskDescription}
-            onChange={(event) => setTaskDescription(event.target.value)}
-            className="mt-5 h-32 w-full rounded-xl border border-slate-700 bg-slate-950 p-4 text-slate-100 outline-none"
-          />
 
           {message && (
             <div className="mt-5 rounded-xl border border-cyan-500/30 bg-cyan-500/10 p-4 text-sm text-cyan-200">

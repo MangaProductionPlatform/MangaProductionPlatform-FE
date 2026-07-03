@@ -30,11 +30,10 @@ export default function ChapterManagementPage() {
   const [chapterTitle, setChapterTitle] = useState("");
   const [chapterNumber, setChapterNumber] = useState("1");
   const [totalPages, setTotalPages] = useState("24");
-  const [chapterCoverImageUrl, setChapterCoverImageUrl] = useState("");
+  const [assignedEditorId, setAssignedEditorId] = useState("");
   const [detailChapterId, setDetailChapterId] = useState("");
   const [pageNumber, setPageNumber] = useState("1");
   const [assistantId, setAssistantId] = useState("");
-  const [pageTaskDescription, setPageTaskDescription] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isActivatingPage, setIsActivatingPage] = useState(false);
@@ -189,23 +188,26 @@ export default function ChapterManagementPage() {
       return;
     }
 
+    if (!assignedEditorId.trim()) {
+      toast.error("Editor ID required", "Assign a Tantou Editor when creating the chapter.");
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
       await mangaErpApi.createChapter({
-        seriesId: selectedSeriesId,
-        title: chapterTitle,
-        chapterNumber: Number(chapterNumber),
-        totalPages: Number(totalPages),
-        assignedEditorId: null,
-        coverImageUrl: chapterCoverImageUrl.trim() || null,
+        SeriesId: selectedSeriesId,
+        Title: chapterTitle,
+        ChapterNumber: Number(chapterNumber),
+        TotalPages: Number(totalPages),
+        AssignedEditorId: assignedEditorId.trim(),
       });
 
       toast.success("Chapter created", `${chapterTitle} was saved to the backend.`);
 
       const createdTitle = chapterTitle;
       setChapterTitle("");
-      setChapterCoverImageUrl("");
 
       const chapterResult = await mangaErpApi.getChaptersBySeries(selectedSeriesId);
 
@@ -241,13 +243,21 @@ export default function ChapterManagementPage() {
     setIsActivatingPage(true);
 
     try {
+      try {
+        await mangaErpApi.addBasePage(detailChapterId, Number(pageNumber));
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "";
+        if (!message.toLowerCase().includes("already exists")) {
+          throw err;
+        }
+      }
+
       await mangaErpApi.activatePage(detailChapterId, {
-        pageNumber: Number(pageNumber),
-        assignedAssistantId: assistantId.trim(),
-        description: pageTaskDescription.trim() || null,
+        PageNumber: Number(pageNumber),
+        AssignedAssistantId: assistantId.trim(),
       });
 
-      toast.success("Page task activated", `Page ${pageNumber} was assigned in the backend.`);
+      toast.success("Page task activated", `Page ${pageNumber} was created if needed and assigned in the backend.`);
 
       const detail = await mangaErpApi.getChapter(detailChapterId);
       setSelectedChapter(detail);
@@ -570,13 +580,6 @@ export default function ChapterManagementPage() {
                 placeholder="Assistant user ID"
               />
 
-              <textarea
-                className="input min-h-24 resize-y"
-                value={pageTaskDescription}
-                onChange={(event) => setPageTaskDescription(event.target.value)}
-                placeholder="Task description"
-              />
-
               <button
                 disabled={isActivatingPage}
                 className="inline-flex items-center justify-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-bold text-slate-950 hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-60"
@@ -649,10 +652,11 @@ export default function ChapterManagementPage() {
               </div>
 
               <input
+                required
                 className="input"
-                value={chapterCoverImageUrl}
-                onChange={(event) => setChapterCoverImageUrl(event.target.value)}
-                placeholder="Cover image URL"
+                value={assignedEditorId}
+                onChange={(event) => setAssignedEditorId(event.target.value)}
+                placeholder="Assigned Tantou Editor ID"
               />
 
               <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-cyan-300/30 bg-cyan-300/5 p-5 text-center">

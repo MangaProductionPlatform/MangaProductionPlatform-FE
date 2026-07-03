@@ -1,338 +1,146 @@
-import { useEffect, useState } from "react";
-import {
-  CheckCircle,
-  Eye,
-  MessageSquare,
-  RefreshCw,
-  XCircle,
-} from "lucide-react";
-import { taskService } from "../../shared/services/taskService";
+import { useCallback, useEffect, useState } from "react";
+import { CheckCircle2, Eye, MessageSquare, RefreshCw, RotateCcw } from "lucide-react";
+import { useToast } from "../../shared/components/toastContext";
 import { mangaErpApi } from "../../shared/services/mangaErpService";
-import type { ChapterDto, MangaSeriesDto } from "../../shared/types/mangaErp";
-
-type ChapterTask = {
-  id?: string;
-  pageTaskId: string;
-  pageNumber: number;
-  taskStatus: string;
-  assignedAssistantId?: string | null;
-  currentLayerType?: string | null;
-  currentLayerVersion?: number | null;
-  rejectionNote?: string | null;
-  updatedAt: string;
-  fileUrlOriginal?: string;
-  fileUrlOptimized?: string;
-};
+import type { ChapterDto, LayerHistoryDto, MangaSeriesDto, PageTaskDto } from "../../shared/types/mangaErp";
 
 export default function LayerReviewPage() {
-  const [chapterId, setChapterId] = useState("");
+  const toast = useToast();
+  const role = (JSON.parse(localStorage.getItem("currentUser") || "null") as { role?: string } | null)?.role;
+  const [series, setSeries] = useState<MangaSeriesDto[]>([]);
   const [seriesId, setSeriesId] = useState("");
-  const [seriesList, setSeriesList] = useState<MangaSeriesDto[]>([]);
   const [chapters, setChapters] = useState<ChapterDto[]>([]);
-  const [tasks, setTasks] = useState<ChapterTask[]>([]);
-  const [selectedTaskId, setSelectedTaskId] = useState("");
-  const [rejectionNote, setRejectionNote] = useState("");
+  const [chapterId, setChapterId] = useState("");
+  const [tasks, setTasks] = useState<PageTaskDto[]>([]);
+  const [selectedId, setSelectedId] = useState("");
+  const [feedback, setFeedback] = useState("");
+  const [pendingLayer, setPendingLayer] = useState<LayerHistoryDto | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isReviewing, setIsReviewing] = useState(false);
-  const [message, setMessage] = useState("");
-
-  const selectedTask = tasks.find(
-    (task) => (task.pageTaskId ?? task.id) === selectedTaskId
-  );
-  const selectedChapter = chapters.find((chapter) => chapter.id === chapterId);
-
-  async function selectSeries(id: string) {
-    setSeriesId(id);
-    setTasks([]);
-    setSelectedTaskId("");
-    if (!id) { setChapters([]); setChapterId(""); return; }
-    try {
-      const result = await mangaErpApi.getChaptersBySeries(id);
-      setChapters(result);
-      setChapterId(result[0]?.id ?? "");
-    } catch (err) {
-      setMessage(err instanceof Error ? err.message : "Could not load chapters.");
-    }
-  }
+  const selected = tasks.find((task) => task.id === selectedId) ?? null;
 
   useEffect(() => {
-    void mangaErpApi.getMySeries().then((items) => {
-      setSeriesList(items);
-      if (items[0]) void selectSeries(items[0].id);
-    });
-  }, []);
+    if (!selectedId) return;
 
-  async function loadChapterTasks() {
-    if (!chapterId.trim()) {
-      setMessage("Vui lòng nhập Chapter ID.");
-      return;
-    }
+    let ignore = false;
+    void mangaErpApi.getLayerHistory({ pageTaskId: selectedId, status: "Pending" })
+      .then((items) => {
+        if (!ignore) setPendingLayer(items[0] ?? null);
+      })
+      .catch(() => {
+        if (!ignore) setPendingLayer(null);
+      });
 
+    return () => {
+      ignore = true;
+    };
+  }, [selectedId]);
+
+  const loadTasks = useCallback(async (id: string) => {
+    if (!id.trim()) return;
     setIsLoading(true);
-    setMessage("");
-
     try {
-      const result = await taskService.getChapterTasks(chapterId.trim());
-
-      const list = Array.isArray(result)
-        ? result
-        : (result as { items?: ChapterTask[] }).items ?? [];
-
-      setTasks(list as ChapterTask[]);
-
-      if (list.length > 0) {
-        const firstTask = list[0] as ChapterTask;
-        setSelectedTaskId(firstTask.pageTaskId ?? firstTask.id);
-      } else {
-        setSelectedTaskId("");
-      }
-    } catch (err) {
+      const items = await mangaErpApi.getChapterPageTasks(id.trim());
+      setTasks(items);
+      setSelectedId((current) => items.some((item) => item.id === current) ? current : items[0]?.id ?? "");
+    } catch (error) {
       setTasks([]);
-      setSelectedTaskId("");
-      setMessage(
-        err instanceof Error
-          ? err.message
-          : "Không thể tải danh sách task của chapter."
-      );
+      setSelectedId("");
+      toast.error("Could not load chapter tasks", error instanceof Error ? error.message : "Unknown error");
     } finally {
       setIsLoading(false);
     }
-  }
+  }, [toast]);
 
-  async function handleReview(isAccepted: boolean) {
-    if (!selectedTask) {
-      setMessage("Vui lòng chọn task cần review.");
-      return;
-    }
-
-    if (!isAccepted && !rejectionNote.trim()) {
-      setMessage("Vui lòng nhập lý do từ chối.");
-      return;
-    }
-
-    const pageTaskId = selectedTask.pageTaskId ?? selectedTask.id;
-
-    setIsReviewing(true);
-    setMessage("");
-
-    try {
-      await taskService.reviewLayer(pageTaskId, {
-        IsAccepted: isAccepted,
-        RejectionNote: isAccepted ? "" : rejectionNote.trim(),
+  useEffect(() => {
+    if (role !== "mangaka") return;
+    void mangaErpApi.getMySeries().then((items) => {
+      setSeries(items);
+      const firstId = items[0]?.id ?? "";
+      setSeriesId(firstId);
+      if (!firstId) return;
+      void mangaErpApi.getChaptersBySeries(firstId).then((chapterItems) => {
+        setChapters(chapterItems);
+        const firstChapter = chapterItems[0]?.id ?? "";
+        setChapterId(firstChapter);
+        if (firstChapter) void loadTasks(firstChapter);
       });
+    }).catch((error: unknown) => toast.error("Could not load your series", error instanceof Error ? error.message : "Unknown error"));
+  }, [loadTasks, role, toast]);
 
-      setMessage(
-        isAccepted
-          ? "Layer đã được duyệt thành công."
-          : "Đã yêu cầu Assistant chỉnh sửa layer."
-      );
+  const changeSeries = async (id: string) => {
+    setSeriesId(id);
+    setChapterId("");
+    setTasks([]);
+    try {
+      const items = id ? await mangaErpApi.getChaptersBySeries(id) : [];
+      setChapters(items);
+      const first = items[0]?.id ?? "";
+      setChapterId(first);
+      if (first) await loadTasks(first);
+    } catch (error) {
+      toast.error("Could not load chapters", error instanceof Error ? error.message : "Unknown error");
+    }
+  };
 
-      setRejectionNote("");
-      await loadChapterTasks();
-    } catch (err) {
-      setMessage(
-        err instanceof Error ? err.message : "Review layer thất bại."
-      );
+  const review = async (isAccepted: boolean) => {
+    if (!selected) return;
+    if (!isAccepted && !feedback.trim()) {
+      toast.error("Feedback is required", "Tell the assistant what needs to change.");
+      return;
+    }
+    setIsReviewing(true);
+    try {
+      await mangaErpApi.reviewPageTask(selected.id, { IsAccepted: isAccepted, RejectionNote: isAccepted ? "" : feedback.trim() });
+      toast.success(isAccepted ? "Layer approved" : "Changes requested", isAccepted ? `Page ${selected.pageNumber} was accepted for backend compositing.` : "A revision request was returned to the assistant.");
+      setFeedback("");
+      setPendingLayer(null);
+      await loadTasks(chapterId);
+    } catch (error) {
+      toast.error("Review could not be saved", error instanceof Error ? error.message : "Unknown error");
     } finally {
       setIsReviewing(false);
     }
-  }
+  };
 
   return (
     <div className="space-y-6">
-      <div className="rounded-[2rem] border border-slate-800 bg-slate-900 p-7">
-        <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-200">
-          Mangaka Workflow
-        </p>
-
-        <h1 className="mt-2 text-3xl font-black text-white">
-          Layer Review
-        </h1>
-
-        <p className="mt-2 text-sm text-slate-400">
-          Mangaka xem các layer Assistant đã gửi và duyệt hoặc yêu cầu chỉnh sửa.
-        </p>
-      </div>
+      <header>
+        <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-200">{role === "mangaka" ? "Mangaka" : "Editor"} workflow</p>
+        <h1 className="mt-2 text-3xl font-black text-white">Page Layer Review</h1>
+        <p className="mt-2 text-sm text-slate-400">Inspect submitted artwork, approve it, or return actionable feedback to the assistant.</p>
+      </header>
 
       <section className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
-        <div className="grid gap-4 md:grid-cols-[1fr_1fr_auto]">
-          <div>
-            <label className="text-sm text-slate-400">Series</label>
-            <select value={seriesId} onChange={(event) => void selectSeries(event.target.value)} className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none">
-              <option value="">Select Series</option>
-              {seriesList.map((series) => <option key={series.id} value={series.id}>{series.title}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="text-sm text-slate-400">Chapter</label>
-            <select value={chapterId} onChange={(event) => setChapterId(event.target.value)} className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none">
-              <option value="">Select Chapter</option>
-              {chapters.map((chapter) => <option key={chapter.id} value={chapter.id}>Ch. {chapter.chapterNumber} - {chapter.title}</option>)}
-            </select>
-          </div>
-          <div className="hidden">
-            <label className="text-sm text-slate-400">Chapter ID</label>
-            <input
-              value={chapterId}
-              onChange={(event) => setChapterId(event.target.value)}
-              placeholder="Nhập chapterId"
-              className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none"
-            />
-          </div>
-
-          <button
-            type="button"
-            disabled={isLoading}
-            onClick={() => void loadChapterTasks()}
-            className="self-end inline-flex items-center justify-center gap-2 rounded-xl bg-cyan-600 px-5 py-3 font-semibold text-white hover:bg-cyan-500 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            <RefreshCw size={18} />
-            {isLoading ? "Loading..." : "Load Tasks"}
-          </button>
+        <div className={`grid gap-4 ${role === "mangaka" ? "md:grid-cols-[1fr_1fr_auto]" : "md:grid-cols-[1fr_auto]"}`}>
+          {role === "mangaka" ? <label className="text-sm text-slate-400">Series<select className="input mt-2" value={seriesId} onChange={(event) => void changeSeries(event.target.value)}><option value="">Select series</option>{series.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select></label> : null}
+          {role === "mangaka" ? (
+            <label className="text-sm text-slate-400">Chapter<select className="input mt-2" value={chapterId} onChange={(event) => { const id = event.target.value; setChapterId(id); void loadTasks(id); }}><option value="">Select chapter</option>{chapters.map((item) => <option key={item.id} value={item.id}>Ch. {item.chapterNumber} — {item.title}</option>)}</select></label>
+          ) : (
+            <label className="text-sm text-slate-400">Chapter ID<input className="input mt-2" value={chapterId} onChange={(event) => setChapterId(event.target.value)} placeholder="Enter an assigned chapter ID" /></label>
+          )}
+          <button type="button" disabled={isLoading || !chapterId} onClick={() => void loadTasks(chapterId)} className="btn-primary self-end inline-flex items-center justify-center gap-2"><RefreshCw size={16} className={isLoading ? "animate-spin" : ""} />Load tasks</button>
         </div>
       </section>
 
-      {message && (
-        <div className="rounded-xl border border-cyan-500/30 bg-cyan-500/10 p-4 text-sm text-cyan-200">
-          {message}
-        </div>
-      )}
-
-      <section className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
+      <section className="grid gap-6 xl:grid-cols-[0.85fr_1.15fr]">
         <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
-          <h2 className="text-xl font-bold text-white">
-            Chapter Tasks
-          </h2>
-
-          <p className="mt-2 text-sm text-slate-400">
-            API: GET /api/v1/tasks/chapter/{"{chapterId}"}
-          </p>
-
+          <h2 className="text-xl font-bold text-white">Chapter Tasks</h2>
           <div className="mt-5 space-y-3">
-            {isLoading && (
-              <div className="rounded-xl border border-slate-800 bg-slate-950 p-4 text-slate-300">
-                Loading tasks...
-              </div>
-            )}
-
-            {!isLoading && tasks.length === 0 && (
-              <div className="rounded-xl border border-slate-800 bg-slate-950 p-4 text-slate-400">
-                Không có task nào cho chapter này.
-              </div>
-            )}
-
-            {tasks.map((task) => {
-              const taskId = task.pageTaskId ?? task.id;
-              const isSelected = selectedTaskId === taskId;
-
-              return (
-                <button
-                  key={taskId}
-                  type="button"
-                  onClick={() => setSelectedTaskId(taskId)}
-                  className={`w-full rounded-xl border p-4 text-left transition ${
-                    isSelected
-                      ? "border-cyan-400 bg-cyan-400/10"
-                      : "border-slate-800 bg-slate-950 hover:border-cyan-400/50"
-                  }`}
-                >
-                  <h3 className="font-semibold text-white">
-                    {selectedChapter ? `Ch. ${selectedChapter.chapterNumber} - ${selectedChapter.title}` : "Selected Chapter"}
-                  </h3>
-
-                  <p className="mt-2 text-sm text-slate-400">
-                    Page {task.pageNumber}
-                  </p>
-
-                  <p className="text-sm text-slate-400">
-                    Layer: {task.currentLayerType ?? "Not submitted"}
-                    {task.currentLayerVersion ? ` · v${task.currentLayerVersion}` : ""}
-                  </p>
-
-                  <p className="text-sm text-slate-500">
-                    Assistant: {task.assignedAssistantId ?? "Unassigned"}
-                  </p>
-
-                  <span className="mt-3 inline-flex rounded-lg bg-yellow-500/10 px-3 py-1 text-xs text-yellow-300">
-                    {task.taskStatus}
-                  </span>
-                </button>
-              );
-            })}
+            {isLoading ? <p className="rounded-xl bg-slate-950 p-5 text-slate-400">Loading tasks…</p> : null}
+            {!isLoading && tasks.length === 0 ? <p className="rounded-xl border border-dashed border-slate-700 bg-slate-950 p-8 text-center text-sm text-slate-400">Select a chapter to see its page tasks.</p> : null}
+            {tasks.map((task) => <button key={task.id} type="button" onClick={() => { setPendingLayer(null); setSelectedId(task.id); setFeedback(""); }} className={`w-full rounded-xl border p-4 text-left transition ${selectedId === task.id ? "border-cyan-400 bg-cyan-400/10" : "border-slate-800 bg-slate-950 hover:border-slate-600"}`}><div className="flex items-center justify-between gap-3"><span className="font-semibold text-white">Page {task.pageNumber}</span><span className="rounded-lg bg-white/5 px-2.5 py-1 text-xs text-cyan-200">{task.status}</span></div><p className="mt-2 text-sm text-slate-400">{task.currentLayerType ?? "No layer"}{task.currentLayerVersion ? ` · v${task.currentLayerVersion}` : ""}</p>{task.submissionNote ? <p className="mt-2 line-clamp-2 text-sm text-slate-300">“{task.submissionNote}”</p> : null}</button>)}
           </div>
         </div>
 
         <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
-          <h2 className="text-xl font-bold text-white">
-            Review Selected Layer
-          </h2>
-
-          {selectedTask ? (
-            <div className="mt-5 space-y-5">
-              <div className="rounded-xl border border-dashed border-slate-700 bg-slate-950 p-8">
-                <div className="flex items-center gap-2 text-slate-300">
-                  <Eye size={18} />
-                  Artwork Preview
-                </div>
-
-                {selectedTask.fileUrlOptimized || selectedTask.fileUrlOriginal ? (
-                  <img
-                    src={selectedTask.fileUrlOptimized ?? selectedTask.fileUrlOriginal}
-                    alt="Artwork layer preview"
-                    className="mt-4 max-h-80 w-full rounded-xl object-contain"
-                  />
-                ) : (
-                  <div className="mt-4 flex h-56 items-center justify-center rounded-xl border border-slate-700 bg-slate-900 px-6 text-center text-sm text-slate-500">
-                    Backend task DTO does not return the submitted layer file URL yet.
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <label className="flex items-center gap-2 text-sm text-slate-400">
-                  <MessageSquare size={16} />
-                  Rejection Note
-                </label>
-
-                <textarea
-                  value={rejectionNote}
-                  onChange={(event) => setRejectionNote(event.target.value)}
-                  placeholder="Nhập lý do nếu từ chối..."
-                  className="mt-2 h-28 w-full rounded-xl border border-slate-700 bg-slate-950 p-4 text-slate-100 outline-none"
-                />
-              </div>
-
-              <div className="flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  disabled={isReviewing}
-                  onClick={() => void handleReview(true)}
-                  className="flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 font-semibold text-white hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  <CheckCircle size={18} />
-                  {isReviewing ? "Sending..." : "Approve Layer"}
-                </button>
-
-                <button
-                  type="button"
-                  disabled={isReviewing}
-                  onClick={() => void handleReview(false)}
-                  className="flex items-center gap-2 rounded-xl bg-red-600 px-5 py-3 font-semibold text-white hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  <XCircle size={18} />
-                  {isReviewing ? "Sending..." : "Reject Layer"}
-                </button>
-              </div>
-
-              <div className="rounded-xl border border-slate-800 bg-slate-950 p-4 text-xs text-slate-500">
-                API: POST /api/v1/tasks/{"{pageTaskId}"}/review
-              </div>
-            </div>
-          ) : (
-            <p className="mt-5 text-sm text-slate-400">
-              Chọn một task ở bên trái để review.
-            </p>
-          )}
+          <h2 className="text-xl font-bold text-white">Review Selected Layer</h2>
+          {!selected ? <p className="mt-5 text-sm text-slate-400">Choose a task from the chapter list.</p> : <div className="mt-5 space-y-5">
+            <div className="rounded-xl border border-dashed border-slate-700 bg-slate-950 p-4"><p className="flex items-center gap-2 text-sm text-slate-300"><Eye size={17} /> Artwork preview</p>{pendingLayer?.fileUrlOptimized || pendingLayer?.fileUrlOriginal || selected.fileUrlOptimized || selected.fileUrlOriginal || selected.previewCompositeUrl ? <img src={pendingLayer?.fileUrlOptimized ?? pendingLayer?.fileUrlOriginal ?? selected.fileUrlOptimized ?? selected.fileUrlOriginal ?? selected.previewCompositeUrl ?? ""} alt={`Page ${selected.pageNumber} submitted layer`} className="mt-4 max-h-96 w-full rounded-lg object-contain" /> : <div className="mt-4 flex h-56 items-center justify-center rounded-lg bg-slate-900 px-5 text-center text-sm text-slate-500">No preview URL was returned. Review metadata is still available.</div>}</div>
+            {selected.submissionNote ? <div className="rounded-xl border border-slate-800 bg-slate-950 p-4"><p className="text-xs text-slate-500">Assistant note</p><p className="mt-2 text-sm text-slate-200">{selected.submissionNote}</p></div> : null}
+            <label className="block text-sm text-slate-400"><span className="flex items-center gap-2"><MessageSquare size={16} />Change request feedback</span><textarea className="mt-2 h-28 w-full rounded-xl border border-slate-700 bg-slate-950 p-4 text-slate-100 outline-none focus:border-cyan-400" value={feedback} onChange={(event) => setFeedback(event.target.value)} placeholder="Describe the exact changes needed…" /></label>
+            <div className="flex flex-wrap gap-3"><button type="button" disabled={isReviewing} onClick={() => void review(true)} className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 font-semibold text-white disabled:opacity-50"><CheckCircle2 size={18} />Approve</button><button type="button" disabled={isReviewing} onClick={() => void review(false)} className="inline-flex items-center gap-2 rounded-xl bg-rose-600 px-5 py-3 font-semibold text-white disabled:opacity-50"><RotateCcw size={18} />Request changes</button></div>
+          </div>}
         </div>
       </section>
     </div>
