@@ -16,7 +16,24 @@ export default function AssistantTasksPage() {
   const loadTasks = useCallback(async () => {
     setIsLoading(true);
     try {
-      setTasks(await mangaErpApi.getAssignedPageTasks(filter === "All" ? undefined : filter));
+      const assigned = await mangaErpApi.getAssignedPageTasks(filter === "All" ? undefined : filter);
+      const enriched = await Promise.all(assigned.map(async (task) => {
+        try {
+          const detail = await mangaErpApi.getPageTask(task.id);
+          return {
+            ...task,
+            ...detail,
+            chapterTitle: detail.chapterTitle ?? task.chapterTitle,
+            chapterNumber: detail.chapterNumber ?? task.chapterNumber,
+            currentLayerType: detail.currentLayerType ?? task.currentLayerType,
+            currentLayerVersion: detail.currentLayerVersion ?? task.currentLayerVersion,
+            rejectionNote: detail.rejectionNote ?? task.rejectionNote,
+          };
+        } catch {
+          return task;
+        }
+      }));
+      setTasks(enriched);
     } catch (error) {
       setTasks([]);
       toast.error("Could not load assigned tasks", error instanceof Error ? error.message : "Unknown error");
@@ -70,8 +87,8 @@ export default function AssistantTasksPage() {
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-2"><ClipboardList size={18} className="text-cyan-300" /><h2 className="font-bold text-white">{task.chapterTitle ?? `Chapter ${task.chapterNumber ?? ""}`}</h2></div>
-                  <p className="mt-2 text-sm text-slate-400">Page {task.pageNumber} · {task.currentLayerType ?? "Layer not submitted"}{task.currentLayerVersion ? ` · v${task.currentLayerVersion}` : ""}</p>
-                  {task.description ? <p className="mt-2 text-sm text-slate-300">{task.description}</p> : null}
+                  <p className="mt-2 text-sm text-slate-400">Page {task.pageNumber} · Task type: {task.taskType ?? "General"}{task.currentLayerVersion ? ` · submitted v${task.currentLayerVersion}` : ""}</p>
+                  {task.description ? <p className="mt-3 rounded-lg border border-cyan-400/20 bg-cyan-500/10 p-3 text-sm text-cyan-100"><span className="font-semibold">Mangaka note:</span> {task.description}</p> : null}
                   {task.rejectionNote ? <p className="mt-3 rounded-lg border border-rose-400/20 bg-rose-500/10 p-3 text-sm text-rose-200">Changes requested: {task.rejectionNote}</p> : null}
                 </div>
                 <span className="rounded-lg bg-cyan-500/10 px-3 py-2 text-sm text-cyan-300">{task.status}</span>

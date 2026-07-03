@@ -21,11 +21,21 @@ export default function AssistantTaskDetailPage() {
   useEffect(() => {
     if (!id) return;
 
-    void mangaErpApi.getAssignedPageTasks()
-      .then((items) => {
-        const match = items.find((item) => item.id === id) ?? null;
-        setTask(match);
-        if (!match) toast.error("Task not found", "This task is no longer in your assigned work.");
+    void Promise.all([
+      mangaErpApi.getAssignedPageTasks(),
+      mangaErpApi.getPageTask(id),
+    ])
+      .then(([items, detail]) => {
+        const summary = items.find((item) => item.id === id);
+        setTask({
+          ...summary,
+          ...detail,
+          chapterTitle: detail.chapterTitle ?? summary?.chapterTitle,
+          chapterNumber: detail.chapterNumber ?? summary?.chapterNumber,
+          currentLayerType: detail.currentLayerType ?? summary?.currentLayerType,
+          currentLayerVersion: detail.currentLayerVersion ?? summary?.currentLayerVersion,
+          rejectionNote: detail.rejectionNote ?? summary?.rejectionNote,
+        });
       })
       .catch((error: unknown) => {
         setTask(null);
@@ -97,6 +107,9 @@ export default function AssistantTaskDetailPage() {
           <dl className="mt-5 space-y-4 text-sm">
             <Info label="Status" value={task?.status ?? "Assigned"} />
             <Info label="Page" value={task ? String(task.pageNumber) : "-"} />
+            <Info label="Task type" value={task?.taskType ?? "General"} />
+            {task?.description ? <Info label="Mangaka note" value={task.description} /> : null}
+            {task?.deadline ? <Info label="Deadline" value={new Date(task.deadline).toLocaleString()} /> : null}
             {task?.rejectionNote ? <Info label="Revision alert" value={task.rejectionNote} alert /> : null}
           </dl>
         </section>

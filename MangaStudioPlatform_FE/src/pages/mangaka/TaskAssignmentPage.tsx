@@ -13,6 +13,7 @@ export default function TaskAssignmentPage() {
   const [pageNumber, setPageNumber] = useState(1);
   const [assistantId, setAssistantId] = useState("");
   const [taskType, setTaskType] = useState("Background");
+  const [taskDescription, setTaskDescription] = useState("");
   const [regionMask, setRegionMask] = useState("");
   const [samFile, setSamFile] = useState<File | null>(null);
   const [samEmbedding, setSamEmbedding] = useState<Awaited<ReturnType<typeof mangaErpApi.getSamEmbedding>> | null>(null);
@@ -123,11 +124,19 @@ export default function TaskAssignmentPage() {
     setMessage("");
 
     try {
+      await mangaErpApi.setPageRegion(chapterId, {
+        pageNumber,
+        regionMask: regionMask.trim() || "[]",
+        taskType,
+      });
+
       await mangaErpApi.activatePage(chapterId, {
         PageNumber: pageNumber,
         AssignedAssistantId: assistantId.trim(),
+        Description: taskDescription.trim() || null,
       });
       setMessage("");
+      setTaskDescription("");
       toast.success("Page task assigned", `Page ${pageNumber} is now in the Assistant task inbox.`);
     } catch (err) {
       const detail = err instanceof Error ? err.message : "Unknown error";
@@ -372,6 +381,17 @@ export default function TaskAssignmentPage() {
               </div>
             </div>
           </div>
+
+          <label className="mt-5 block text-sm text-slate-400">
+            Task note for Assistant
+            <textarea
+              value={taskDescription}
+              onChange={(event) => setTaskDescription(event.target.value)}
+              maxLength={2000}
+              placeholder="Describe the work requirements, expected result, colors, or details the Assistant should follow..."
+              className="mt-2 h-28 w-full rounded-xl border border-slate-700 bg-slate-950 p-4 text-slate-100 outline-none focus:border-cyan-400"
+            />
+          </label>
 
           <div className="mt-5 rounded-xl border border-slate-800 bg-slate-950 p-4">
             <div className="flex items-center gap-2">
