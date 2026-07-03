@@ -130,6 +130,9 @@ export type PageTaskDto = {
   assignedAssistantId?: string | null;
   previewCompositeUrl?: string | null;
   description?: string | null;
+  taskType?: string | null;
+  regionMask?: string | null;
+  deadline?: string | null;
   currentLayerType?: string | null;
   currentLayerVersion?: number | null;
   fileUrlOriginal?: string | null;
