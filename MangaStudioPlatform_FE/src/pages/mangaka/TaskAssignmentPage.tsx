@@ -1,4 +1,4 @@
-import { useEffect, useState, type MouseEvent } from "react";
+import { useEffect, useRef, useState, type MouseEvent } from "react";
 import { BookOpen, ClipboardCheck, Plus, RefreshCw, Send, Wand2 } from "lucide-react";
 import { useToast } from "../../shared/components/toastContext";
 import { mangaErpApi } from "../../shared/services/mangaErpService";
@@ -9,8 +9,96 @@ type SamImageSize = {
   height: number;
 };
 
+type MaskOverlay = {
+  width: number;
+  height: number;
+  pixels: Uint8Array;
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function flattenMaskValues(value: unknown, output: number[] = []) {
+  if (Array.isArray(value)) {
+    value.forEach((item) => flattenMaskValues(item, output));
+    return output;
+  }
+
+  if (typeof value === "boolean") {
+    output.push(value ? 1 : 0);
+  } else if (typeof value === "number") {
+    output.push(value > 0 ? 1 : 0);
+  }
+
+  return output;
+}
+
+function decodeUncompressedMask(value: unknown, fallbackSize: SamImageSize | null): MaskOverlay | null {
+  if (!Array.isArray(value)) return null;
+
+  const height = Array.isArray(value[0]) ? value.length : fallbackSize?.height;
+  const width = Array.isArray(value[0]) && Array.isArray(value[0])
+    ? (value[0] as unknown[]).length
+    : fallbackSize?.width;
+
+  if (!height || !width) return null;
+
+  const flattened = flattenMaskValues(value);
+  const pixelCount = width * height;
+  if (flattened.length < pixelCount) return null;
+
+  return {
+    width,
+    height,
+    pixels: Uint8Array.from(flattened.slice(0, pixelCount)),
+  };
+}
+
+function decodeCocoCounts(counts: unknown, size: unknown, fallbackSize: SamImageSize | null): MaskOverlay | null {
+  if (!Array.isArray(counts) || !counts.every((item) => typeof item === "number")) return null;
+
+  const height = Array.isArray(size) && typeof size[0] === "number" ? size[0] : fallbackSize?.height;
+  const width = Array.isArray(size) && typeof size[1] === "number" ? size[1] : fallbackSize?.width;
+  if (!height || !width) return null;
+
+  const pixelCount = width * height;
+  const pixels = new Uint8Array(pixelCount);
+  let cursor = 0;
+  let isMask = false;
+
+  for (const count of counts) {
+    const runLength = Math.max(0, Math.floor(count));
+    if (isMask) {
+      pixels.fill(1, cursor, Math.min(cursor + runLength, pixelCount));
+    }
+    cursor += runLength;
+    isMask = !isMask;
+    if (cursor >= pixelCount) break;
+  }
+
+  return { width, height, pixels };
+}
+
+function decodeSamMask(maskRle: unknown, fallbackSize: SamImageSize | null): MaskOverlay | null {
+  if (!maskRle) return null;
+
+  if (Array.isArray(maskRle)) {
+    return decodeUncompressedMask(maskRle, fallbackSize);
+  }
+
+  if (!isRecord(maskRle)) return null;
+
+  const directMask = maskRle.mask ?? maskRle.data ?? maskRle.segmentation;
+  const decodedDirect = decodeUncompressedMask(directMask, fallbackSize);
+  if (decodedDirect) return decodedDirect;
+
+  return decodeCocoCounts(maskRle.counts, maskRle.size, fallbackSize);
+}
+
 export default function TaskAssignmentPage() {
   const toast = useToast();
+  const maskCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const [seriesList, setSeriesList] = useState<MangaSeriesDto[]>([]);
   const [selectedSeriesId, setSelectedSeriesId] = useState("");
   const [chapters, setChapters] = useState<ChapterDto[]>([]);
@@ -25,6 +113,7 @@ export default function TaskAssignmentPage() {
   const [samEmbedding, setSamEmbedding] = useState<Awaited<ReturnType<typeof mangaErpApi.getSamEmbedding>> | null>(null);
   const [samImageSize, setSamImageSize] = useState<SamImageSize | null>(null);
   const [maskBbox, setMaskBbox] = useState<number[] | null>(null);
+  const [maskOverlay, setMaskOverlay] = useState<MaskOverlay | null>(null);
   const [clickX, setClickX] = useState("0");
   const [clickY, setClickY] = useState("0");
   const [isLoading, setIsLoading] = useState(false);
@@ -100,6 +189,34 @@ export default function TaskAssignmentPage() {
     return () => URL.revokeObjectURL(samPreviewUrl);
   }, [samPreviewUrl]);
 
+  useEffect(() => {
+    const canvas = maskCanvasRef.current;
+    if (!canvas) return;
+
+    const context = canvas.getContext("2d");
+    if (!context) return;
+
+    if (!maskOverlay) {
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      return;
+    }
+
+    canvas.width = maskOverlay.width;
+    canvas.height = maskOverlay.height;
+    const imageData = context.createImageData(maskOverlay.width, maskOverlay.height);
+
+    maskOverlay.pixels.forEach((isSelected, index) => {
+      if (!isSelected) return;
+      const offset = index * 4;
+      imageData.data[offset] = 34;
+      imageData.data[offset + 1] = 211;
+      imageData.data[offset + 2] = 238;
+      imageData.data[offset + 3] = 105;
+    });
+
+    context.putImageData(imageData, 0, 0);
+  }, [maskOverlay]);
+
   const handleCreateBasePage = async () => {
     if (!chapterId) {
       setMessage("Vui lòng chọn chapter thật từ backend.");
@@ -137,11 +254,21 @@ export default function TaskAssignmentPage() {
     setMessage("");
 
     try {
-      await mangaErpApi.setPageRegion(chapterId, {
-        pageNumber,
-        regionMask: regionMask.trim() || "[]",
-        taskType,
-      });
+      const trimmedRegion = regionMask.trim();
+      if (trimmedRegion) {
+        try {
+          JSON.parse(trimmedRegion);
+        } catch {
+          setMessage("SAM region data is not valid JSON. Clear it or predict the region again.");
+          return;
+        }
+
+        await mangaErpApi.setPageRegion(chapterId, {
+          pageNumber,
+          regionMask: trimmedRegion,
+          taskType,
+        });
+      }
 
       await mangaErpApi.activatePage(chapterId, {
         PageNumber: pageNumber,
@@ -198,14 +325,16 @@ export default function TaskAssignmentPage() {
         x: Number(clickX),
         y: Number(clickY),
       });
+      const decodedMask = decodeSamMask(mask.maskRle, samImageSize);
       setMaskBbox(mask.bbox?.length === 4 ? mask.bbox : null);
+      setMaskOverlay(decodedMask);
       setRegionMask(JSON.stringify({
         maskRle: mask.maskRle ?? null,
         bbox: mask.bbox,
         score: mask.score,
         point: { x: Number(clickX), y: Number(clickY) },
       }));
-      setMessage("SAM region predicted. Save the region before assigning the task.");
+      setMessage(decodedMask ? "SAM region predicted and painted on the page. Save the region before assigning the task." : "SAM region predicted. Full mask format could not be painted, showing bounding box instead.");
     } catch (err) {
       setMessage(err instanceof Error ? err.message : "Could not predict SAM region.");
     } finally {
@@ -219,6 +348,7 @@ export default function TaskAssignmentPage() {
     setSamEmbedding(null);
     setSamImageSize(null);
     setMaskBbox(null);
+    setMaskOverlay(null);
     setRegionMask("");
     setClickX("0");
     setClickY("0");
@@ -235,6 +365,7 @@ export default function TaskAssignmentPage() {
     setClickX(String(Math.max(0, x)));
     setClickY(String(Math.max(0, y)));
     setMaskBbox(null);
+    setMaskOverlay(null);
     setMessage(samEmbedding ? "Point selected. Predict region to preview the mask." : "Point selected. Create embedding before predicting the region.");
   };
 
@@ -256,7 +387,7 @@ export default function TaskAssignmentPage() {
     }
 
     if (!regionMask.trim()) {
-      setMessage("Region mask JSON is required.");
+      setMessage("Predict a SAM region first, then save it.");
       return;
     }
 
@@ -264,6 +395,7 @@ export default function TaskAssignmentPage() {
     setMessage("");
 
     try {
+      JSON.parse(regionMask.trim());
       await mangaErpApi.setPageRegion(chapterId, {
         pageNumber,
         regionMask: regionMask.trim(),
@@ -492,6 +624,7 @@ export default function TaskAssignmentPage() {
                   onChange={(event) => {
                     setClickX(event.target.value);
                     setMaskBbox(null);
+                    setMaskOverlay(null);
                   }}
                   placeholder="Click X"
                   className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none"
@@ -506,6 +639,7 @@ export default function TaskAssignmentPage() {
                   onChange={(event) => {
                     setClickY(event.target.value);
                     setMaskBbox(null);
+                    setMaskOverlay(null);
                   }}
                   placeholder="Click Y"
                   className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none"
@@ -533,6 +667,11 @@ export default function TaskAssignmentPage() {
                         setSamImageSize({ width: image.naturalWidth, height: image.naturalHeight });
                       }}
                     />
+                    <canvas
+                      ref={maskCanvasRef}
+                      className="pointer-events-none absolute inset-0 h-full w-full"
+                      aria-hidden="true"
+                    />
                     {bboxStyle ? (
                       <div
                         className="pointer-events-none absolute border-2 border-cyan-300 bg-cyan-300/20 shadow-[0_0_30px_rgba(34,211,238,0.35)]"
@@ -551,12 +690,15 @@ export default function TaskAssignmentPage() {
               </div>
             ) : null}
 
-            <textarea
-              value={regionMask}
-              onChange={(event) => setRegionMask(event.target.value)}
-              placeholder="Region mask JSON from SAM will appear here after prediction"
-              className="mt-3 h-28 w-full rounded-xl border border-slate-700 bg-slate-950 p-4 text-slate-100 outline-none"
-            />
+            <label className="mt-3 block text-sm text-slate-400">
+              Generated SAM region data
+              <textarea
+                value={regionMask}
+                readOnly
+                placeholder="Predict a region to generate mask JSON. Leave empty to assign without SAM."
+                className="mt-2 h-28 w-full rounded-xl border border-slate-700 bg-slate-950 p-4 text-xs text-slate-300 outline-none"
+              />
+            </label>
 
             <div className="mt-3 grid gap-2 md:grid-cols-3">
               <button
