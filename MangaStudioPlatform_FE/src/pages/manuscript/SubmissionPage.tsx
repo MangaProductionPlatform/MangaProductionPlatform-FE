@@ -1,4 +1,4 @@
-import type { FormEvent } from "react";
+import type { ChangeEvent, FormEvent } from "react";
 import { useEffect, useState } from "react";
 import { Eye, FileText, RefreshCw, Save, Send, Upload } from "lucide-react";
 import { mangaErpApi } from "../../shared/services/mangaErpService";
@@ -16,6 +16,7 @@ export default function SubmissionPage() {
   const [manuscriptUrl, setManuscriptUrl] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingManuscript, setIsUploadingManuscript] = useState(false);
   const [feedbackPins, setFeedbackPins] = useState<FeedbackPinDto[]>([]);
 
   const loadSubmissions = async () => {
@@ -150,7 +151,7 @@ export default function SubmissionPage() {
     }
 
     if (!manuscriptUrl.trim()) {
-      toast.error("Manuscript required", "Paste a manuscript URL first.");
+      toast.error("Manuscript required", "Upload a manuscript image first.");
       return;
     }
 
@@ -159,7 +160,7 @@ export default function SubmissionPage() {
       await mangaErpApi.updateSubmissionManuscript(selected.id, {
         manuscriptUrl: manuscriptUrl.trim(),
       });
-      toast.success("Manuscript updated", "The manuscript URL was saved.");
+      toast.success("Manuscript updated", "The uploaded manuscript image was saved.");
       await openSubmission(selected.id);
     } catch (err) {
       toast.error(
@@ -168,6 +169,26 @@ export default function SubmissionPage() {
       );
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const uploadManuscriptImage = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingManuscript(true);
+    try {
+      const result = await mangaErpApi.uploadImage(file);
+      setManuscriptUrl(result.url);
+      toast.success("Manuscript uploaded", selected ? "Click Update manuscript to save it." : "Create the draft to save it.");
+    } catch (err) {
+      toast.error(
+        "Could not upload manuscript",
+        err instanceof Error ? err.message : "Please choose a PNG, JPG, JPEG, or WEBP image.",
+      );
+    } finally {
+      setIsUploadingManuscript(false);
+      event.target.value = "";
     }
   };
 
@@ -314,12 +335,24 @@ export default function SubmissionPage() {
               onChange={(event) => setCoverImageUrl(event.target.value)}
               placeholder="Cover image URL"
             />
-            <input
-              className="input"
-              value={manuscriptUrl}
-              onChange={(event) => setManuscriptUrl(event.target.value)}
-              placeholder="Manuscript URL"
-            />
+            {manuscriptUrl ? (
+              <img
+                src={manuscriptUrl}
+                alt="Manuscript preview"
+                className="mx-auto max-h-72 rounded-lg border border-white/10 object-contain shadow-xl shadow-slate-950/30"
+              />
+            ) : null}
+            <label className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-cyan-300/30 bg-cyan-300/10 px-4 py-2.5 text-sm font-semibold text-cyan-100 hover:bg-cyan-300/15">
+              <Upload size={16} />
+              {isUploadingManuscript ? "Uploading..." : manuscriptUrl ? "Replace manuscript image" : "Upload manuscript image"}
+              <input
+                className="sr-only"
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                disabled={isUploadingManuscript || isSaving}
+                onChange={(event) => void uploadManuscriptImage(event)}
+              />
+            </label>
           </div>
 
           <div className="mt-5 grid gap-2">

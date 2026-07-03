@@ -3,6 +3,8 @@ import type {
   ActivateAccountPayload,
   ActivateAccountResult,
   AdminUserDto,
+  BulkActivatePagesPayload,
+  BulkReviewPageTaskPayload,
   CastSubmissionVotePayload,
   CastSubmissionVoteResult,
   CreateChapterPayload,
@@ -11,7 +13,9 @@ import type {
   AddQaPinPayload,
   FeedbackPinDto,
   InviteAssistantPayload,
+  LayerHistoryDto,
   ListUsersResult,
+  MediaUploadResult,
   PageTaskDto,
   ReviewPageTaskPayload,
   ProvisionAccountPayload,
@@ -19,6 +23,7 @@ import type {
   QaBugPinDto,
   QaSessionDto,
   RequestRevisionPayload,
+  ReassignPageTaskPayload,
   ResolveSubmissionConflictPayload,
   ResolveSubmissionConflictResult,
   ReviewSubmissionPayload,
@@ -30,9 +35,11 @@ import type {
   SubmitPageLayerPayload,
   SubmissionDetailDto,
   SubmissionSummaryDto,
+  SubmissionVotesDto,
   StudioInvitationDto,
   UpdateProfilePayload,
   UpdateAdminAccountPayload,
+  UpdateTaskDeadlinePayload,
   UpdateSubmissionManuscriptPayload,
   UpdateSubmissionMetadataPayload,
 } from "../types/mangaErp";
@@ -151,6 +158,16 @@ export const mangaErpApi = {
     return mapSeries(data);
   },
 
+  async uploadImage(file: File) {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    return request<MediaUploadResult>("media", "/api/v1/media/upload", {
+      method: "POST",
+      body: formData,
+    });
+  },
+
   async createDraftSubmission(payload: CreateSubmissionPayload) {
     return request<{ submissionId?: string; SubmissionId?: string }>(
       "submission",
@@ -232,6 +249,11 @@ export const mangaErpApi = {
     );
   },
 
+  async getSubmissionVotes(id: string, round?: number) {
+    const query = round !== undefined ? `?round=${encodeURIComponent(String(round))}` : "";
+    return request<SubmissionVotesDto>("submission", `/api/v1/submissions/${id}/votes${query}`);
+  },
+
   async rejectSubmission(id: string, payload: ReviewSubmissionPayload) {
     return request<void>("submission", `/api/v1/submissions/${id}/reject`, {
       method: "POST",
@@ -298,10 +320,24 @@ export const mangaErpApi = {
     });
   },
 
+  async bulkActivatePages(chapterId: string, payload: BulkActivatePagesPayload) {
+    return request("chapter", `/api/v1/chapters/${chapterId}/pages/bulk-activate`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
   async addBasePage(chapterId: string, pageNumber: number) {
     return request("chapter", `/api/v1/chapters/${chapterId}/pages`, {
       method: "POST",
       body: JSON.stringify({ PageNumber: pageNumber }),
+    });
+  },
+
+  async reassignPageTask(chapterId: string, pageNumber: number, payload: ReassignPageTaskPayload) {
+    return request("chapter", `/api/v1/chapters/${chapterId}/pages/${pageNumber}/reassign`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
     });
   },
 
@@ -331,6 +367,11 @@ export const mangaErpApi = {
     return items.map(mapPageTask);
   },
 
+  async getPageTask(pageTaskId: string) {
+    const data = await request<Record<string, unknown>>("task", `/api/v1/tasks/${pageTaskId}`);
+    return mapPageTask(data);
+  },
+
   async submitPageTaskLayer(pageTaskId: string, payload: SubmitPageLayerPayload) {
     return request("task", `/api/v1/tasks/${pageTaskId}/layers`, {
       method: "POST",
@@ -341,6 +382,34 @@ export const mangaErpApi = {
   async reviewPageTask(pageTaskId: string, payload: ReviewPageTaskPayload) {
     return request("task", `/api/v1/tasks/${pageTaskId}/review`, {
       method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async bulkReviewPageTasks(payload: BulkReviewPageTaskPayload) {
+    return request("task", "/api/v1/tasks/bulk-review", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async getLayerHistory(filters: {
+    seriesId?: string;
+    chapterId?: string;
+    pageTaskId?: string;
+    status?: "Accepted" | "Rejected" | "Pending" | "Current";
+  } = {}) {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value) params.set(key, value);
+    });
+    const query = params.toString();
+    return request<LayerHistoryDto[]>("task", `/api/v1/tasks/layers/history${query ? `?${query}` : ""}`);
+  },
+
+  async updateTaskDeadline(pageTaskId: string, payload: UpdateTaskDeadlinePayload) {
+    return request("task", `/api/v1/tasks/${pageTaskId}/deadline`, {
+      method: "PATCH",
       body: JSON.stringify(payload),
     });
   },

@@ -243,12 +243,21 @@ export default function ChapterManagementPage() {
     setIsActivatingPage(true);
 
     try {
+      try {
+        await mangaErpApi.addBasePage(detailChapterId, Number(pageNumber));
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "";
+        if (!message.toLowerCase().includes("already exists")) {
+          throw err;
+        }
+      }
+
       await mangaErpApi.activatePage(detailChapterId, {
         PageNumber: Number(pageNumber),
         AssignedAssistantId: assistantId.trim(),
       });
 
-      toast.success("Page task activated", `Page ${pageNumber} was assigned in the backend.`);
+      toast.success("Page task activated", `Page ${pageNumber} was created if needed and assigned in the backend.`);
 
       const detail = await mangaErpApi.getChapter(detailChapterId);
       setSelectedChapter(detail);

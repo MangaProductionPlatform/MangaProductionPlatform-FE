@@ -5,7 +5,7 @@ import { useToast } from "../../shared/components/toastContext";
 import { mangaErpApi } from "../../shared/services/mangaErpService";
 import type { PageTaskDto } from "../../shared/types/mangaErp";
 
-const filters = ["All", "Incomplete", "Submitted", "Reviewing", "RevisionRequired", "Approved"];
+const filters = ["All", "Pending", "Incomplete", "Reviewing", "RevisionAlert", "Approved"];
 
 export default function AssistantTasksPage() {
   const toast = useToast();

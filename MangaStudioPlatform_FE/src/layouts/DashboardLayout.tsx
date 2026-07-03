@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useToast } from "../shared/components/toastContext";
 import { clearAuthSession } from "../shared/utils/authSession";
+import ModeToggle from "../shared/components/ModeToggle";
 
 const defaultMenus = [
   { label: "Dashboard", path: "/app/dashboard", icon: LayoutDashboard, end: true },
@@ -129,6 +130,14 @@ export default function DashboardLayout() {
       : role === "mangaka"
         ? "Mangaka Workspace"
         : "Creator command center";
+  const homePath =
+    role === "editor"
+      ? "/app/editor/dashboard"
+      : role === "editorial_board" || role === "editor_in_chief"
+        ? "/app/board/dashboard"
+        : role === "mangaka"
+          ? "/mangaka/dashboard"
+          : "/app/dashboard";
 
   const handleLogout = () => {
     clearAuthSession();
@@ -137,10 +146,10 @@ export default function DashboardLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-[#050816] text-slate-100">
+    <div className="app-shell">
       <div className="flex min-h-screen">
-        <aside className="sticky top-0 hidden h-screen w-72 shrink-0 flex-col overflow-hidden border-r border-white/10 bg-slate-950/85 p-5 backdrop-blur-xl lg:flex">
-          <NavLink to="/app/dashboard" className="flex shrink-0 items-center gap-3">
+        <aside className="app-sidebar sticky top-0 hidden h-screen w-72 shrink-0 flex-col overflow-hidden p-5 lg:flex">
+          <NavLink to={homePath} className="flex shrink-0 items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-300 via-rose-400 to-cyan-300 text-sm font-black text-slate-950">
               M
             </div>
@@ -150,7 +159,7 @@ export default function DashboardLayout() {
             </div>
           </NavLink>
 
-          <div className="mt-6 shrink-0 rounded-2xl border border-amber-300/20 bg-amber-300/10 p-4">
+          <div className="premium-card mt-6 shrink-0 rounded-xl p-4">
             <p className="text-xs uppercase tracking-[0.24em] text-amber-100/80">
               Active role
             </p>
@@ -187,19 +196,22 @@ export default function DashboardLayout() {
             })}
           </nav>
 
-          <button
-            onClick={handleLogout}
-            className="mt-4 flex w-full shrink-0 items-center gap-3 rounded-xl border border-rose-300/20 bg-rose-500/10 px-3.5 py-2.5 text-sm font-medium text-rose-100 transition hover:bg-rose-500/15"
-          >
-            <LogOut size={18} />
-            Logout
-          </button>
+          <div className="mt-4 grid shrink-0 gap-2">
+            <ModeToggle />
+            <button
+              onClick={handleLogout}
+              className="flex min-h-11 w-full items-center gap-3 rounded-xl border border-rose-300/20 bg-rose-500/10 px-3.5 py-2.5 text-sm font-medium text-rose-100 transition hover:bg-rose-500/15"
+            >
+              <LogOut size={18} />
+              Logout
+            </button>
+          </div>
         </aside>
 
         <main className="min-w-0 flex-1">
-          <header className="sticky top-0 z-30 border-b border-white/10 bg-slate-950/70 px-4 py-4 backdrop-blur-xl lg:hidden">
+          <header className="app-topbar sticky top-0 z-30 px-4 py-4 lg:hidden">
             <div className="flex items-center justify-between gap-3">
-              <NavLink to="/app/dashboard" className="flex items-center gap-3">
+              <NavLink to={homePath} className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-300 via-rose-400 to-cyan-300 text-sm font-black text-slate-950">
                   M
                 </div>
@@ -208,16 +220,37 @@ export default function DashboardLayout() {
                   <p className="text-xs text-slate-400">{workspaceLabel}</p>
                 </div>
               </NavLink>
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="rounded-xl border border-rose-300/20 bg-rose-500/10 p-2 text-rose-100"
-                title="Logout"
-                aria-label="Logout"
-              >
-                <LogOut size={18} />
-              </button>
+              <div className="flex items-center gap-2">
+                <ModeToggle compact />
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl border border-rose-300/20 bg-rose-500/10 p-2 text-rose-100"
+                  title="Logout"
+                  aria-label="Logout"
+                >
+                  <LogOut size={18} />
+                </button>
+              </div>
             </div>
+            <nav className="mt-3 flex gap-2 overflow-x-auto pb-1" aria-label="Workspace navigation">
+              {menus.map((item) => (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  end={"end" in item ? item.end : undefined}
+                  className={({ isActive }) =>
+                    `whitespace-nowrap rounded-full border px-3 py-2 text-xs font-semibold ${
+                      isActive
+                        ? "border-cyan-300/40 bg-cyan-300/15 text-cyan-100"
+                        : "border-white/10 bg-white/5 text-slate-300"
+                    }`
+                  }
+                >
+                  {item.label}
+                </NavLink>
+              ))}
+            </nav>
           </header>
 
           <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">

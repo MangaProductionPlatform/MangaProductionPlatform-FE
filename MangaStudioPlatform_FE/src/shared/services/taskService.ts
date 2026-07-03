@@ -1,7 +1,8 @@
 import { request } from "./httpClient";
+import type { LayerType } from "../types/mangaErp";
 
 export type SubmitLayerPayload = {
-  LayerType: "LineArt" | "Color" | "Background";
+  LayerType: LayerType;
   FileUrlOriginal: string;
   FileUrlOptimized?: string | null;
 };

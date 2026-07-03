@@ -17,6 +17,7 @@ export type ActivatePageTaskPayload = {
   PageNumber: number;
   AssignedAssistantId: string;
   Description?: string | null;
+  Deadline?: string | null;
 };
 
 export type SetPageRegionPayload = {
