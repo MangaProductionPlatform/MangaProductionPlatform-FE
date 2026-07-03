@@ -1,8 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type MouseEvent } from "react";
 import { BookOpen, ClipboardCheck, Plus, RefreshCw, Send, Wand2 } from "lucide-react";
 import { useToast } from "../../shared/components/toastContext";
 import { mangaErpApi } from "../../shared/services/mangaErpService";
 import type { ChapterDto, MangaSeriesDto } from "../../shared/types/mangaErp";
+
+type SamImageSize = {
+  width: number;
+  height: number;
+};
 
 export default function TaskAssignmentPage() {
   const toast = useToast();
@@ -16,7 +21,10 @@ export default function TaskAssignmentPage() {
   const [taskDescription, setTaskDescription] = useState("");
   const [regionMask, setRegionMask] = useState("");
   const [samFile, setSamFile] = useState<File | null>(null);
+  const [samPreviewUrl, setSamPreviewUrl] = useState("");
   const [samEmbedding, setSamEmbedding] = useState<Awaited<ReturnType<typeof mangaErpApi.getSamEmbedding>> | null>(null);
+  const [samImageSize, setSamImageSize] = useState<SamImageSize | null>(null);
+  const [maskBbox, setMaskBbox] = useState<number[] | null>(null);
   const [clickX, setClickX] = useState("0");
   const [clickY, setClickY] = useState("0");
   const [isLoading, setIsLoading] = useState(false);
@@ -86,6 +94,11 @@ export default function TaskAssignmentPage() {
     void loadSeriesAndChapters();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (!samPreviewUrl) return undefined;
+    return () => URL.revokeObjectURL(samPreviewUrl);
+  }, [samPreviewUrl]);
 
   const handleCreateBasePage = async () => {
     if (!chapterId) {
@@ -159,7 +172,10 @@ export default function TaskAssignmentPage() {
     try {
       const embedding = await mangaErpApi.getSamEmbedding(samFile);
       setSamEmbedding(embedding);
-      setMessage("SAM embedding created. Click coordinates can now predict a region.");
+      if (embedding.imageSize?.length >= 2) {
+        setSamImageSize({ height: embedding.imageSize[0], width: embedding.imageSize[1] });
+      }
+      setMessage("SAM embedding created. Click directly on the page image to choose a region.");
     } catch (err) {
       setMessage(err instanceof Error ? err.message : "Could not create SAM embedding.");
     } finally {
@@ -182,7 +198,13 @@ export default function TaskAssignmentPage() {
         x: Number(clickX),
         y: Number(clickY),
       });
-      setRegionMask(JSON.stringify(mask.maskRle ?? { bbox: mask.bbox, score: mask.score }));
+      setMaskBbox(mask.bbox?.length === 4 ? mask.bbox : null);
+      setRegionMask(JSON.stringify({
+        maskRle: mask.maskRle ?? null,
+        bbox: mask.bbox,
+        score: mask.score,
+        point: { x: Number(clickX), y: Number(clickY) },
+      }));
       setMessage("SAM region predicted. Save the region before assigning the task.");
     } catch (err) {
       setMessage(err instanceof Error ? err.message : "Could not predict SAM region.");
@@ -190,6 +212,42 @@ export default function TaskAssignmentPage() {
       setIsSamBusy(false);
     }
   };
+
+  const handleSamFileChange = (file: File | null) => {
+    setSamFile(file);
+    setSamPreviewUrl(file ? URL.createObjectURL(file) : "");
+    setSamEmbedding(null);
+    setSamImageSize(null);
+    setMaskBbox(null);
+    setRegionMask("");
+    setClickX("0");
+    setClickY("0");
+  };
+
+  const handleSamImageClick = (event: MouseEvent<HTMLImageElement>) => {
+    const image = event.currentTarget;
+    const rect = image.getBoundingClientRect();
+    const naturalWidth = image.naturalWidth || samImageSize?.width || rect.width;
+    const naturalHeight = image.naturalHeight || samImageSize?.height || rect.height;
+    const x = Math.round(((event.clientX - rect.left) / rect.width) * naturalWidth);
+    const y = Math.round(((event.clientY - rect.top) / rect.height) * naturalHeight);
+
+    setClickX(String(Math.max(0, x)));
+    setClickY(String(Math.max(0, y)));
+    setMaskBbox(null);
+    setMessage(samEmbedding ? "Point selected. Predict region to preview the mask." : "Point selected. Create embedding before predicting the region.");
+  };
+
+  const bboxStyle = (() => {
+    if (!maskBbox || maskBbox.length !== 4 || !samImageSize) return null;
+    const [x, y, width, height] = maskBbox;
+    return {
+      left: `${(x / samImageSize.width) * 100}%`,
+      top: `${(y / samImageSize.height) * 100}%`,
+      width: `${(width / samImageSize.width) * 100}%`,
+      height: `${(height / samImageSize.height) * 100}%`,
+    };
+  })();
 
   const handleSaveRegion = async () => {
     if (!chapterId) {
@@ -405,7 +463,7 @@ export default function TaskAssignmentPage() {
                 <input
                   type="file"
                   accept="image/png,image/jpeg,image/webp"
-                  onChange={(event) => setSamFile(event.target.files?.[0] ?? null)}
+                  onChange={(event) => handleSamFileChange(event.target.files?.[0] ?? null)}
                   className="mt-2 block w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-slate-100"
                 />
               </label>
@@ -426,27 +484,77 @@ export default function TaskAssignmentPage() {
                 </select>
               </label>
 
-              <input
-                type="number"
-                value={clickX}
-                onChange={(event) => setClickX(event.target.value)}
-                placeholder="Click X"
-                className="rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none"
-              />
+              <label className="text-sm text-slate-400">
+                Click X
+                <input
+                  type="number"
+                  value={clickX}
+                  onChange={(event) => {
+                    setClickX(event.target.value);
+                    setMaskBbox(null);
+                  }}
+                  placeholder="Click X"
+                  className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none"
+                />
+              </label>
 
-              <input
-                type="number"
-                value={clickY}
-                onChange={(event) => setClickY(event.target.value)}
-                placeholder="Click Y"
-                className="rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none"
-              />
+              <label className="text-sm text-slate-400">
+                Click Y
+                <input
+                  type="number"
+                  value={clickY}
+                  onChange={(event) => {
+                    setClickY(event.target.value);
+                    setMaskBbox(null);
+                  }}
+                  placeholder="Click Y"
+                  className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none"
+                />
+              </label>
             </div>
+
+            {samPreviewUrl ? (
+              <div className="mt-4 overflow-hidden rounded-xl border border-slate-700 bg-slate-950">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 px-4 py-3">
+                  <p className="text-sm font-semibold text-white">Interactive page region</p>
+                  <p className="text-xs text-slate-400">
+                    Click image to set point ({clickX}, {clickY})
+                  </p>
+                </div>
+                <div className="p-3">
+                  <div className="relative mx-auto max-h-[28rem] w-fit overflow-hidden rounded-lg bg-slate-900">
+                    <img
+                      src={samPreviewUrl}
+                      alt="Page preview for SAM region selection"
+                      className="max-h-[28rem] max-w-full cursor-crosshair object-contain"
+                      onClick={handleSamImageClick}
+                      onLoad={(event) => {
+                        const image = event.currentTarget;
+                        setSamImageSize({ width: image.naturalWidth, height: image.naturalHeight });
+                      }}
+                    />
+                    {bboxStyle ? (
+                      <div
+                        className="pointer-events-none absolute border-2 border-cyan-300 bg-cyan-300/20 shadow-[0_0_30px_rgba(34,211,238,0.35)]"
+                        style={bboxStyle}
+                      />
+                    ) : null}
+                    <div
+                      className="pointer-events-none absolute h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-amber-200 bg-amber-300/80 shadow-[0_0_24px_rgba(251,191,36,0.55)]"
+                      style={{
+                        left: samImageSize ? `${(Number(clickX) / samImageSize.width) * 100}%` : "0%",
+                        top: samImageSize ? `${(Number(clickY) / samImageSize.height) * 100}%` : "0%",
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            ) : null}
 
             <textarea
               value={regionMask}
               onChange={(event) => setRegionMask(event.target.value)}
-              placeholder="Region mask JSON from SAM"
+              placeholder="Region mask JSON from SAM will appear here after prediction"
               className="mt-3 h-28 w-full rounded-xl border border-slate-700 bg-slate-950 p-4 text-slate-100 outline-none"
             />
 
