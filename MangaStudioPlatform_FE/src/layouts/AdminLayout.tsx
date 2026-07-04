@@ -1,6 +1,5 @@
 import { Navigate, NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
-  Activity,
   BarChart3,
   Bell,
   Bot,
@@ -18,7 +17,7 @@ import {
 } from "lucide-react";
 import { useToast } from "../shared/components/toastContext";
 import { clearAuthSession } from "../shared/utils/authSession";
-import ModeToggle from "../shared/components/ModeToggle";
+import { QuickSettingsTrigger } from "../shared/components/QuickSettingsPanel";
 
 const menus = [
   { label: "Dashboard", path: "/admin/dashboard", icon: LayoutDashboard, end: true },
@@ -52,12 +51,12 @@ export default function AdminLayout() {
   return (
     <div className="app-shell">
       <div className="flex min-h-screen">
-        <aside className="app-sidebar sticky top-0 hidden h-screen w-72 shrink-0 p-5 lg:block">
+        <aside className="app-sidebar settings-sidebar sticky top-0 hidden h-screen w-72 shrink-0 p-5 lg:block">
           <NavLink to="/admin/dashboard" className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-white text-sm font-black text-slate-950">
               OP
             </div>
-            <div>
+            <div className="sidebar-copy">
               <h1 className="text-lg font-bold leading-tight">
                 Studio Operations
               </h1>
@@ -65,16 +64,16 @@ export default function AdminLayout() {
             </div>
           </NavLink>
 
-          <div className="premium-card mt-6 rounded-xl p-4">
+          <div className="premium-card sidebar-role-card mt-6 rounded-xl p-4">
             <p className="text-xs uppercase tracking-[0.22em] text-emerald-100/80">
               Platform status
             </p>
             <div className="mt-3 flex items-center justify-between gap-3">
-              <div>
+              <div className="sidebar-copy">
                 <p className="font-semibold text-white">Operational</p>
                 <p className="text-xs text-slate-400">3 queues need review</p>
               </div>
-              <Activity size={18} className="text-emerald-200" />
+              <QuickSettingsTrigger />
             </div>
           </div>
 
@@ -96,21 +95,20 @@ export default function AdminLayout() {
                   }
                 >
                   <Icon size={18} />
-                  {item.label}
+                  <span className="sidebar-copy">{item.label}</span>
                 </NavLink>
               );
             })}
           </nav>
 
           <div className="mt-6 grid gap-2">
-            <ModeToggle />
             <button
               type="button"
               onClick={handleLogout}
-              className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium text-rose-200 transition hover:bg-rose-500/10"
+              className="sidebar-action flex min-h-11 w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium text-rose-200 transition hover:bg-rose-500/10"
             >
               <LogOut size={18} />
-              Logout
+              <span className="sidebar-copy">Logout</span>
             </button>
           </div>
         </aside>
@@ -128,7 +126,7 @@ export default function AdminLayout() {
                 </div>
               </NavLink>
               <div className="flex items-center gap-2">
-                <ModeToggle compact />
+                <QuickSettingsTrigger />
                 <button
                   type="button"
                   onClick={handleLogout}

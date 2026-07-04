@@ -297,7 +297,7 @@ export default function SubmissionPage() {
                 {selected ? "Selected submission" : "New draft"}
               </h3>
               <p className="break-all text-xs text-slate-400">
-                {selected?.id ?? "POST /api/v1/submissions/draft"}
+                {selected?.id ?? "New draft — not saved yet"}
               </p>
             </div>
           </div>

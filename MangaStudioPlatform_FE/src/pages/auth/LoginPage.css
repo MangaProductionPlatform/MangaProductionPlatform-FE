@@ -1,0 +1,51 @@
+.login-visual {
+  color: #f8fafc;
+}
+
+.login-visual__overlay {
+  background:
+    linear-gradient(90deg, rgba(2, 6, 23, 0.6) 0%, rgba(2, 6, 23, 0.28) 62%, rgba(2, 6, 23, 0.46) 100%),
+    linear-gradient(180deg, rgba(5, 8, 22, 0.1) 0%, rgba(5, 8, 22, 0.7) 100%);
+}
+
+.login-visual img {
+  opacity: 0.9 !important;
+  filter: saturate(1.04) contrast(1.02);
+}
+
+.login-panel {
+  background: color-mix(in srgb, var(--surface-strong) 88%, transparent);
+  border-color: var(--border);
+  box-shadow: var(--shadow);
+}
+
+html[data-theme="light"] .login-visual {
+  color: var(--text);
+}
+
+html[data-theme="light"] .login-visual__overlay {
+  background:
+    linear-gradient(90deg, rgba(248, 250, 252, 0.68) 0%, rgba(248, 250, 252, 0.36) 64%, rgba(248, 250, 252, 0.52) 100%),
+    linear-gradient(180deg, rgba(237, 247, 251, 0.08), rgba(248, 250, 252, 0.56));
+}
+
+html[data-theme="light"] .login-visual img {
+  opacity: 0.82 !important;
+  filter: saturate(0.96) contrast(0.98);
+}
+
+html[data-theme="light"] .login-panel {
+  background: rgba(255, 255, 255, 0.96) !important;
+  border-color: rgba(15, 23, 42, 0.16) !important;
+  box-shadow: 0 28px 80px rgba(15, 23, 42, 0.2);
+}
+
+@media (max-width: 1023px) {
+  .login-visual__overlay {
+    background: linear-gradient(180deg, rgba(2, 6, 23, 0.48), rgba(2, 6, 23, 0.76));
+  }
+
+  html[data-theme="light"] .login-visual__overlay {
+    background: linear-gradient(180deg, rgba(248, 250, 252, 0.58), rgba(248, 250, 252, 0.7));
+  }
+}

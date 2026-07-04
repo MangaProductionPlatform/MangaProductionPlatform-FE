@@ -16,6 +16,7 @@ import type {
   LayerHistoryDto,
   ListUsersResult,
   MediaUploadResult,
+  NotificationDto,
   PageTaskDto,
   ReviewPageTaskPayload,
   ProvisionAccountPayload,
@@ -370,6 +371,13 @@ export const mangaErpApi = {
   async getPageTask(pageTaskId: string) {
     const data = await request<Record<string, unknown>>("task", `/api/v1/tasks/${pageTaskId}`);
     return mapPageTask(data);
+  },
+
+  async getMyNotifications(unreadOnly = false) {
+    return request<NotificationDto[]>(
+      "publishing",
+      `/api/v1/notifications?unreadOnly=${unreadOnly}`,
+    );
   },
 
   async submitPageTaskLayer(pageTaskId: string, payload: SubmitPageLayerPayload) {

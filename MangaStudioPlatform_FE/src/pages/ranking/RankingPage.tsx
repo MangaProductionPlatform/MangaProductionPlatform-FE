@@ -16,7 +16,7 @@ export default function RankingPage() {
           eyebrow="Ranking"
           title="Weekly manga ranking"
           icon={Trophy}
-          description="BE có module/domain Ranking nhưng chưa expose RankingController hay route /api/v1/ranking. Trang này không còn gọi endpoint chưa tồn tại."
+          description="Ranking data is not available in the current workspace yet."
         />
       </div>
     </div>
