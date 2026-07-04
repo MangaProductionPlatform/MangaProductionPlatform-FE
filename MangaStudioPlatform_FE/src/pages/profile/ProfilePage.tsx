@@ -26,6 +26,7 @@ export default function ProfilePage() {
   const [bankAccountNumber, setBankAccountNumber] = useState("");
   const [drawingSoftwares, setDrawingSoftwares] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const canEditDrawingSoftware = currentUser?.role === "mangaka" || currentUser?.role === "assistant";
 
   const toggleSoftware = (value: string) => {
     setDrawingSoftwares((items) =>
@@ -42,7 +43,7 @@ export default function ProfilePage() {
     try {
       await mangaErpApi.updateProfile({
         penName: penName.trim() || null,
-        drawingSoftwares,
+        drawingSoftwares: canEditDrawingSoftware ? drawingSoftwares : undefined,
         bankAccountNumber: bankAccountNumber.trim() || null,
       });
       toast.success("Profile updated", "Your backend profile was saved.");
@@ -126,27 +127,29 @@ export default function ProfilePage() {
               </label>
             </div>
 
-            <div className="mt-5">
-              <span className="mb-2 block text-sm font-semibold text-slate-200">
-                Drawing software
-              </span>
-              <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-                {drawingSoftwareOptions.map((item) => (
-                  <label
-                    key={item}
-                    className="flex items-center gap-2 rounded-lg border border-white/10 bg-slate-950/70 p-3 text-sm text-slate-200"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={drawingSoftwares.includes(item)}
-                      onChange={() => toggleSoftware(item)}
-                      className="h-4 w-4 accent-cyan-300"
-                    />
-                    {item}
-                  </label>
-                ))}
+            {canEditDrawingSoftware ? (
+              <div className="mt-5">
+                <span className="mb-2 block text-sm font-semibold text-slate-200">
+                  Drawing software
+                </span>
+                <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                  {drawingSoftwareOptions.map((item) => (
+                    <label
+                      key={item}
+                      className="flex items-center gap-2 rounded-lg border border-white/10 bg-slate-950/70 p-3 text-sm text-slate-200"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={drawingSoftwares.includes(item)}
+                        onChange={() => toggleSoftware(item)}
+                        className="h-4 w-4 accent-cyan-300"
+                      />
+                      {item}
+                    </label>
+                  ))}
+                </div>
               </div>
-            </div>
+            ) : null}
 
             <button
               type="submit"

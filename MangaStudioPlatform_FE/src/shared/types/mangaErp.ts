@@ -25,6 +25,18 @@ export type CurrentUser = {
   refreshToken: string;
 };
 
+export type NotificationDto = {
+  id: string;
+  title: string;
+  message: string;
+  isRead: boolean;
+  notifyType: string;
+  relatedEntityId?: string | null;
+  relatedEntityType?: string | null;
+  targetUrl?: string | null;
+  createdAt: string;
+};
+
 export type AppRole =
   | "reader"
   | "mangaka"

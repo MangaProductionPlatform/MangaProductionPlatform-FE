@@ -515,11 +515,6 @@ export default function TaskAssignmentPage() {
             Create Page Task
           </h2>
 
-          <p className="mt-2 text-sm text-slate-400">
-            API: POST /api/v1/chapters/{"{chapterId}"}/pages và POST
-            /api/v1/chapters/{"{chapterId}"}/pages/activate
-          </p>
-
           <div className="mt-5 grid gap-5 md:grid-cols-2">
             <div>
               <label className="text-sm text-slate-400">Chapter</label>

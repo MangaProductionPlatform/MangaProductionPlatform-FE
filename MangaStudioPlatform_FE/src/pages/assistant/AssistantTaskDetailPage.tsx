@@ -1,10 +1,10 @@
 import type { ChangeEvent } from "react";
 import { useEffect, useState } from "react";
-import { ArrowLeft, FileImage, Send, Upload } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ClipboardPenLine, FileImage, Send, Upload } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import { useToast } from "../../shared/components/toastContext";
 import { mangaErpApi } from "../../shared/services/mangaErpService";
-import type { LayerType, PageTaskDto } from "../../shared/types/mangaErp";
+import type { LayerType, NotificationDto, PageTaskDto } from "../../shared/types/mangaErp";
 
 const layerTypes: LayerType[] = ["LineArt", "Background", "Coloring", "Text", "Effects", "Dialogue"];
 
@@ -12,6 +12,7 @@ export default function AssistantTaskDetailPage() {
   const { id } = useParams();
   const toast = useToast();
   const [task, setTask] = useState<PageTaskDto | null>(null);
+  const [revisionFeedback, setRevisionFeedback] = useState<NotificationDto | null>(null);
   const [layerType, setLayerType] = useState<LayerType>("LineArt");
   const [artworkUrl, setArtworkUrl] = useState("");
   const [isUploading, setIsUploading] = useState(false);
@@ -24,8 +25,9 @@ export default function AssistantTaskDetailPage() {
     void Promise.all([
       mangaErpApi.getAssignedPageTasks(),
       mangaErpApi.getPageTask(id),
+      mangaErpApi.getMyNotifications().catch(() => []),
     ])
-      .then(([items, detail]) => {
+      .then(([items, detail, notifications]) => {
         const summary = items.find((item) => item.id === id);
         setTask({
           ...summary,
@@ -36,6 +38,12 @@ export default function AssistantTaskDetailPage() {
           currentLayerVersion: detail.currentLayerVersion ?? summary?.currentLayerVersion,
           rejectionNote: detail.rejectionNote ?? summary?.rejectionNote,
         });
+        const latestRevision = notifications.find((notification) =>
+          notification.notifyType.toLowerCase() === "revisionrequired"
+          && notification.relatedEntityType?.toLowerCase() === "pagetask"
+          && notification.relatedEntityId?.toLowerCase() === id.toLowerCase(),
+        );
+        setRevisionFeedback(latestRevision ?? null);
       })
       .catch((error: unknown) => {
         setTask(null);
@@ -108,10 +116,29 @@ export default function AssistantTaskDetailPage() {
             <Info label="Status" value={task?.status ?? "Assigned"} />
             <Info label="Page" value={task ? String(task.pageNumber) : "-"} />
             <Info label="Task type" value={task?.taskType ?? "General"} />
-            {task?.description ? <Info label="Mangaka note" value={task.description} /> : null}
             {task?.deadline ? <Info label="Deadline" value={new Date(task.deadline).toLocaleString()} /> : null}
-            {task?.rejectionNote ? <Info label="Revision alert" value={task.rejectionNote} alert /> : null}
           </dl>
+
+          <div className="mt-5 rounded-xl border border-cyan-400/20 bg-cyan-500/10 p-4">
+            <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-cyan-200">
+              <ClipboardPenLine size={16} /> Initial assignment
+            </p>
+            <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-100">
+              {task?.description?.trim() || "No initial instructions were provided for this task."}
+            </p>
+          </div>
+
+          {task?.status.toLowerCase() === "revisionalert" || task?.rejectionNote || revisionFeedback ? (
+            <div className="mt-4 rounded-xl border border-rose-400/25 bg-rose-500/10 p-4">
+              <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-rose-200">
+                <AlertTriangle size={16} /> Revision feedback
+              </p>
+              <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-rose-100">
+                {task?.rejectionNote?.trim() || revisionFeedback?.message?.trim() || "A revision was requested, but no written comment is available."}
+              </p>
+              {revisionFeedback?.createdAt ? <p className="mt-3 text-xs text-rose-200/60">Received {new Date(revisionFeedback.createdAt).toLocaleString()}</p> : null}
+            </div>
+          ) : null}
         </section>
 
         <section className="rounded-2xl border border-slate-800 bg-slate-900 p-6">

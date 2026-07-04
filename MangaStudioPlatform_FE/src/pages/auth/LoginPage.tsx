@@ -5,14 +5,14 @@ import {
   ArrowRight,
   Eye,
   EyeOff,
-  LockKeyhole,
   ShieldCheck,
   UserRoundCheck,
 } from "lucide-react";
 import { mangaErpApi } from "../../shared/services/mangaErpService";
 import { useToast } from "../../shared/components/toastContext";
-import ModeToggle from "../../shared/components/ModeToggle";
+import { QuickSettingsTrigger } from "../../shared/components/QuickSettingsPanel";
 import { mangaPlanningImage } from "../../shared/visuals/mangaVisuals";
+import "./LoginPage.css";
 
 const loginHighlights = [
   "Role-based routing after authentication",
@@ -76,14 +76,14 @@ export default function LoginPage() {
   return (
     <div className="app-shell">
       <div className="grid min-h-screen lg:grid-cols-[1fr_0.9fr]">
-        <aside className="relative overflow-hidden border-b border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.2),transparent_24%),linear-gradient(180deg,rgba(2,6,23,0.98),rgba(15,23,42,0.94))] p-8 lg:border-b-0 lg:border-r lg:p-10">
-          <div className="absolute inset-0 opacity-45">
+        <aside className="login-visual relative overflow-hidden border-b border-white/10 bg-slate-950 p-8 lg:border-b-0 lg:border-r lg:p-10">
+          <div className="absolute inset-0">
             <img
               src={mangaPlanningImage}
               alt=""
-              className="h-full w-full object-cover"
+              className="h-full w-full object-cover opacity-70"
             />
-            <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,8,22,0.25),rgba(5,8,22,0.96))]" />
+            <div className="login-visual__overlay absolute inset-0" />
           </div>
 
           <div className="relative flex h-full flex-col justify-between gap-10">
@@ -138,12 +138,12 @@ export default function LoginPage() {
         </aside>
 
         <main className="flex items-center justify-center p-6 sm:p-10">
-          <div className="w-full max-w-md rounded-xl border border-white/10 bg-white/5 p-6 shadow-[0_24px_90px_rgba(2,6,23,0.45)] backdrop-blur-xl sm:p-8">
+          <div className="login-panel w-full max-w-md rounded-xl border border-white/10 bg-white/5 p-6 shadow-[0_24px_90px_rgba(2,6,23,0.45)] backdrop-blur-xl sm:p-8">
             <div className="mb-6 flex items-center justify-between gap-3">
               <Link to="/" className="text-sm font-semibold text-slate-300 transition hover:text-white">
                 MangaStudio ERP
               </Link>
-              <ModeToggle compact />
+              <QuickSettingsTrigger />
             </div>
             <div className="mb-8">
               <p className="text-sm uppercase tracking-[0.35em] text-slate-400">
@@ -178,10 +178,6 @@ export default function LoginPage() {
                   Password
                 </span>
                 <div className="relative">
-                  <LockKeyhole
-                    size={16}
-                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"
-                  />
                   <input
                     type={showPassword ? "text" : "password"}
                     required
@@ -189,7 +185,7 @@ export default function LoginPage() {
                     value={password}
                     onChange={(event) => setPassword(event.target.value)}
                     placeholder="Enter password"
-                    className="input pr-12 pl-10"
+                    className="input pr-12"
                   />
                   <button
                     type="button"

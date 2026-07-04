@@ -469,7 +469,6 @@ export default function ChapterManagementPage() {
 
               <div>
                 <h3 className="font-bold text-white">Chapter Detail</h3>
-                <p className="text-sm text-slate-400">GET /api/v1/chapters/:id</p>
               </div>
             </div>
 
