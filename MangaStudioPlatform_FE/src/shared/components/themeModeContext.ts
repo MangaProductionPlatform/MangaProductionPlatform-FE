@@ -2,7 +2,7 @@ import { createContext, useContext } from "react";
 
 export type ThemeMode = "dark" | "light";
 export type AccentPreset = "cyan" | "violet" | "emerald" | "amber" | "rose";
-export type SidebarStyle = "pinned" | "collapsed" | "icons" | "auto-hide";
+export type SidebarStyle = "pinned" | "icons";
 export type FontSizePreference = "small" | "medium" | "large";
 
 export type ThemeContextValue = {
@@ -13,8 +13,6 @@ export type ThemeContextValue = {
   setAccent: (accent: AccentPreset) => void;
   sidebarStyle: SidebarStyle;
   setSidebarStyle: (style: SidebarStyle) => void;
-  sidebarPeekOpen: boolean;
-  setSidebarPeekOpen: (open: boolean) => void;
   fontSize: FontSizePreference;
   setFontSize: (size: FontSizePreference) => void;
   settingsOpen: boolean;

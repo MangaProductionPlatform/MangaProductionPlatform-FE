@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { mangaErpApi } from "../../shared/services/mangaErpService";
 import { useToast } from "../../shared/components/toastContext";
-import { QuickSettingsTrigger } from "../../shared/components/QuickSettingsPanel";
+import ModeToggle from "../../shared/components/ModeToggle";
 import { mangaPlanningImage } from "../../shared/visuals/mangaVisuals";
 import "./LoginPage.css";
 
@@ -143,7 +143,7 @@ export default function LoginPage() {
               <Link to="/" className="text-sm font-semibold text-slate-300 transition hover:text-white">
                 MangaStudio ERP
               </Link>
-              <QuickSettingsTrigger />
+              <ModeToggle />
             </div>
             <div className="mb-8">
               <p className="text-sm uppercase tracking-[0.35em] text-slate-400">

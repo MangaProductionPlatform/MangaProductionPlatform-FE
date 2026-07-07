@@ -181,6 +181,53 @@ textarea:focus-visible {
   background: color-mix(in srgb, var(--brand) 10%, var(--surface-strong));
 }
 
+.mode-toggle {
+  display: inline-flex;
+  min-width: 2.5rem;
+  min-height: 2.5rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 1px solid color-mix(in srgb, var(--brand) 26%, var(--border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-strong) 88%, transparent);
+  color: var(--brand);
+  box-shadow: 0 12px 32px rgba(2, 6, 23, 0.14);
+}
+
+.mode-toggle:hover {
+  border-color: color-mix(in srgb, var(--brand) 48%, var(--border));
+  background: color-mix(in srgb, var(--brand) 12%, var(--surface-strong));
+}
+
+.mode-toggle span {
+  padding-right: 0.15rem;
+  color: var(--text);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.app-logout-top {
+  position: fixed;
+  top: 1.25rem;
+  right: 1.25rem;
+  z-index: 45;
+  min-height: 2.75rem;
+  border: 1px solid color-mix(in srgb, var(--danger) 24%, var(--border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--danger) 10%, var(--surface-strong));
+  padding: 0.65rem 1rem;
+  color: var(--danger);
+  font-size: 0.875rem;
+  font-weight: 800;
+  box-shadow: var(--shadow);
+}
+
+.app-logout-top:hover {
+  background: color-mix(in srgb, var(--danger) 16%, var(--surface-strong));
+  transform: translateY(-1px);
+}
+
 .input {
   width: 100%;
   min-height: 44px;
@@ -367,44 +414,6 @@ html[data-sidebar="icons"] .settings-sidebar .sidebar-role-card {
 html[data-sidebar="icons"] .settings-sidebar .sidebar-role-card > div { margin: 0; justify-content: center; }
 html[data-sidebar="icons"] .settings-sidebar nav a,
 html[data-sidebar="icons"] .settings-sidebar .sidebar-action { justify-content: center; padding-inline: 0.65rem; }
-
-html[data-sidebar="auto-hide"] .settings-sidebar { width: 5.5rem !important; padding-inline: 1rem !important; overflow-x: hidden; z-index: 50; }
-html[data-sidebar="auto-hide"] .settings-sidebar:hover { width: 18rem !important; padding-inline: 1.25rem !important; box-shadow: 22px 0 70px rgba(2, 6, 23, 0.24); }
-html[data-sidebar="auto-hide"] .settings-sidebar:not(:hover) .sidebar-copy { width: 0; opacity: 0; overflow: hidden; }
-html[data-sidebar="auto-hide"] .settings-sidebar:not(:hover) .sidebar-role-card > p { display: none; }
-html[data-sidebar="auto-hide"] .settings-sidebar:not(:hover) .sidebar-role-card .sidebar-copy { display: none; }
-html[data-sidebar="auto-hide"] .settings-sidebar:not(:hover) .sidebar-role-card {
-  display: flex;
-  width: 3.5rem;
-  min-height: 3.5rem;
-  align-items: center;
-  justify-content: center;
-  padding: 0 !important;
-}
-html[data-sidebar="auto-hide"] .settings-sidebar:not(:hover) .sidebar-role-card > div { margin: 0; justify-content: center; }
-html[data-sidebar="auto-hide"] .settings-sidebar:not(:hover) nav a,
-html[data-sidebar="auto-hide"] .settings-sidebar:not(:hover) .sidebar-action { justify-content: center; padding-inline: 0.65rem; }
-
-html[data-sidebar="collapsed"] .settings-sidebar { width: 0 !important; padding: 0 !important; border: 0 !important; overflow: hidden !important; }
-html[data-sidebar="collapsed"] body:has(.settings-sidebar) .quick-settings-floating-trigger { display: inline-grid; }
-html[data-sidebar="collapsed"] body:has(.settings-sidebar) .sidebar-reveal-trigger { display: inline-grid; }
-html[data-sidebar="collapsed"][data-sidebar-peek="open"] .settings-sidebar {
-  width: 18rem !important;
-  padding: 1.25rem !important;
-  border-right: 1px solid var(--border) !important;
-  overflow: hidden !important;
-  z-index: 50;
-  box-shadow: 22px 0 70px rgba(2, 6, 23, 0.28);
-}
-html[data-sidebar="collapsed"][data-sidebar-peek="open"] .sidebar-reveal-trigger,
-html[data-sidebar="collapsed"][data-sidebar-peek="open"] .quick-settings-floating-trigger { display: none; }
-html[data-sidebar="collapsed"][data-sidebar-peek="open"] .sidebar-peek-backdrop { display: block; }
-
-@media (max-width: 1023px) {
-  .quick-settings-floating-trigger,
-  .sidebar-reveal-trigger,
-  .sidebar-peek-backdrop { display: none !important; }
-}
 
 @keyframes fade-in-up {
   from {

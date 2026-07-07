@@ -1,10 +1,7 @@
 import { useEffect, type ReactNode } from "react";
 import {
-  Eye,
   Moon,
-  PanelLeftClose,
   PanelLeftDashed,
-  PanelLeftOpen,
   Pin,
   RotateCcw,
   Settings,
@@ -12,6 +9,7 @@ import {
   X,
 } from "lucide-react";
 import { useThemeMode, type AccentPreset, type FontSizePreference, type SidebarStyle } from "./themeModeContext";
+import ModeToggle from "./ModeToggle";
 import "./quickSettingsPanel.css";
 
 const accents: Array<{ value: AccentPreset; label: string; color: string }> = [
@@ -24,9 +22,7 @@ const accents: Array<{ value: AccentPreset; label: string; color: string }> = [
 
 const sidebarOptions: Array<{ value: SidebarStyle; label: string; icon: typeof Pin }> = [
   { value: "pinned", label: "Pinned", icon: Pin },
-  { value: "collapsed", label: "Collapsed", icon: PanelLeftClose },
   { value: "icons", label: "Icons only", icon: PanelLeftDashed },
-  { value: "auto-hide", label: "Auto hide", icon: Eye },
 ];
 
 const fontOptions: Array<{ value: FontSizePreference; label: string; sample: string }> = [
@@ -35,8 +31,18 @@ const fontOptions: Array<{ value: FontSizePreference; label: string; sample: str
   { value: "large", label: "Large", sample: "Aa" },
 ];
 
-export function QuickSettingsTrigger({ className = "" }: { className?: string }) {
+type QuickSettingsTriggerProps = {
+  className?: string;
+  variant?: "mode" | "settings";
+};
+
+export function QuickSettingsTrigger({ className = "", variant = "mode" }: QuickSettingsTriggerProps) {
   const { setSettingsOpen } = useThemeMode();
+
+  if (variant === "mode") {
+    return <ModeToggle className={className} />;
+  }
+
   return (
     <button type="button" onClick={() => setSettingsOpen(true)} className={`quick-settings-trigger ${className}`} aria-label="Open quick settings" title="Quick settings">
       <Settings size={18} />
@@ -47,7 +53,6 @@ export function QuickSettingsTrigger({ className = "" }: { className?: string })
 export default function QuickSettingsPanel() {
   const {
     mode, setMode, accent, setAccent, sidebarStyle, setSidebarStyle,
-    sidebarPeekOpen, setSidebarPeekOpen,
     fontSize, setFontSize, settingsOpen, setSettingsOpen, resetPreferences,
   } = useThemeMode();
 
@@ -62,24 +67,6 @@ export default function QuickSettingsPanel() {
 
   return (
     <>
-      <QuickSettingsTrigger className="quick-settings-floating-trigger" />
-      <button
-        type="button"
-        className="sidebar-reveal-trigger"
-        onClick={() => setSidebarPeekOpen(true)}
-        aria-label="Temporarily open sidebar"
-        title="Open sidebar"
-      >
-        <PanelLeftOpen size={19} />
-      </button>
-      {sidebarPeekOpen ? (
-        <button
-          type="button"
-          className="sidebar-peek-backdrop"
-          onClick={() => setSidebarPeekOpen(false)}
-          aria-label="Close temporary sidebar"
-        />
-      ) : null}
       {settingsOpen ? (
         <div className="quick-settings-layer" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setSettingsOpen(false); }}>
           <aside className="quick-settings-panel" role="dialog" aria-modal="true" aria-labelledby="quick-settings-title">
