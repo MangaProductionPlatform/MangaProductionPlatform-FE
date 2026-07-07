@@ -167,7 +167,7 @@ export default function DashboardLayout() {
                 <p className="font-semibold text-white">{role ?? "Mangaka"}</p>
                 <p className="text-xs text-slate-400">{workspaceLabel}</p>
               </div>
-              <QuickSettingsTrigger />
+              <QuickSettingsTrigger variant="settings" />
             </div>
           </div>
 
@@ -195,18 +195,19 @@ export default function DashboardLayout() {
             })}
           </nav>
 
-          <div className="mt-4 grid shrink-0 gap-2">
-            <button
-              onClick={handleLogout}
-              className="sidebar-action flex min-h-11 w-full items-center gap-3 rounded-xl border border-rose-300/20 bg-rose-500/10 px-3.5 py-2.5 text-sm font-medium text-rose-100 transition hover:bg-rose-500/15"
-            >
-              <LogOut size={18} />
-              <span className="sidebar-copy">Logout</span>
-            </button>
-          </div>
         </aside>
 
         <main className="min-w-0 flex-1">
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="app-logout-top hidden items-center gap-2 lg:inline-flex"
+            title="Logout"
+            aria-label="Logout"
+          >
+            <LogOut size={18} />
+            <span>Logout</span>
+          </button>
           <header className="app-topbar sticky top-0 z-30 px-4 py-4 lg:hidden">
             <div className="flex items-center justify-between gap-3">
               <NavLink to={homePath} className="flex items-center gap-3">
@@ -219,7 +220,6 @@ export default function DashboardLayout() {
                 </div>
               </NavLink>
               <div className="flex items-center gap-2">
-                <QuickSettingsTrigger />
                 <button
                   type="button"
                   onClick={handleLogout}

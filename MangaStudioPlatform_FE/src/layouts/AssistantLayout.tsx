@@ -68,7 +68,7 @@ export default function AssistantLayout() {
                 <p className="font-semibold text-white">Assistant</p>
                 <p className="text-xs text-slate-400">Task worker</p>
               </div>
-              <QuickSettingsTrigger />
+              <QuickSettingsTrigger variant="settings" />
             </div>
           </div>
 
@@ -95,19 +95,19 @@ export default function AssistantLayout() {
               );
             })}
           </nav>
-          <div className="mt-6 grid gap-2">
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="sidebar-action flex min-h-11 w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium text-rose-200 transition hover:bg-rose-500/10"
-            >
-              <LogOut size={18} />
-              <span className="sidebar-copy">Logout</span>
-            </button>
-          </div>
         </aside>
 
         <main className="min-w-0 flex-1">
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="app-logout-top hidden items-center gap-2 lg:inline-flex"
+            title="Logout"
+            aria-label="Logout"
+          >
+            <LogOut size={18} />
+            <span>Logout</span>
+          </button>
           <header className="app-topbar sticky top-0 z-30 px-4 py-4 lg:hidden">
             <div className="flex items-center justify-between gap-3">
               <NavLink to="/assistant/dashboard" className="flex items-center gap-3">
@@ -120,7 +120,6 @@ export default function AssistantLayout() {
                 </div>
               </NavLink>
               <div className="flex items-center gap-2">
-                <QuickSettingsTrigger />
                 <button
                   type="button"
                   onClick={handleLogout}

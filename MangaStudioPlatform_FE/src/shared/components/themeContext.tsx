@@ -34,8 +34,7 @@ type ThemeProviderProps = {
 export function ThemeProvider({ children }: ThemeProviderProps) {
   const [mode, setModeState] = useState<ThemeMode>(getInitialMode);
   const [accent, setAccent] = useState<AccentPreset>(() => getStoredValue(storageKeys.accent, ["cyan", "violet", "emerald", "amber", "rose"], "cyan"));
-  const [sidebarStyle, setSidebarStyleState] = useState<SidebarStyle>(() => getStoredValue(storageKeys.sidebar, ["pinned", "collapsed", "icons", "auto-hide"], "pinned"));
-  const [sidebarPeekOpen, setSidebarPeekOpen] = useState(false);
+  const [sidebarStyle, setSidebarStyleState] = useState<SidebarStyle>(() => getStoredValue(storageKeys.sidebar, ["pinned", "icons"], "pinned"));
   const [fontSize, setFontSize] = useState<FontSizePreference>(() => getStoredValue(storageKeys.fontSize, ["small", "medium", "large"], "medium"));
   const [settingsOpen, setSettingsOpen] = useState(false);
 
@@ -57,17 +56,12 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     window.localStorage.setItem(storageKeys.fontSize, fontSize);
   }, [accent, sidebarStyle, fontSize]);
 
-  useEffect(() => {
-    document.documentElement.dataset.sidebarPeek = sidebarPeekOpen ? "open" : "closed";
-  }, [sidebarPeekOpen]);
-
   const setMode = useCallback((nextMode: ThemeMode) => {
     setModeState(nextMode);
   }, []);
 
   const setSidebarStyle = useCallback((nextStyle: SidebarStyle) => {
     setSidebarStyleState(nextStyle);
-    setSidebarPeekOpen(false);
   }, []);
 
   const toggleMode = useCallback(() => {
@@ -89,14 +83,12 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     setAccent,
     sidebarStyle,
     setSidebarStyle,
-    sidebarPeekOpen,
-    setSidebarPeekOpen,
     fontSize,
     setFontSize,
     settingsOpen,
     setSettingsOpen,
     resetPreferences,
-  }), [mode, setMode, toggleMode, accent, sidebarStyle, setSidebarStyle, sidebarPeekOpen, fontSize, settingsOpen, resetPreferences]);
+  }), [mode, setMode, toggleMode, accent, sidebarStyle, setSidebarStyle, fontSize, settingsOpen, resetPreferences]);
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }
