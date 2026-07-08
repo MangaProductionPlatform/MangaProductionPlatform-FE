@@ -13,8 +13,8 @@ export default function CoverMarquee({ compact = false }: CoverMarqueeProps) {
         {covers.map((cover, index) => (
           <article
             key={`${cover.title}-${index}`}
-            className={`group relative overflow-hidden rounded-lg border border-white/10 bg-gradient-to-br ${cover.tone} shadow-[0_18px_45px_rgba(2,6,23,0.35)] ${
-              compact ? "h-44 w-28" : "h-64 w-40"
+            className={`cover-card group relative overflow-hidden rounded-lg border border-white/10 bg-gradient-to-br ${cover.tone} shadow-[0_18px_45px_rgba(2,6,23,0.35)] ${
+              compact ? "cover-card--compact" : ""
             }`}
           >
             <div

@@ -51,7 +51,7 @@ export default function AdminLayout() {
   return (
     <div className="app-shell">
       <div className="flex min-h-screen">
-        <aside className="app-sidebar settings-sidebar sticky top-0 hidden h-screen w-72 shrink-0 p-5 lg:block">
+        <aside className="app-sidebar settings-sidebar sticky top-0 hidden h-dvh w-72 shrink-0 p-5 lg:block">
           <NavLink to="/admin/dashboard" className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-white text-sm font-black text-slate-950">
               OP
@@ -61,6 +61,10 @@ export default function AdminLayout() {
                 Studio Operations
               </h1>
               <p className="text-xs text-slate-400">Admin governance</p>
+              <span className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-emerald-300/20 bg-emerald-300/10 px-2.5 py-1 text-xs font-semibold text-emerald-100">
+                <ShieldCheck size={13} className="text-emerald-200" />
+                Admin access
+              </span>
             </div>
           </NavLink>
 
@@ -123,6 +127,10 @@ export default function AdminLayout() {
                 <div>
                   <p className="font-semibold">Studio Operations</p>
                   <p className="text-xs text-slate-400">Admin governance</p>
+                  <span className="mt-1 inline-flex items-center gap-1.5 rounded-full border border-emerald-300/20 bg-emerald-300/10 px-2 py-0.5 text-[0.68rem] font-semibold text-emerald-100">
+                    <ShieldCheck size={12} className="text-emerald-200" />
+                    Admin access
+                  </span>
                 </div>
               </NavLink>
               <div className="flex items-center gap-2">
@@ -162,13 +170,9 @@ export default function AdminLayout() {
               <div className="surface-card flex items-center gap-3 rounded-xl px-3 py-2.5">
                 <Search size={17} className="text-slate-500" />
                 <input
-                  className="w-80 bg-transparent text-sm text-white outline-none placeholder:text-slate-500"
+                  className="w-full min-w-0 max-w-80 bg-transparent text-sm text-white outline-none placeholder:text-slate-500"
                   placeholder="Search users, series, jobs, reports"
                 />
-              </div>
-              <div className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-slate-300">
-                <ShieldCheck size={16} className="text-emerald-200" />
-                Admin access
               </div>
             </div>
             <Outlet />

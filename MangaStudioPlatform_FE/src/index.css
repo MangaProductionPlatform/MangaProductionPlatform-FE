@@ -64,6 +64,13 @@ html {
   scroll-behavior: smooth;
 }
 
+html,
+body,
+#root {
+  min-width: 0;
+  overflow-x: clip;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -79,6 +86,28 @@ body {
   color: var(--text);
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+}
+
+img,
+video,
+canvas,
+svg {
+  max-width: 100%;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+li,
+dt,
+dd,
+label,
+span {
+  overflow-wrap: anywhere;
 }
 
 a {
@@ -124,6 +153,7 @@ textarea:focus-visible {
 }
 
 .app-sidebar {
+  width: clamp(15.5rem, 18vw, 18rem);
   border-right: 1px solid var(--border);
   background: color-mix(in srgb, var(--surface-strong) 92%, transparent);
   box-shadow: 18px 0 60px rgba(2, 6, 23, 0.14);
@@ -137,12 +167,14 @@ textarea:focus-visible {
 }
 
 .surface-card {
+  min-width: 0;
   border: 1px solid var(--border);
   background: var(--surface);
   box-shadow: var(--shadow);
 }
 
 .premium-card {
+  min-width: 0;
   border: 1px solid var(--border);
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--surface-strong) 96%, transparent), var(--surface));
@@ -239,6 +271,15 @@ textarea:focus-visible {
   outline: none;
   box-shadow: inset 0 1px 0 color-mix(in srgb, white 5%, transparent);
   transition: border-color 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+}
+
+section:has(table),
+div:has(> table) {
+  overflow-x: auto;
+}
+
+table {
+  min-width: max-content;
 }
 
 .input:focus {
@@ -399,6 +440,11 @@ html[data-accent] [class*="accent-cyan-"] { accent-color: var(--brand); }
 
 .settings-sidebar { transition: width 220ms ease, padding 220ms ease, transform 220ms ease; }
 .settings-sidebar .sidebar-copy { white-space: nowrap; transition: opacity 160ms ease, width 200ms ease; }
+.settings-sidebar nav {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
 
 html[data-sidebar="icons"] .settings-sidebar { width: 5.5rem !important; padding-inline: 1rem !important; }
 html[data-sidebar="icons"] .settings-sidebar .sidebar-copy { display: none; }
@@ -414,6 +460,17 @@ html[data-sidebar="icons"] .settings-sidebar .sidebar-role-card {
 html[data-sidebar="icons"] .settings-sidebar .sidebar-role-card > div { margin: 0; justify-content: center; }
 html[data-sidebar="icons"] .settings-sidebar nav a,
 html[data-sidebar="icons"] .settings-sidebar .sidebar-action { justify-content: center; padding-inline: 0.65rem; }
+
+@media (min-width: 1024px) {
+  .settings-sidebar {
+    display: flex !important;
+    flex-direction: column;
+  }
+
+  .settings-sidebar nav {
+    flex: 1 1 auto;
+  }
+}
 
 @keyframes fade-in-up {
   from {
@@ -550,6 +607,17 @@ html[data-sidebar="icons"] .settings-sidebar .sidebar-action { justify-content: 
   will-change: transform;
 }
 
+.cover-card {
+  width: clamp(7.25rem, 15vw, 10rem);
+  height: clamp(11rem, 24vw, 16rem);
+  flex: 0 0 auto;
+}
+
+.cover-card--compact {
+  width: clamp(6.25rem, 13vw, 7rem);
+  height: clamp(9.75rem, 20vw, 11rem);
+}
+
 .cover-marquee-track > article {
   transition: transform 350ms ease, filter 350ms ease;
 }
@@ -591,7 +659,48 @@ html[data-sidebar="icons"] .settings-sidebar .sidebar-action { justify-content: 
 }
 
 @media (max-width: 640px) {
+  .app-topbar > div {
+    flex-wrap: wrap;
+  }
+
+  .app-topbar a {
+    min-width: 0;
+  }
+
+  .mode-toggle {
+    min-width: 2.35rem;
+    min-height: 2.35rem;
+  }
+
+  .btn-primary,
+  .btn-secondary,
+  .input {
+    min-height: 42px;
+  }
+
   .cover-marquee-track {
     animation-duration: 14s;
+  }
+}
+
+@media (max-width: 900px) {
+  [class*="grid-cols-["] {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  [class*="md:grid-cols-"],
+  [class*="lg:grid-cols-"],
+  [class*="xl:grid-cols-"] {
+    min-width: 0;
+  }
+}
+
+@media (max-width: 380px) {
+  html {
+    font-size: 14px;
+  }
+
+  .cover-marquee {
+    margin-inline: -0.25rem;
   }
 }

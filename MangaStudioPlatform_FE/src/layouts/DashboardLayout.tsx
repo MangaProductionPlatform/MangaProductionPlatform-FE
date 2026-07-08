@@ -147,7 +147,7 @@ export default function DashboardLayout() {
   return (
     <div className="app-shell">
       <div className="flex min-h-screen">
-        <aside className="app-sidebar settings-sidebar sticky top-0 hidden h-screen w-72 shrink-0 flex-col overflow-hidden p-5 lg:flex">
+        <aside className="app-sidebar settings-sidebar sticky top-0 hidden h-dvh w-72 shrink-0 flex-col overflow-hidden p-5 lg:flex">
           <NavLink to={homePath} className="flex shrink-0 items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-300 via-rose-400 to-cyan-300 text-sm font-black text-slate-950">
               M

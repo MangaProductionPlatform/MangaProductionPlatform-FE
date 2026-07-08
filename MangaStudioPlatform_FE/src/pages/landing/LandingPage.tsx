@@ -36,13 +36,13 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-[#050816] text-slate-100">
-      <main className="mx-auto flex min-h-[calc(100dvh-5rem)] max-w-6xl flex-col justify-center px-4 py-12 sm:px-6 lg:px-8">
-        <section className="grid items-center gap-8 lg:grid-cols-[1fr_24rem]">
+      <main className="mx-auto flex min-h-[calc(100dvh-5rem)] w-full max-w-6xl flex-col justify-center px-4 py-8 sm:px-6 sm:py-10 lg:px-8 lg:py-12">
+        <section className="grid items-center gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)] lg:gap-8">
           <div className="max-w-3xl">
             <p className="text-sm font-semibold uppercase tracking-[0.35em] text-cyan-200">
               Company operations portal
             </p>
-            <h1 className="mt-4 text-5xl font-black tracking-tight text-white sm:text-6xl">
+            <h1 className="mt-4 text-[clamp(2.6rem,8vw,3.75rem)] font-black leading-[0.95] tracking-tight text-white">
               MangaStudio ERP
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-7 text-slate-300 sm:text-lg sm:leading-8">
@@ -61,7 +61,7 @@ export default function LandingPage() {
               </span>
             </div>
           </div>
-          <div className="relative min-h-80 overflow-hidden rounded-lg border border-white/10 bg-slate-900/70 shadow-[0_24px_80px_rgba(2,6,23,0.45)]">
+          <div className="relative min-h-[clamp(15rem,36vw,20rem)] overflow-hidden rounded-lg border border-white/10 bg-slate-900/70 shadow-[0_24px_80px_rgba(2,6,23,0.45)]">
             <img
               key={heroSlide.image}
               src={heroSlide.image}
@@ -73,7 +73,7 @@ export default function LandingPage() {
               <p className="text-xs font-semibold uppercase tracking-[0.28em] text-amber-100">
                 {heroSlide.eyebrow}
               </p>
-              <h2 className="mt-2 text-2xl font-black text-white">
+              <h2 className="mt-2 text-[clamp(1.25rem,5vw,1.5rem)] font-black leading-tight text-white">
                 {heroSlide.title}
               </h2>
             </div>
