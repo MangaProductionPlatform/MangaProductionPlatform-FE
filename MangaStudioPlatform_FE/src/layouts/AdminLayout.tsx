@@ -12,7 +12,6 @@ import {
   LogOut,
   Search,
   Settings,
-  ShieldCheck,
   Users,
 } from "lucide-react";
 import { useToast } from "../shared/components/toastContext";
@@ -52,19 +51,17 @@ export default function AdminLayout() {
     <div className="app-shell">
       <div className="flex min-h-screen">
         <aside className="app-sidebar settings-sidebar sticky top-0 hidden h-dvh w-72 shrink-0 p-5 lg:block">
-          <NavLink to="/admin/dashboard" className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-white text-sm font-black text-slate-950">
-              OP
-            </div>
-            <div className="sidebar-copy">
-              <h1 className="text-lg font-bold leading-tight">
-                Studio Operations
-              </h1>
-              <p className="text-xs text-slate-400">Admin governance</p>
-              <span className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-emerald-300/20 bg-emerald-300/10 px-2.5 py-1 text-xs font-semibold text-emerald-100">
-                <ShieldCheck size={13} className="text-emerald-200" />
-                Admin access
-              </span>
+          <NavLink to="/admin/dashboard" className="block">
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-white text-sm font-black text-slate-950">
+                OP
+              </div>
+              <div className="sidebar-copy min-w-0">
+                <h1 className="text-lg font-bold leading-tight">
+                  Studio Operations
+                </h1>
+                <p className="text-xs leading-5 text-slate-400">Admin governance</p>
+              </div>
             </div>
           </NavLink>
 
@@ -120,17 +117,13 @@ export default function AdminLayout() {
           </button>
           <header className="app-topbar sticky top-0 z-30 px-4 py-4 lg:hidden">
             <div className="flex items-center justify-between gap-3">
-              <NavLink to="/admin/dashboard" className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white text-xs font-black text-slate-950">
+              <NavLink to="/admin/dashboard" className="flex items-start gap-3">
+                <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white text-xs font-black text-slate-950">
                   OP
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="font-semibold">Studio Operations</p>
-                  <p className="text-xs text-slate-400">Admin governance</p>
-                  <span className="mt-1 inline-flex items-center gap-1.5 rounded-full border border-emerald-300/20 bg-emerald-300/10 px-2 py-0.5 text-[0.68rem] font-semibold text-emerald-100">
-                    <ShieldCheck size={12} className="text-emerald-200" />
-                    Admin access
-                  </span>
+                  <p className="text-xs leading-5 text-slate-400">Admin governance</p>
                 </div>
               </NavLink>
               <div className="flex items-center gap-2">
