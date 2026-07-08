@@ -74,8 +74,8 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="app-shell">
-      <div className="grid min-h-screen lg:grid-cols-[1fr_0.9fr]">
+    <div className="app-shell login-page">
+      <div className="login-page__grid grid min-h-dvh lg:grid-cols-[minmax(0,1fr)_minmax(22rem,0.9fr)]">
         <aside className="login-visual relative overflow-hidden border-b border-white/10 bg-slate-950 p-8 lg:border-b-0 lg:border-r lg:p-10">
           <div className="absolute inset-0">
             <img
@@ -105,7 +105,7 @@ export default function LoginPage() {
                 Authorized staff access
               </div>
 
-              <h1 className="text-5xl font-black tracking-tight text-white sm:text-6xl">
+              <h1 className="text-[clamp(2.45rem,7vw,3.75rem)] font-black leading-[0.98] tracking-tight text-white">
                 Sign in to MangaStudio ERP
               </h1>
               <p className="max-w-lg text-lg leading-8 text-slate-300">
@@ -137,7 +137,7 @@ export default function LoginPage() {
           </div>
         </aside>
 
-        <main className="flex items-center justify-center p-6 sm:p-10">
+        <main className="login-form-area flex items-center justify-center p-4 sm:p-8 lg:p-10">
           <div className="login-panel w-full max-w-md rounded-xl border border-white/10 bg-white/5 p-6 shadow-[0_24px_90px_rgba(2,6,23,0.45)] backdrop-blur-xl sm:p-8">
             <div className="mb-6 flex items-center justify-between gap-3">
               <Link to="/" className="text-sm font-semibold text-slate-300 transition hover:text-white">

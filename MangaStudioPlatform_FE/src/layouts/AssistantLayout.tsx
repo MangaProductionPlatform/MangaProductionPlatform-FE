@@ -46,7 +46,7 @@ export default function AssistantLayout() {
   return (
     <div className="app-shell">
       <div className="flex min-h-screen">
-        <aside className="app-sidebar settings-sidebar sticky top-0 hidden h-screen w-72 shrink-0 p-5 lg:block">
+        <aside className="app-sidebar settings-sidebar sticky top-0 hidden h-dvh w-72 shrink-0 p-5 lg:block">
           <NavLink to="/assistant/dashboard" className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-cyan-300 text-sm font-black text-slate-950">
               A

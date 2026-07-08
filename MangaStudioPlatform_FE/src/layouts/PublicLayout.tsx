@@ -16,12 +16,12 @@ export default function PublicLayout() {
       </div>
 
       <header className="app-topbar sticky top-0 z-40">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
-          <Link to="/" className="flex items-center gap-3">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-4 sm:flex-nowrap sm:gap-4 sm:px-6 lg:px-8">
+          <Link to="/" className="flex min-w-0 items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-300 via-rose-400 to-fuchsia-500 text-sm font-black text-slate-950 shadow-lg shadow-rose-500/20">
               M
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="text-base font-semibold tracking-wide">
                 MangaStudio
               </p>

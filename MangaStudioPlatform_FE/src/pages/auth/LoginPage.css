@@ -2,6 +2,14 @@
   color: #f8fafc;
 }
 
+.login-page__grid {
+  grid-auto-rows: auto;
+}
+
+.login-form-area {
+  min-width: 0;
+}
+
 .login-visual__overlay {
   background:
     linear-gradient(90deg, rgba(2, 6, 23, 0.6) 0%, rgba(2, 6, 23, 0.28) 62%, rgba(2, 6, 23, 0.46) 100%),
@@ -41,11 +49,49 @@ html[data-theme="light"] .login-panel {
 }
 
 @media (max-width: 1023px) {
+  .login-visual {
+    min-height: clamp(34rem, 62vh, 46rem);
+  }
+
   .login-visual__overlay {
     background: linear-gradient(180deg, rgba(2, 6, 23, 0.48), rgba(2, 6, 23, 0.76));
   }
 
   html[data-theme="light"] .login-visual__overlay {
     background: linear-gradient(180deg, rgba(248, 250, 252, 0.58), rgba(248, 250, 252, 0.7));
+  }
+}
+
+@media (max-width: 640px) {
+  .login-visual {
+    min-height: auto;
+    padding: 1.25rem !important;
+  }
+
+  .login-visual > .relative {
+    gap: 2rem;
+  }
+
+  .login-panel {
+    padding: 1.25rem !important;
+  }
+}
+
+@media (max-height: 760px) and (min-width: 1024px) {
+  .login-visual,
+  .login-form-area {
+    align-items: flex-start;
+  }
+
+  .login-visual {
+    padding-block: 1.5rem !important;
+  }
+
+  .login-visual > .relative {
+    gap: 1.5rem;
+  }
+
+  .login-panel {
+    margin-block: 1.5rem;
   }
 }
