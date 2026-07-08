@@ -627,6 +627,24 @@ html[data-sidebar="icons"] .settings-sidebar .sidebar-action { justify-content: 
   transform: translateY(-8px) scale(1.025);
 }
 
+.admin-users-page {
+  width: min(100%, 74rem);
+}
+
+.admin-users-table {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--brand) 40%, transparent) transparent;
+}
+
+.admin-users-table::-webkit-scrollbar {
+  height: 0.6rem;
+}
+
+.admin-users-table::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--brand) 38%, transparent);
+}
+
 .hero-pan {
   animation: hero-pan 14s ease-in-out infinite;
   will-change: transform;
