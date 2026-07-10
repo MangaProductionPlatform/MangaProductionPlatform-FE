@@ -11,6 +11,7 @@ import type {
   CreateSubmissionPayload,
   CurrentUser,
   AddQaPinPayload,
+  AssignQaFixPayload,
   FeedbackPinDto,
   InviteAssistantPayload,
   LayerHistoryDto,
@@ -22,9 +23,17 @@ import type {
   ProvisionAccountPayload,
   ProvisionAccountResult,
   QaBugPinDto,
+  QaFeedbackHistoryDto,
+  QaHistoryDto,
+  QaQueueChapterDto,
+  QaReviewPageDto,
+  QaRevisionTaskDto,
   QaSessionDto,
+  QaSummaryDto,
+  CompleteQaSessionPayload,
   RequestRevisionPayload,
   ReassignPageTaskPayload,
+  ResolveQaPinPayload,
   ResolveSubmissionConflictPayload,
   ResolveSubmissionConflictResult,
   ReviewSubmissionPayload,
@@ -34,15 +43,18 @@ import type {
   SchedulePublicationPayload,
   SetPageRegionPayload,
   SubmitPageLayerPayload,
+  StartQaSessionPayload,
   SubmissionDetailDto,
   SubmissionSummaryDto,
   SubmissionVotesDto,
   StudioInvitationDto,
   UpdateProfilePayload,
   UpdateAdminAccountPayload,
+  UpdateQaPinPayload,
   UpdateTaskDeadlinePayload,
   UpdateSubmissionManuscriptPayload,
   UpdateSubmissionMetadataPayload,
+  UnresolveQaPinPayload,
 } from "../types/mangaErp";
 import { request } from "./httpClient";
 import { API_BASE_URL, SERVICE_BASE_URLS } from "./mangaErpConfig";
@@ -55,6 +67,54 @@ import {
   normalizeRole,
   pick,
 } from "./mangaErpMappers";
+
+function pickAny<T>(value: Record<string, unknown>, keys: string[]): T {
+  for (const key of keys) {
+    const candidate = value[key];
+    if (candidate !== undefined) return candidate as T;
+  }
+  return undefined as T;
+}
+
+function mapQaPin(item: Record<string, unknown>): QaBugPinDto {
+  return {
+    id: pickAny<string>(item, ["id", "Id", "pinId", "PinId"]),
+    chapterId: pickAny<string | undefined>(item, ["chapterId", "ChapterId"]),
+    pageTaskId: pickAny<string | undefined>(item, ["pageTaskId", "PageTaskId"]),
+    pageId: pickAny<string | undefined>(item, ["pageId", "PageId"]),
+    editorId: pickAny<string | undefined>(item, ["editorId", "EditorId"]),
+    coordinateX: pickAny<number>(item, ["coordinateX", "CoordinateX"]),
+    coordinateY: pickAny<number>(item, ["coordinateY", "CoordinateY"]),
+    noteMessage: pickAny<string | undefined>(item, ["noteMessage", "NoteMessage"]),
+    description: pickAny<string | undefined>(item, ["description", "Description"]),
+    issueType: pickAny<string | null | undefined>(item, ["issueType", "IssueType"]),
+    pinType: pickAny<string | null | undefined>(item, ["pinType", "PinType"]),
+    severity: pickAny<string | null | undefined>(item, ["severity", "Severity"]),
+    category: pickAny<string | null | undefined>(item, ["category", "Category"]),
+    assignedToRole: pickAny<string | null | undefined>(item, ["assignedToRole", "AssignedToRole"]),
+    batchToken: pickAny<string | undefined>(item, ["batchToken", "BatchToken"]),
+    resolvedImageUrl: pickAny<string | null | undefined>(item, ["resolvedImageUrl", "ResolvedImageUrl"]),
+    notes: pickAny<string | null | undefined>(item, ["notes", "Notes"]),
+    status: pickAny<string>(item, ["status", "Status"]),
+    resolvedAt: pickAny<string | null | undefined>(item, ["resolvedAt", "ResolvedAt"]),
+    createdAt: pickAny<string | undefined>(item, ["createdAt", "CreatedAt"]),
+  };
+}
+
+function mapQaSession(item: Record<string, unknown>): QaSessionDto {
+  return {
+    id: pickAny<string | undefined>(item, ["id", "Id", "sessionId", "SessionId"]),
+    sessionId: pickAny<string | undefined>(item, ["sessionId", "SessionId", "id", "Id"]),
+    qaSessionId: pickAny<string | undefined>(item, ["qaSessionId", "QaSessionId", "sessionId", "SessionId"]),
+    chapterId: pickAny<string>(item, ["chapterId", "ChapterId"]),
+    editorId: pickAny<string | undefined>(item, ["editorId", "EditorId"]),
+    status: pickAny<string>(item, ["status", "Status"]),
+    isApproved: pickAny<boolean | undefined>(item, ["isApproved", "IsApproved"]),
+    approvedAt: pickAny<string | null | undefined>(item, ["approvedAt", "ApprovedAt"]),
+    createdAt: pickAny<string | undefined>(item, ["createdAt", "CreatedAt", "startedAt", "StartedAt"]),
+    completedAt: pickAny<string | null | undefined>(item, ["completedAt", "CompletedAt"]),
+  };
+}
 
 export const mangaErpApi = {
   baseUrl: API_BASE_URL,
@@ -443,50 +503,238 @@ export const mangaErpApi = {
     return request<void>("chapter", `/api/v1/chapters/${chapterId}/submit-for-qa`, { method: "POST" });
   },
 
-  async addQaPin(chapterId: string, payload: AddQaPinPayload) {
+  async resubmitChapterForQA(chapterId: string) {
+    return request<void>("qa", `/api/v1/qa/chapters/${chapterId}/resubmit`, { method: "POST" });
+  },
+
+  async getQaQueue(status = "Pending") {
+    void status;
+    const data = await request<Record<string, unknown>[] | { items?: Record<string, unknown>[]; Items?: Record<string, unknown>[] }>(
+      "qa",
+      "/api/v1/qa/queue",
+    );
+    const items = Array.isArray(data) ? data : data.items ?? data.Items ?? [];
+    return items.map((item) => ({
+      chapterId: pickAny<string>(item, ["chapterId", "ChapterId", "id", "Id"]),
+      seriesId: pickAny<string | null | undefined>(item, ["seriesId", "SeriesId"]),
+      seriesTitle: pickAny<string | null | undefined>(item, ["seriesTitle", "SeriesTitle"]),
+      title: pickAny<string>(item, ["title", "Title", "chapterTitle", "ChapterTitle"]),
+      chapterNumber: pickAny<number | null | undefined>(item, ["chapterNumber", "ChapterNumber"]),
+      status: pickAny<string>(item, ["status", "Status"]),
+      totalPages: pickAny<number | null | undefined>(item, ["totalPages", "TotalPages"]),
+      deadline: pickAny<string | null | undefined>(item, ["deadline", "Deadline"]),
+      submittedAt: pickAny<string | null | undefined>(item, ["submittedAt", "SubmittedAt", "createdAt", "CreatedAt"]),
+    })) satisfies QaQueueChapterDto[];
+  },
+
+  async startQaSession(chapterId: string, payload: StartQaSessionPayload) {
+    void payload;
+    const data = await request<Record<string, unknown> | string>("qa", `/api/v1/qa/chapters/${chapterId}/start`, {
+      method: "POST",
+    });
+    if (typeof data === "string") return data;
+    return mapQaSession(data);
+  },
+
+  async getQaSessionById(chapterId: string) {
+    const data = await request<Record<string, unknown>>("qa", `/api/v1/qa/chapters/${chapterId}/session`);
+    return mapQaSession(data);
+  },
+
+  async getQaSessionPages(chapterId: string) {
+    const data = await request<Record<string, unknown>[] | { items?: Record<string, unknown>[]; Items?: Record<string, unknown>[] }>(
+      "qa",
+      `/api/v1/qa/chapters/${chapterId}/pages`,
+    );
+    const items = Array.isArray(data) ? data : data.items ?? data.Items ?? [];
+    return items.map((item) => ({
+      pageId: pickAny<string>(item, ["pageTaskId", "PageTaskId", "pageId", "PageId", "id", "Id"]),
+      pageTaskId: pickAny<string>(item, ["pageTaskId", "PageTaskId", "pageId", "PageId", "id", "Id"]),
+      pageNumber: pickAny<number>(item, ["pageNumber", "PageNumber"]),
+      description: pickAny<string | null | undefined>(item, ["description", "Description"]),
+      imageUrl: pickAny<string | null | undefined>(item, ["imageUrl", "ImageUrl"]),
+      compositeUrl: pickAny<string | null | undefined>(item, ["compositeUrl", "CompositeUrl", "previewCompositeUrl", "PreviewCompositeUrl"]),
+      previewCompositeUrl: pickAny<string | null | undefined>(item, ["previewCompositeUrl", "PreviewCompositeUrl", "compositeUrl", "CompositeUrl"]),
+      fileUrlOriginal: pickAny<string | null | undefined>(item, ["fileUrlOriginal", "FileUrlOriginal"]),
+      fileUrlOptimized: pickAny<string | null | undefined>(item, ["fileUrlOptimized", "FileUrlOptimized"]),
+      taskType: pickAny<string | null | undefined>(item, ["taskType", "TaskType"]),
+      regionMask: pickAny<string | null | undefined>(item, ["regionMask", "RegionMask"]),
+      status: pickAny<string | null | undefined>(item, ["status", "Status", "taskStatus", "TaskStatus"]),
+      createdAt: pickAny<string | undefined>(item, ["createdAt", "CreatedAt"]),
+      updatedAt: pickAny<string | undefined>(item, ["updatedAt", "UpdatedAt"]),
+    })) satisfies QaReviewPageDto[];
+  },
+
+  async getQaSessionPins(chapterId: string) {
+    const data = await request<Record<string, unknown>[] | { items?: Record<string, unknown>[]; Items?: Record<string, unknown>[] }>(
+      "qa",
+      `/api/v1/qa/chapters/${chapterId}/pins`,
+    );
+    const items = Array.isArray(data) ? data : data.items ?? data.Items ?? [];
+    return items.map(mapQaPin) satisfies QaBugPinDto[];
+  },
+
+  async addQaPin(chapterId: string, pageTaskId: string, payload: AddQaPinPayload) {
     return request<string>("qa", `/api/v1/qa/chapters/${chapterId}/pins`, {
       method: "POST",
-      body: JSON.stringify(payload),
+      body: JSON.stringify({
+        pageTaskId,
+        coordinateX: payload.CoordinateX,
+        coordinateY: payload.CoordinateY,
+        noteMessage: payload.NoteMessage,
+        issueType: payload.IssueType,
+        severity: payload.Severity,
+        category: payload.Category,
+        batchToken: payload.BatchToken,
+      }),
     });
   },
 
-  async getQaPins(chapterId: string) {
-    // TODO(backend-confirmation): This read endpoint is required by the MF3 UI but is not listed in the official Workflow 3 contract.
-    return request<QaBugPinDto[]>("qa", `/api/v1/qa/chapters/${chapterId}/pins`);
+  async updateQaPin(pinId: string, payload: UpdateQaPinPayload) {
+    return request<boolean>("qa", `/api/v1/qa/pins/${pinId}`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        noteMessage: payload.NoteMessage,
+        issueType: payload.IssueType,
+        coordinateX: payload.CoordinateX,
+        coordinateY: payload.CoordinateY,
+        severity: payload.Severity,
+        category: payload.Category,
+      }),
+    });
   },
 
-  async getQaSession(chapterId: string) {
-    // TODO(backend-confirmation): Confirm this session read endpoint before treating it as an official Workflow 3 contract.
-    return request<QaSessionDto>("qa", `/api/v1/qa/chapters/${chapterId}/session`);
+  async deleteQaPin(pinId: string) {
+    return request<boolean>("qa", `/api/v1/qa/pins/${pinId}`, { method: "DELETE" });
   },
 
-  async sendQaFeedback(chapterId: string, batchToken: string) {
+  async completeQaSession(chapterId: string, payload: CompleteQaSessionPayload & { BatchToken?: string }) {
+    if (payload.Decision === "Approved") {
+      return request("qa", `/api/v1/qa/chapters/${chapterId}/approve`, { method: "POST" });
+    }
     return request("qa", `/api/v1/qa/chapters/${chapterId}/send-feedback`, {
       method: "POST",
-      body: JSON.stringify({ batchToken }),
+      body: JSON.stringify({ batchToken: payload.BatchToken }),
     });
   },
 
-  async resolveQaPin(pinId: string) {
-    return request<boolean>("qa", `/api/v1/qa/pins/${pinId}/resolve`, { method: "POST" });
+  async getQaSummary(chapterId: string) {
+    const data = await request<Record<string, unknown>>("qa", `/api/v1/qa/chapters/${chapterId}/summary`);
+    return {
+      chapterId: pickAny<string>(data, ["chapterId", "ChapterId"]),
+      totalPins: pickAny<number>(data, ["totalPins", "TotalPins"]),
+      openPins: pickAny<number>(data, ["openPins", "OpenPins"]),
+      inFixingPins: pickAny<number>(data, ["inFixingPins", "InFixingPins"]),
+      fixedPins: pickAny<number>(data, ["fixedPins", "FixedPins"]),
+      resolvedPins: pickAny<number>(data, ["resolvedPins", "ResolvedPins"]),
+      canApprove: pickAny<boolean>(data, ["canApprove", "CanApprove"]),
+      sessionStatus: pickAny<string | null | undefined>(data, ["sessionStatus", "SessionStatus"]),
+    } satisfies QaSummaryDto;
   },
 
-  async approveChapterQa(chapterId: string) {
-    return request("qa", `/api/v1/qa/chapters/${chapterId}/approve`, { method: "POST" });
+  async getQaFeedbackHistory(chapterId: string) {
+    const data = await request<Record<string, unknown>>("qa", `/api/v1/qa/chapters/${chapterId}/feedback`);
+    const batches = pickAny<Record<string, unknown>[] | undefined>(data, ["batches", "Batches"]) ?? [];
+    return {
+      chapterId: pickAny<string>(data, ["chapterId", "ChapterId"]),
+      batches: batches.map((batch) => {
+        const pins = pickAny<Record<string, unknown>[] | undefined>(batch, ["pins", "Pins"]) ?? [];
+        return {
+          batchToken: pickAny<string>(batch, ["batchToken", "BatchToken"]),
+          sentAt: pickAny<string | null | undefined>(batch, ["sentAt", "SentAt", "createdAt", "CreatedAt"]),
+          createdAt: pickAny<string | null | undefined>(batch, ["createdAt", "CreatedAt", "sentAt", "SentAt"]),
+          pins: pins.map(mapQaPin),
+        };
+      }),
+    } satisfies QaFeedbackHistoryDto;
+  },
+
+  async getQaHistory(chapterId: string) {
+    const data = await request<Record<string, unknown>>("qa", `/api/v1/qa/chapters/${chapterId}/history`);
+    const sessions = pickAny<Record<string, unknown>[] | undefined>(data, ["sessions", "Sessions"]) ?? [];
+    const pins = pickAny<Record<string, unknown>[] | undefined>(data, ["pins", "Pins"]) ?? [];
+    return {
+      chapterId: pickAny<string>(data, ["chapterId", "ChapterId"]),
+      sessions: sessions.map(mapQaSession),
+      pins: pins.map(mapQaPin),
+    } satisfies QaHistoryDto;
+  },
+
+  async reopenQaChapter(chapterId: string) {
+    return request("qa", `/api/v1/qa/chapters/${chapterId}/reopen`, { method: "POST" });
+  },
+
+  async assignQaFix(pinId: string, payload: AssignQaFixPayload) {
+    return request<boolean>("qa", `/api/v1/qa/pins/${pinId}/assign-fix`, {
+      method: "POST",
+      body: JSON.stringify({
+        assistantId: payload.AssistantId,
+        instructions: payload.Instructions,
+      }),
+    });
+  },
+
+  async getRevisionTasks(type = "Revision") {
+    const mapRevisionTask = (item: Record<string, unknown>) => ({
+      id: pickAny<string>(item, ["id", "Id", "taskId", "TaskId"]),
+      pinId: pickAny<string>(item, ["pinId", "PinId", "qaPinId", "QaPinId", "relatedPinId", "RelatedPinId", "relatedEntityId", "RelatedEntityId"]),
+      chapterId: pickAny<string | undefined>(item, ["chapterId", "ChapterId"]),
+      pageId: pickAny<string | undefined>(item, ["pageId", "PageId"]),
+      pageNumber: pickAny<number | null | undefined>(item, ["pageNumber", "PageNumber"]),
+      description: pickAny<string>(item, ["description", "Description", "note", "Note", "title", "Title"]),
+      status: pickAny<string>(item, ["status", "Status"]),
+      pinType: pickAny<string | null | undefined>(item, ["pinType", "PinType"]),
+      severity: pickAny<string | null | undefined>(item, ["severity", "Severity"]),
+      coordinateX: pickAny<number | null | undefined>(item, ["coordinateX", "CoordinateX"]),
+      coordinateY: pickAny<number | null | undefined>(item, ["coordinateY", "CoordinateY"]),
+      assignedToRole: pickAny<string | null | undefined>(item, ["assignedToRole", "AssignedToRole"]),
+      resolvedImageUrl: pickAny<string | null | undefined>(item, ["resolvedImageUrl", "ResolvedImageUrl"]),
+      notes: pickAny<string | null | undefined>(item, ["notes", "Notes"]),
+    }) satisfies QaRevisionTaskDto;
+
+    const readItems = (data: Record<string, unknown>[] | { items?: Record<string, unknown>[]; Items?: Record<string, unknown>[] }) => (
+      Array.isArray(data) ? data : data.items ?? data.Items ?? []
+    );
+
+    try {
+      const data = await request<Record<string, unknown>[] | { items?: Record<string, unknown>[]; Items?: Record<string, unknown>[] }>(
+        "task",
+        `/api/v1/tasks?type=${encodeURIComponent(type)}`,
+      );
+      return readItems(data).map(mapRevisionTask);
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("404")) {
+        return [];
+      }
+      throw error;
+    }
+  },
+
+  async resolveQaPin(pinId: string, payload: ResolveQaPinPayload) {
+    void payload;
+    return request<boolean>("qa", `/api/v1/qa/pins/${pinId}/fixed`, { method: "POST" });
+  },
+
+  async unresolveQaPin(pinId: string, payload: UnresolveQaPinPayload) {
+    void payload;
+    return request("qa", `/api/v1/qa/pins/${pinId}/unresolve`, { method: "POST" });
+  },
+
+  async closeQaPin(pinId: string, payload?: ResolveQaPinPayload) {
+    return request("qa", `/api/v1/qa/pins/${pinId}/resolve`, {
+      method: "POST",
+      body: payload ? JSON.stringify({
+        note: payload.Note ?? payload.Notes,
+        reviewedLayerId: payload.ReviewedLayerId,
+      }) : undefined,
+    });
   },
 
   async schedulePublication(payload: SchedulePublicationPayload) {
-    // TODO(backend-confirmation): Confirm the exact schedule payload fields; the official contract names the endpoint but does not define its body.
-    return request<void>("publishing", "/api/v1/publishing/schedule", {
+    return request<void>("publishing", "/api/v1/publishing/schedules", {
       method: "POST",
       body: JSON.stringify(payload),
     });
   },
 
-  async publishChapter(chapterId: string) {
-    return request("publishing", "/api/v1/publishing/publish", {
-      method: "POST",
-      body: JSON.stringify({ chapterId }),
-    });
-  },
 };
