@@ -319,10 +319,11 @@ export type UpdateProfilePayload = {
 };
 
 export type SchedulePublicationPayload = {
-  chapterId: string;
-  seriesId: string;
-  issueType: PublicationType;
-  scheduledPublishAt: string;
+  ChapterId: string;
+  PublishDate: string;
+  Platforms: string[];
+  IsPremium: boolean;
+  PromotionNote?: string | null;
 };
 
 export type PublicationType = "Weekly" | "Monthly" | "Special";
@@ -423,27 +424,50 @@ export type InviteAssistantPayload = {
 };
 
 export type AddQaPinPayload = {
-  pageTaskId: string;
-  coordinateX: number;
-  coordinateY: number;
-  noteMessage: string;
-  issueType: string;
-  batchToken: string;
+  CoordinateX: number;
+  CoordinateY: number;
+  IssueType: string;
+  NoteMessage: string;
+  Severity: string;
+  Category?: string;
+  BatchToken: string;
+};
+
+export type UpdateQaPinPayload = {
+  NoteMessage?: string;
+  IssueType?: string;
+  CoordinateX?: number;
+  CoordinateY?: number;
+  Severity?: string;
+  Category?: string;
+};
+
+export type AssignQaFixPayload = {
+  AssistantId: string;
+  Instructions?: string;
 };
 
 export type QaBugPinDto = {
   id: string;
-  chapterId: string;
-  pageTaskId: string;
-  editorId: string;
+  chapterId?: string;
+  pageTaskId?: string;
+  pageId?: string;
+  editorId?: string;
   coordinateX: number;
   coordinateY: number;
-  noteMessage: string;
+  noteMessage?: string;
+  description?: string;
   issueType?: string | null;
-  batchToken: string;
+  pinType?: string | null;
+  severity?: string | null;
+  category?: string | null;
+  assignedToRole?: string | null;
+  batchToken?: string;
+  resolvedImageUrl?: string | null;
+  notes?: string | null;
   status: string;
   resolvedAt?: string | null;
-  createdAt: string;
+  createdAt?: string;
 };
 
 export type QaPinDto = {
@@ -459,17 +483,113 @@ export type QaPinDto = {
 
 export type QaSessionDto = {
   chapterId: string;
-  batchToken: string;
-  totalPins: number;
-  resolvedPins: number;
-  pendingPins: number;
+  batchToken?: string;
+  totalPins?: number;
+  resolvedPins?: number;
+  pendingPins?: number;
   status: string;
   id?: string;
+  sessionId?: string;
+  qaSessionId?: string;
   editorId?: string;
   isApproved?: boolean;
   approvedAt?: string | null;
   createdAt?: string;
   completedAt?: string | null;
+  generalFeedback?: string | null;
+};
+
+export type QaSummaryDto = {
+  chapterId: string;
+  totalPins: number;
+  openPins: number;
+  inFixingPins: number;
+  fixedPins: number;
+  resolvedPins: number;
+  canApprove: boolean;
+  sessionStatus?: string | null;
+};
+
+export type QaQueueChapterDto = {
+  chapterId: string;
+  seriesId?: string | null;
+  seriesTitle?: string | null;
+  title: string;
+  chapterNumber?: number | null;
+  status: string;
+  totalPages?: number | null;
+  deadline?: string | null;
+  submittedAt?: string | null;
+};
+
+export type QaReviewPageDto = {
+  pageId: string;
+  pageTaskId: string;
+  pageNumber: number;
+  description?: string | null;
+  imageUrl?: string | null;
+  compositeUrl?: string | null;
+  previewCompositeUrl?: string | null;
+  fileUrlOriginal?: string | null;
+  fileUrlOptimized?: string | null;
+  taskType?: string | null;
+  regionMask?: string | null;
+  status?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type QaFeedbackBatchDto = {
+  batchToken: string;
+  sentAt?: string | null;
+  pins: QaBugPinDto[];
+};
+
+export type QaFeedbackHistoryDto = {
+  chapterId: string;
+  batches: QaFeedbackBatchDto[];
+};
+
+export type QaHistoryDto = {
+  chapterId: string;
+  sessions: QaSessionDto[];
+  pins: QaBugPinDto[];
+};
+
+export type StartQaSessionPayload = {
+  ReviewMode: "Standard";
+  Notes?: string;
+};
+
+export type CompleteQaSessionPayload = {
+  Decision: "RequiresRevision" | "Approved";
+  GeneralFeedback: string;
+};
+
+export type ResolveQaPinPayload = {
+  ResolvedImageUrl: string;
+  Notes?: string;
+};
+
+export type UnresolveQaPinPayload = {
+  Reason: string;
+};
+
+export type QaRevisionTaskDto = {
+  id: string;
+  pinId: string;
+  chapterId?: string;
+  pageId?: string;
+  pageNumber?: number | null;
+  description: string;
+  status: string;
+  pinType?: string | null;
+  severity?: string | null;
+  coordinateX?: number | null;
+  coordinateY?: number | null;
+  assignedToRole?: string | null;
+  resolvedImageUrl?: string | null;
+  notes?: string | null;
 };
 
 export type ImportVotePayload = {
