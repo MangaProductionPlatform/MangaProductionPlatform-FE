@@ -396,7 +396,7 @@ export default function QaSubmissionPage() {
                 {feedbackHistory?.batches.map((batch) => (
                   <div key={batch.batchToken} className="rounded-lg border border-white/10 p-3">
                     <p className="text-xs text-slate-500">Batch: {batch.batchToken}</p>
-                    <p className="mt-1 text-xs text-slate-500">Sent: {batch.sentAt ? new Date(batch.sentAt).toLocaleString() : "—"}</p>
+                    <p className="mt-1 text-xs text-slate-500">Sent: {batch.sentAt || batch.createdAt ? new Date(batch.sentAt ?? batch.createdAt ?? "").toLocaleString() : "—"}</p>
                     <p className="mt-2 text-sm text-slate-300">{batch.pins.length} pins included</p>
                   </div>
                 ))}

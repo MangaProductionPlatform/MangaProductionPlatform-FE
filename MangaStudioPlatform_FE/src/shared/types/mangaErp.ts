@@ -542,6 +542,7 @@ export type QaReviewPageDto = {
 export type QaFeedbackBatchDto = {
   batchToken: string;
   sentAt?: string | null;
+  createdAt?: string | null;
   pins: QaBugPinDto[];
 };
 
@@ -567,8 +568,10 @@ export type CompleteQaSessionPayload = {
 };
 
 export type ResolveQaPinPayload = {
-  ResolvedImageUrl: string;
+  ResolvedImageUrl?: string;
   Notes?: string;
+  Note?: string;
+  ReviewedLayerId?: string;
 };
 
 export type UnresolveQaPinPayload = {

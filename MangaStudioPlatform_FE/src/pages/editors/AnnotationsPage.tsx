@@ -40,7 +40,7 @@ export default function AnnotationsPage() {
   const [feedback, setFeedback] = useState("Chương này về khá tốt, nhưng các cảnh hành động tỉ lệ body hơi lệch, đã ghim chi tiết ở các trang. Vui lòng check và sửa lại.");
   const [issueType, setIssueType] = useState("Visual");
   const [severity, setSeverity] = useState("High");
-  const [category, setCategory] = useState("Art");
+  const [category, setCategory] = useState("Shading");
   const [description, setDescription] = useState("");
   const [coordinateX, setCoordinateX] = useState("50.00");
   const [coordinateY, setCoordinateY] = useState("50.00");
@@ -269,7 +269,8 @@ export default function AnnotationsPage() {
   const resolvePin = async (pinId: string) => {
     setBusy(true);
     try {
-      await mangaErpApi.closeQaPin(pinId);
+      const note = window.prompt("Resolve note (optional)", "OK tốt lắm");
+      await mangaErpApi.closeQaPin(pinId, { Note: note || undefined });
       toast.success("Pin resolved", "This issue has been verified by the Editor.");
       await loadChapterReview(activeChapterId);
     } catch (error) {
@@ -446,7 +447,7 @@ export default function AnnotationsPage() {
                     <label className="text-sm text-slate-400">Y %<input className="input mt-2" value={coordinateY} onChange={(event) => setCoordinateY(event.target.value)} /></label>
                     <label className="text-sm text-slate-400">Issue type<select className="input mt-2" value={issueType} onChange={(event) => setIssueType(event.target.value)}><option>Visual</option><option>Content</option><option>Text</option><option>Layout</option></select></label>
                     <label className="text-sm text-slate-400">Severity<select className="input mt-2" value={severity} onChange={(event) => setSeverity(event.target.value)}><option>Low</option><option>Medium</option><option>High</option><option>Critical</option></select></label>
-                    <label className="text-sm text-slate-400 sm:col-span-2">Category<select className="input mt-2" value={category} onChange={(event) => setCategory(event.target.value)}><option>Art</option><option>Dialogue</option><option>Lettering</option><option>Composition</option><option>Continuity</option></select></label>
+                    <label className="text-sm text-slate-400 sm:col-span-2">Category<input className="input mt-2" value={category} onChange={(event) => setCategory(event.target.value)} placeholder="Shading, Art, Dialogue..." /></label>
                   </div>
                   <label className="mt-3 block text-sm text-slate-400">Note message<textarea className="input mt-2 min-h-28" value={description} onChange={(event) => setDescription(event.target.value)} placeholder="Describe the art/content issue to fix." /></label>
                   <p className="mt-2 text-xs text-slate-500">Batch token for this review round: {batchToken}</p>
@@ -508,7 +509,7 @@ export default function AnnotationsPage() {
                           <label className="text-sm text-slate-400">Y %<input className="input mt-2" value={editDraft.coordinateY} onChange={(event) => setEditDraft((current) => ({ ...current, coordinateY: event.target.value }))} /></label>
                           <label className="text-sm text-slate-400">Issue type<select className="input mt-2" value={editDraft.issueType} onChange={(event) => setEditDraft((current) => ({ ...current, issueType: event.target.value }))}><option>Visual</option><option>Content</option><option>Text</option><option>Layout</option></select></label>
                           <label className="text-sm text-slate-400">Severity<select className="input mt-2" value={editDraft.severity} onChange={(event) => setEditDraft((current) => ({ ...current, severity: event.target.value }))}><option>Low</option><option>Medium</option><option>High</option><option>Critical</option></select></label>
-                          <label className="text-sm text-slate-400 sm:col-span-2">Category<select className="input mt-2" value={editDraft.category} onChange={(event) => setEditDraft((current) => ({ ...current, category: event.target.value }))}><option>Art</option><option>Dialogue</option><option>Lettering</option><option>Composition</option><option>Continuity</option></select></label>
+                          <label className="text-sm text-slate-400 sm:col-span-2">Category<input className="input mt-2" value={editDraft.category} onChange={(event) => setEditDraft((current) => ({ ...current, category: event.target.value }))} placeholder="Shading, Art, Dialogue..." /></label>
                           <label className="text-sm text-slate-400 sm:col-span-2">Note message<textarea className="input mt-2 min-h-20" value={editDraft.noteMessage} onChange={(event) => setEditDraft((current) => ({ ...current, noteMessage: event.target.value }))} /></label>
                         </div>
                         <div className="mt-3 flex flex-wrap gap-2">
@@ -550,7 +551,7 @@ export default function AnnotationsPage() {
                     {feedbackHistory?.batches.map((batch) => (
                       <div key={batch.batchToken} className="rounded-lg border border-white/10 p-3">
                         <p className="text-xs text-slate-500">Batch: {batch.batchToken}</p>
-                        <p className="mt-1 text-xs text-slate-500">Sent: {batch.sentAt ? new Date(batch.sentAt).toLocaleString() : "—"}</p>
+                        <p className="mt-1 text-xs text-slate-500">Sent: {batch.sentAt || batch.createdAt ? new Date(batch.sentAt ?? batch.createdAt ?? "").toLocaleString() : "—"}</p>
                         <p className="mt-2 text-sm text-slate-300">{batch.pins.length} pins in this feedback batch</p>
                       </div>
                     ))}

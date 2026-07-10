@@ -641,7 +641,8 @@ export const mangaErpApi = {
         const pins = pickAny<Record<string, unknown>[] | undefined>(batch, ["pins", "Pins"]) ?? [];
         return {
           batchToken: pickAny<string>(batch, ["batchToken", "BatchToken"]),
-          sentAt: pickAny<string | null | undefined>(batch, ["sentAt", "SentAt"]),
+          sentAt: pickAny<string | null | undefined>(batch, ["sentAt", "SentAt", "createdAt", "CreatedAt"]),
+          createdAt: pickAny<string | null | undefined>(batch, ["createdAt", "CreatedAt", "sentAt", "SentAt"]),
           pins: pins.map(mapQaPin),
         };
       }),
@@ -719,8 +720,14 @@ export const mangaErpApi = {
     return request("qa", `/api/v1/qa/pins/${pinId}/unresolve`, { method: "POST" });
   },
 
-  async closeQaPin(pinId: string) {
-    return request("qa", `/api/v1/qa/pins/${pinId}/resolve`, { method: "POST" });
+  async closeQaPin(pinId: string, payload?: ResolveQaPinPayload) {
+    return request("qa", `/api/v1/qa/pins/${pinId}/resolve`, {
+      method: "POST",
+      body: payload ? JSON.stringify({
+        note: payload.Note ?? payload.Notes,
+        reviewedLayerId: payload.ReviewedLayerId,
+      }) : undefined,
+    });
   },
 
   async schedulePublication(payload: SchedulePublicationPayload) {
