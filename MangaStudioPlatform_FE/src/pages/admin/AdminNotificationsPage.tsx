@@ -4,6 +4,7 @@ import { useToast } from "../../shared/components/toastContext";
 import { mangaErpApi } from "../../shared/services/mangaErpService";
 import type { NotificationDto } from "../../shared/types/mangaErp";
 
+// Trang dùng luồng notification chung nhưng được giới hạn bởi quyền Admin từ backend.
 export default function AdminNotificationsPage() {
   const toast = useToast();
   const [notifications, setNotifications] = useState<NotificationDto[]>([]);

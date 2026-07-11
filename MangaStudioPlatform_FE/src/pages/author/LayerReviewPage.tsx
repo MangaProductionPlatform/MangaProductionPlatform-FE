@@ -32,7 +32,8 @@ export default function LayerReviewPage() {
         </h1>
 
         <p className="mt-3 text-slate-400">
-          Mangaka kiểm tra layer Assistant đã upload, sau đó accept hoặc yêu cầu chỉnh sửa.
+          Mangaka kiểm tra layer Assistant đã upload, sau đó accept hoặc yêu cầu
+          chỉnh sửa.
         </p>
       </div>
 
@@ -92,7 +93,8 @@ export default function LayerReviewPage() {
         </h2>
 
         <p className="mt-2 text-slate-400">
-          Khi các layer cần thiết đã được duyệt, Mangaka có thể gửi chapter sang Editorial QA.
+          Khi các layer cần thiết đã được duyệt, Mangaka có thể gửi chapter sang
+          Editorial QA.
         </p>
 
         <button className="mt-4 inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 font-semibold text-white hover:bg-emerald-500">

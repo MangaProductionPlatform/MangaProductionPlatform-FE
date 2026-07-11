@@ -3,10 +3,12 @@ import { CheckCircle2, Eye, MessageSquare, RefreshCw, RotateCcw } from "lucide-r
 import { useToast } from "../../shared/components/toastContext";
 import { mangaErpApi } from "../../shared/services/mangaErpService";
 import type { ChapterDto, LayerHistoryDto, MangaSeriesDto, PageTaskDto } from "../../shared/types/mangaErp";
+import LoadingSkeleton from "../../shared/components/LoadingSkeleton";
+import WorkflowEmptyState from "../../shared/components/WorkflowEmptyState";
 
 export default function LayerReviewPage() {
   const toast = useToast();
-  const role = (JSON.parse(localStorage.getItem("currentUser") || "null") as { role?: string } | null)?.role;
+  const role = (JSON.parse(localStorage.getItem("currentUser") || "null") as { role?: string; } | null)?.role;
   const [series, setSeries] = useState<MangaSeriesDto[]>([]);
   const [seriesId, setSeriesId] = useState("");
   const [chapters, setChapters] = useState<ChapterDto[]>([]);
@@ -23,6 +25,7 @@ export default function LayerReviewPage() {
     if (!selectedId) return;
 
     let ignore = false;
+    // Ưu tiên layer Pending mới nhất để không review nhầm phiên bản cũ sau khi Assistant nộp sửa.
     void mangaErpApi.getLayerHistory({ pageTaskId: selectedId, status: "Pending" })
       .then((items) => {
         if (!ignore) setPendingLayer(items[0] ?? null);
@@ -69,6 +72,7 @@ export default function LayerReviewPage() {
   }, [loadTasks, role, toast]);
 
   const changeSeries = async (id: string) => {
+    // Xóa dữ liệu chapter/task cũ trước khi đổi series để không lẫn dữ liệu giữa các series.
     setSeriesId(id);
     setChapterId("");
     setTasks([]);
@@ -91,10 +95,12 @@ export default function LayerReviewPage() {
     }
     setIsReviewing(true);
     try {
+      // Từ chối layer bắt buộc có feedback để Assistant biết chính xác cần sửa gì.
       await mangaErpApi.reviewPageTask(selected.id, { IsAccepted: isAccepted, RejectionNote: isAccepted ? "" : feedback.trim() });
       toast.success(isAccepted ? "Layer approved" : "Changes requested", isAccepted ? `Page ${selected.pageNumber} was accepted for backend compositing.` : "A revision request was returned to the assistant.");
       setFeedback("");
       setPendingLayer(null);
+      // Tải lại để giao diện nhận status/version do backend cập nhật sau review.
       await loadTasks(chapterId);
     } catch (error) {
       toast.error("Review could not be saved", error instanceof Error ? error.message : "Unknown error");
@@ -127,8 +133,8 @@ export default function LayerReviewPage() {
         <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
           <h2 className="text-xl font-bold text-white">Chapter Tasks</h2>
           <div className="mt-5 space-y-3">
-            {isLoading ? <p className="rounded-xl bg-slate-950 p-5 text-slate-400">Loading tasks…</p> : null}
-            {!isLoading && tasks.length === 0 ? <p className="rounded-xl border border-dashed border-slate-700 bg-slate-950 p-8 text-center text-sm text-slate-400">Select a chapter to see its page tasks.</p> : null}
+            {isLoading ? <LoadingSkeleton cards={3} /> : null}
+            {!isLoading && tasks.length === 0 ? <WorkflowEmptyState icon={Eye} title="No page tasks to review" description="Select a chapter with Assistant submissions to review its artwork layers." actionLabel="Open task assignment" actionTo="/mangaka/task-assignment" onRefresh={() => { if (chapterId) void loadTasks(chapterId); }} /> : null}
             {tasks.map((task) => <button key={task.id} type="button" onClick={() => { setPendingLayer(null); setSelectedId(task.id); setFeedback(""); }} className={`w-full rounded-xl border p-4 text-left transition ${selectedId === task.id ? "border-cyan-400 bg-cyan-400/10" : "border-slate-800 bg-slate-950 hover:border-slate-600"}`}><div className="flex items-center justify-between gap-3"><span className="font-semibold text-white">Page {task.pageNumber}</span><span className="rounded-lg bg-white/5 px-2.5 py-1 text-xs text-cyan-200">{task.status}</span></div><p className="mt-2 text-sm text-slate-400">{task.currentLayerType ?? "No layer"}{task.currentLayerVersion ? ` · v${task.currentLayerVersion}` : ""}</p>{task.submissionNote ? <p className="mt-2 line-clamp-2 text-sm text-slate-300">“{task.submissionNote}”</p> : null}</button>)}
           </div>
         </div>

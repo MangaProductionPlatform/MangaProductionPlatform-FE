@@ -4,6 +4,7 @@ import { useToast } from "../../shared/components/toastContext";
 import { mangaErpApi } from "../../shared/services/mangaErpService";
 import type { AdminRoleDto } from "../../shared/types/mangaErp";
 
+// Role dictionary được đọc từ backend để giao diện không hard-code danh sách quyền.
 export default function AdminRolesPage() {
   const toast = useToast();
   const [roles, setRoles] = useState<AdminRoleDto[]>([]);

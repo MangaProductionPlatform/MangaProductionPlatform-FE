@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import {
   ThemeContext,
   type AccentPreset,
@@ -18,10 +24,16 @@ function getInitialMode(): ThemeMode {
   if (typeof window === "undefined") return "dark";
   const saved = window.localStorage.getItem(storageKeys.mode);
   if (saved === "light" || saved === "dark") return saved;
-  return window.matchMedia?.("(prefers-color-scheme: light)").matches ? "light" : "dark";
+  return window.matchMedia?.("(prefers-color-scheme: light)").matches
+    ? "light"
+    : "dark";
 }
 
-function getStoredValue<T extends string>(key: string, allowed: readonly T[], fallback: T): T {
+function getStoredValue<T extends string>(
+  key: string,
+  allowed: readonly T[],
+  fallback: T,
+): T {
   if (typeof window === "undefined") return fallback;
   const saved = window.localStorage.getItem(key) as T | null;
   return saved && allowed.includes(saved) ? saved : fallback;
@@ -33,9 +45,23 @@ type ThemeProviderProps = {
 
 export function ThemeProvider({ children }: ThemeProviderProps) {
   const [mode, setModeState] = useState<ThemeMode>(getInitialMode);
-  const [accent, setAccent] = useState<AccentPreset>(() => getStoredValue(storageKeys.accent, ["cyan", "violet", "emerald", "amber", "rose"], "cyan"));
-  const [sidebarStyle, setSidebarStyleState] = useState<SidebarStyle>(() => getStoredValue(storageKeys.sidebar, ["pinned", "icons"], "pinned"));
-  const [fontSize, setFontSize] = useState<FontSizePreference>(() => getStoredValue(storageKeys.fontSize, ["small", "medium", "large"], "medium"));
+  const [accent, setAccent] = useState<AccentPreset>(() =>
+    getStoredValue(
+      storageKeys.accent,
+      ["cyan", "violet", "emerald", "amber", "rose"],
+      "cyan",
+    ),
+  );
+  const [sidebarStyle, setSidebarStyleState] = useState<SidebarStyle>(() =>
+    getStoredValue(storageKeys.sidebar, ["pinned", "icons"], "pinned"),
+  );
+  const [fontSize, setFontSize] = useState<FontSizePreference>(() =>
+    getStoredValue(
+      storageKeys.fontSize,
+      ["small", "medium", "large"],
+      "medium",
+    ),
+  );
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
@@ -75,20 +101,35 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     setFontSize("medium");
   }, [setSidebarStyle]);
 
-  const value = useMemo(() => ({
-    mode,
-    setMode,
-    toggleMode,
-    accent,
-    setAccent,
-    sidebarStyle,
-    setSidebarStyle,
-    fontSize,
-    setFontSize,
-    settingsOpen,
-    setSettingsOpen,
-    resetPreferences,
-  }), [mode, setMode, toggleMode, accent, sidebarStyle, setSidebarStyle, fontSize, settingsOpen, resetPreferences]);
+  const value = useMemo(
+    () => ({
+      mode,
+      setMode,
+      toggleMode,
+      accent,
+      setAccent,
+      sidebarStyle,
+      setSidebarStyle,
+      fontSize,
+      setFontSize,
+      settingsOpen,
+      setSettingsOpen,
+      resetPreferences,
+    }),
+    [
+      mode,
+      setMode,
+      toggleMode,
+      accent,
+      sidebarStyle,
+      setSidebarStyle,
+      fontSize,
+      settingsOpen,
+      resetPreferences,
+    ],
+  );
 
-  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
+  return (
+    <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
+  );
 }

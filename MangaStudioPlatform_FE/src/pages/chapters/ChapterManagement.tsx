@@ -1,6 +1,13 @@
 import type { FormEvent } from "react";
 import { useEffect, useState } from "react";
-import { ClipboardList, Copy, FileText, Send, Upload, UserPlus } from "lucide-react";
+import {
+  ClipboardList,
+  Copy,
+  FileText,
+  Send,
+  Upload,
+  UserPlus,
+} from "lucide-react";
 import { mangaErpApi } from "../../shared/services/mangaErpService";
 import type { ChapterDto, MangaSeriesDto } from "../../shared/types/mangaErp";
 import { useToast } from "../../shared/components/toastContext";
@@ -13,11 +20,7 @@ type ChapterLike = ChapterDto & {
 
 function getChapterId(chapter: ChapterLike | null | undefined) {
   return (
-    chapter?.id ??
-    chapter?.chapterId ??
-    chapter?.ChapterId ??
-    chapter?.Id ??
-    ""
+    chapter?.id ?? chapter?.chapterId ?? chapter?.ChapterId ?? chapter?.Id ?? ""
   );
 }
 
@@ -25,7 +28,9 @@ export default function ChapterManagementPage() {
   const toast = useToast();
   const [seriesList, setSeriesList] = useState<MangaSeriesDto[]>([]);
   const [chapters, setChapters] = useState<ChapterDto[]>([]);
-  const [selectedChapter, setSelectedChapter] = useState<ChapterDto | null>(null);
+  const [selectedChapter, setSelectedChapter] = useState<ChapterDto | null>(
+    null,
+  );
   const [selectedSeriesId, setSelectedSeriesId] = useState("");
   const [chapterTitle, setChapterTitle] = useState("");
   const [chapterNumber, setChapterNumber] = useState("1");
@@ -39,9 +44,9 @@ export default function ChapterManagementPage() {
   const [isActivatingPage, setIsActivatingPage] = useState(false);
   const [isSubmittingQA, setIsSubmittingQA] = useState(false);
 
-  const currentUser = JSON.parse(localStorage.getItem("currentUser") || "null") as
-    | { userId?: string }
-    | null;
+  const currentUser = JSON.parse(
+    localStorage.getItem("currentUser") || "null",
+  ) as { userId?: string } | null;
 
   useEffect(() => {
     let ignore = false;
@@ -66,7 +71,8 @@ export default function ChapterManagementPage() {
           return;
         }
 
-        const chapterResult = await mangaErpApi.getChaptersBySeries(firstSeriesId);
+        const chapterResult =
+          await mangaErpApi.getChaptersBySeries(firstSeriesId);
 
         if (ignore) return;
 
@@ -184,12 +190,18 @@ export default function ChapterManagementPage() {
     event.preventDefault();
 
     if (!selectedSeriesId) {
-      toast.error("No series selected", "Create or approve a series before creating chapters.");
+      toast.error(
+        "No series selected",
+        "Create or approve a series before creating chapters.",
+      );
       return;
     }
 
     if (!assignedEditorId.trim()) {
-      toast.error("Editor ID required", "Assign a Tantou Editor when creating the chapter.");
+      toast.error(
+        "Editor ID required",
+        "Assign a Tantou Editor when creating the chapter.",
+      );
       return;
     }
 
@@ -204,23 +216,31 @@ export default function ChapterManagementPage() {
         AssignedEditorId: assignedEditorId.trim(),
       });
 
-      toast.success("Chapter created", `${chapterTitle} was saved to the backend.`);
+      toast.success(
+        "Chapter created",
+        `${chapterTitle} was saved to the backend.`,
+      );
 
       const createdTitle = chapterTitle;
       setChapterTitle("");
 
-      const chapterResult = await mangaErpApi.getChaptersBySeries(selectedSeriesId);
+      const chapterResult =
+        await mangaErpApi.getChaptersBySeries(selectedSeriesId);
 
       setChapters(chapterResult);
 
-      const created = chapterResult.find((chapter) => chapter.title === createdTitle);
+      const created = chapterResult.find(
+        (chapter) => chapter.title === createdTitle,
+      );
       const createdId = getChapterId(created as ChapterLike);
 
       if (createdId) setDetailChapterId(createdId);
     } catch (err) {
       toast.error(
         "Could not create chapter",
-        err instanceof Error ? err.message : "Please check the form and try again.",
+        err instanceof Error
+          ? err.message
+          : "Please check the form and try again.",
       );
     } finally {
       setIsSubmitting(false);
@@ -231,12 +251,18 @@ export default function ChapterManagementPage() {
     event.preventDefault();
 
     if (!detailChapterId) {
-      toast.error("No chapter selected", "Select a backend chapter before activating a page.");
+      toast.error(
+        "No chapter selected",
+        "Select a backend chapter before activating a page.",
+      );
       return;
     }
 
     if (!assistantId.trim()) {
-      toast.error("Assistant ID required", "Enter the assistant user ID assigned to this page.");
+      toast.error(
+        "Assistant ID required",
+        "Enter the assistant user ID assigned to this page.",
+      );
       return;
     }
 
@@ -257,14 +283,19 @@ export default function ChapterManagementPage() {
         AssignedAssistantId: assistantId.trim(),
       });
 
-      toast.success("Page task activated", `Page ${pageNumber} was created if needed and assigned in the backend.`);
+      toast.success(
+        "Page task activated",
+        `Page ${pageNumber} was created if needed and assigned in the backend.`,
+      );
 
       const detail = await mangaErpApi.getChapter(detailChapterId);
       setSelectedChapter(detail);
     } catch (err) {
       toast.error(
         "Could not activate page",
-        err instanceof Error ? err.message : "Please check the page number and assistant ID.",
+        err instanceof Error
+          ? err.message
+          : "Please check the page number and assistant ID.",
       );
     } finally {
       setIsActivatingPage(false);
@@ -273,7 +304,10 @@ export default function ChapterManagementPage() {
 
   const handleSubmitForQA = async () => {
     if (!detailChapterId) {
-      toast.error("No chapter selected", "Select a backend chapter before submitting QA.");
+      toast.error(
+        "No chapter selected",
+        "Select a backend chapter before submitting QA.",
+      );
       return;
     }
 
@@ -287,14 +321,19 @@ export default function ChapterManagementPage() {
     try {
       await mangaErpApi.submitChapterForQA(detailChapterId);
 
-      toast.success("Submitted for QA", "The backend accepted the QA submission.");
+      toast.success(
+        "Submitted for QA",
+        "The backend accepted the QA submission.",
+      );
 
       const detail = await mangaErpApi.getChapter(detailChapterId);
       setSelectedChapter(detail);
     } catch (err) {
       toast.error(
         "Could not submit for QA",
-        err instanceof Error ? err.message : "All pages may need approval before QA submission.",
+        err instanceof Error
+          ? err.message
+          : "All pages may need approval before QA submission.",
       );
     } finally {
       setIsSubmittingQA(false);
@@ -387,7 +426,11 @@ export default function ChapterManagementPage() {
                         {chapterId ? (
                           <button
                             type="button"
-                            onClick={() => void navigator.clipboard.writeText(chapterId).then(() => toast.success("Chapter ID copied"))}
+                            onClick={() =>
+                              void navigator.clipboard
+                                .writeText(chapterId)
+                                .then(() => toast.success("Chapter ID copied"))
+                            }
                             className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-cyan-300/20 bg-cyan-300/10 px-2 py-1 text-xs font-semibold text-cyan-100"
                           >
                             <Copy size={13} /> Copy Chapter ID
@@ -396,8 +439,14 @@ export default function ChapterManagementPage() {
                       </div>
 
                       <dl className="grid grid-cols-3 gap-2 text-sm sm:min-w-80">
-                        <Info label="Pages" value={String(chapter.totalPages)} />
-                        <Info label="Editor" value={chapter.assignedEditorId ?? "-"} />
+                        <Info
+                          label="Pages"
+                          value={String(chapter.totalPages)}
+                        />
+                        <Info
+                          label="Editor"
+                          value={chapter.assignedEditorId ?? "-"}
+                        />
                         <Info
                           label="Created"
                           value={
@@ -424,7 +473,10 @@ export default function ChapterManagementPage() {
                         type="button"
                         onClick={() => {
                           if (!chapterId) {
-                            toast.error("Missing chapter ID", "Backend did not return a valid chapter ID.");
+                            toast.error(
+                              "Missing chapter ID",
+                              "Backend did not return a valid chapter ID.",
+                            );
                             return;
                           }
 
@@ -500,10 +552,13 @@ export default function ChapterManagementPage() {
 
               {selectedChapter ? (
                 <div className="rounded-lg border border-white/10 bg-slate-950/60 p-4">
-                  <p className="font-bold text-white">{selectedChapter.title}</p>
+                  <p className="font-bold text-white">
+                    {selectedChapter.title}
+                  </p>
 
                   <p className="mt-1 text-sm text-slate-400">
-                    {selectedChapter.totalPages} pages · {selectedChapter.status}
+                    {selectedChapter.totalPages} pages ·{" "}
+                    {selectedChapter.status}
                   </p>
 
                   <p className="mt-2 break-all text-xs text-slate-500">
@@ -522,7 +577,9 @@ export default function ChapterManagementPage() {
                               Page {task.pageNumber}
                             </span>
 
-                            <span className="text-slate-300">{task.status}</span>
+                            <span className="text-slate-300">
+                              {task.status}
+                            </span>
                           </div>
 
                           <p className="mt-1 break-all text-xs text-slate-500">

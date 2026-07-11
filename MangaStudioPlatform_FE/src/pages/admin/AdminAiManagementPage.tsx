@@ -3,6 +3,7 @@ import { Bot, Save } from "lucide-react";
 import { useToast } from "../../shared/components/toastContext";
 import { mangaErpApi } from "../../shared/services/mangaErpService";
 
+// Admin cập nhật cấu hình kết nối SAM; không gửi khóa nội bộ sang bất kỳ service FE nào khác.
 export default function AdminAiManagementPage() {
   const toast = useToast();
   const [url, setUrl] = useState("");

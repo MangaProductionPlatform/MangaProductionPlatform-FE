@@ -2,8 +2,13 @@ import type { ChangeEvent, FormEvent } from "react";
 import { useEffect, useState } from "react";
 import { Eye, FileText, RefreshCw, Save, Send, Upload } from "lucide-react";
 import { mangaErpApi } from "../../shared/services/mangaErpService";
-import type { FeedbackPinDto, SubmissionDetailDto, SubmissionSummaryDto } from "../../shared/types/mangaErp";
+import type {
+  FeedbackPinDto,
+  SubmissionDetailDto,
+  SubmissionSummaryDto,
+} from "../../shared/types/mangaErp";
 import { useToast } from "../../shared/components/toastContext";
+import WorkflowEmptyState from "../../shared/components/WorkflowEmptyState";
 
 export default function SubmissionPage() {
   const toast = useToast();
@@ -18,7 +23,10 @@ export default function SubmissionPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingManuscript, setIsUploadingManuscript] = useState(false);
   const [feedbackPins, setFeedbackPins] = useState<FeedbackPinDto[]>([]);
-  const [reviewResults, setReviewResults] = useState<Record<string, unknown> | null>(null);
+  const [reviewResults, setReviewResults] = useState<Record<
+    string,
+    unknown
+  > | null>(null);
   const [isLoadingReviewResults, setIsLoadingReviewResults] = useState(false);
 
   const loadSubmissions = async () => {
@@ -30,7 +38,9 @@ export default function SubmissionPage() {
       setItems([]);
       toast.error(
         "Could not load submissions",
-        err instanceof Error ? err.message : "Please check your Mangaka session.",
+        err instanceof Error
+          ? err.message
+          : "Please check your Mangaka session.",
       );
     } finally {
       setIsLoading(false);
@@ -51,7 +61,9 @@ export default function SubmissionPage() {
           setItems([]);
           toast.error(
             "Could not load submissions",
-            err instanceof Error ? err.message : "Please check your Mangaka session.",
+            err instanceof Error
+              ? err.message
+              : "Please check your Mangaka session.",
           );
         }
       } finally {
@@ -96,9 +108,20 @@ export default function SubmissionPage() {
   const loadReviewResults = async () => {
     if (!selected) return;
     setIsLoadingReviewResults(true);
-    try { setReviewResults(await mangaErpApi.getSubmissionReviewResults(selected.id)); }
-    catch (err) { toast.error("Could not load review results", err instanceof Error ? err.message : "No review results are available yet."); }
-    finally { setIsLoadingReviewResults(false); }
+    try {
+      setReviewResults(
+        await mangaErpApi.getSubmissionReviewResults(selected.id),
+      );
+    } catch (err) {
+      toast.error(
+        "Could not load review results",
+        err instanceof Error
+          ? err.message
+          : "No review results are available yet.",
+      );
+    } finally {
+      setIsLoadingReviewResults(false);
+    }
   };
 
   const handleCreateDraft = async (event: FormEvent<HTMLFormElement>) => {
@@ -113,7 +136,10 @@ export default function SubmissionPage() {
         manuscriptUrl: manuscriptUrl || null,
       });
       const id = result.submissionId ?? result.SubmissionId;
-      toast.success("Draft created", id ? `Submission ID: ${id}` : "Draft saved.");
+      toast.success(
+        "Draft created",
+        id ? `Submission ID: ${id}` : "Draft saved.",
+      );
       await loadSubmissions();
       if (id) {
         await openSubmission(id);
@@ -121,7 +147,9 @@ export default function SubmissionPage() {
     } catch (err) {
       toast.error(
         "Could not create draft",
-        err instanceof Error ? err.message : "Please check the form and try again.",
+        err instanceof Error
+          ? err.message
+          : "Please check the form and try again.",
       );
     } finally {
       setIsSaving(false);
@@ -130,7 +158,10 @@ export default function SubmissionPage() {
 
   const updateMetadata = async () => {
     if (!selected) {
-      toast.error("No draft selected", "Open a submission before updating metadata.");
+      toast.error(
+        "No draft selected",
+        "Open a submission before updating metadata.",
+      );
       return;
     }
 
@@ -148,7 +179,9 @@ export default function SubmissionPage() {
     } catch (err) {
       toast.error(
         "Could not update metadata",
-        err instanceof Error ? err.message : "Only Draft or Requires_Revision can be edited.",
+        err instanceof Error
+          ? err.message
+          : "Only Draft or Requires_Revision can be edited.",
       );
     } finally {
       setIsSaving(false);
@@ -157,7 +190,10 @@ export default function SubmissionPage() {
 
   const updateManuscript = async () => {
     if (!selected) {
-      toast.error("No draft selected", "Open a submission before updating manuscript.");
+      toast.error(
+        "No draft selected",
+        "Open a submission before updating manuscript.",
+      );
       return;
     }
 
@@ -171,19 +207,26 @@ export default function SubmissionPage() {
       await mangaErpApi.updateSubmissionManuscript(selected.id, {
         manuscriptUrl: manuscriptUrl.trim(),
       });
-      toast.success("Manuscript updated", "The uploaded manuscript image was saved.");
+      toast.success(
+        "Manuscript updated",
+        "The uploaded manuscript image was saved.",
+      );
       await openSubmission(selected.id);
     } catch (err) {
       toast.error(
         "Could not update manuscript",
-        err instanceof Error ? err.message : "Only Draft or Requires_Revision can be edited.",
+        err instanceof Error
+          ? err.message
+          : "Only Draft or Requires_Revision can be edited.",
       );
     } finally {
       setIsSaving(false);
     }
   };
 
-  const uploadManuscriptImage = async (event: ChangeEvent<HTMLInputElement>) => {
+  const uploadManuscriptImage = async (
+    event: ChangeEvent<HTMLInputElement>,
+  ) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -191,11 +234,18 @@ export default function SubmissionPage() {
     try {
       const result = await mangaErpApi.uploadImage(file);
       setManuscriptUrl(result.url);
-      toast.success("Manuscript uploaded", selected ? "Click Update manuscript to save it." : "Create the draft to save it.");
+      toast.success(
+        "Manuscript uploaded",
+        selected
+          ? "Click Update manuscript to save it."
+          : "Create the draft to save it.",
+      );
     } catch (err) {
       toast.error(
         "Could not upload manuscript",
-        err instanceof Error ? err.message : "Please choose a PNG, JPG, JPEG, or WEBP image.",
+        err instanceof Error
+          ? err.message
+          : "Please choose a PNG, JPG, JPEG, or WEBP image.",
       );
     } finally {
       setIsUploadingManuscript(false);
@@ -213,17 +263,25 @@ export default function SubmissionPage() {
     try {
       if (selected.status === "Requires_Revision") {
         await mangaErpApi.resubmitSubmission(selected.id);
-        toast.success("Resubmitted", "The submission returned to Editorial Board review.");
+        toast.success(
+          "Resubmitted",
+          "The submission returned to Editorial Board review.",
+        );
       } else {
         await mangaErpApi.submitSubmission(selected.id);
-        toast.success("Submitted", "The submission was sent to Editorial Board review.");
+        toast.success(
+          "Submitted",
+          "The submission was sent to Editorial Board review.",
+        );
       }
       await openSubmission(selected.id);
       await loadSubmissions();
     } catch (err) {
       toast.error(
         "Could not submit",
-        err instanceof Error ? err.message : "Only Draft or Requires_Revision can be submitted.",
+        err instanceof Error
+          ? err.message
+          : "Only Draft or Requires_Revision can be submitted.",
       );
     } finally {
       setIsSaving(false);
@@ -237,9 +295,12 @@ export default function SubmissionPage() {
           <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-200">
             Mangaka
           </p>
-          <h2 className="mt-2 text-3xl font-black text-white">Series submissions</h2>
+          <h2 className="mt-2 text-3xl font-black text-white">
+            Series submissions
+          </h2>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
-            Draft, edit, submit, and resubmit series proposals through the MF1 backend.
+            Draft, edit, submit, and resubmit series proposals through the MF1
+            backend.
           </p>
         </div>
         <button
@@ -261,9 +322,14 @@ export default function SubmissionPage() {
           ) : null}
 
           {!isLoading && items.length === 0 ? (
-            <div className="rounded-lg border border-white/10 bg-slate-900/75 p-5 text-sm text-slate-300">
-              No submissions found. Create a draft to start MF1.
-            </div>
+            <WorkflowEmptyState
+              icon={FileText}
+              title="No submissions yet"
+              description="Create a draft to start your series proposal and Editorial Board review."
+              actionLabel="Create draft"
+              actionTo="/mangaka/submissions"
+              onRefresh={() => void loadSubmissions()}
+            />
           ) : null}
 
           {items.map((item) => (
@@ -276,10 +342,16 @@ export default function SubmissionPage() {
                   <span className="rounded-md border border-cyan-300/20 bg-cyan-300/10 px-2 py-1 text-xs font-semibold text-cyan-100">
                     {item.status}
                   </span>
-                  <h3 className="mt-3 text-xl font-black text-white">{item.title}</h3>
-                  <p className="mt-1 text-sm text-slate-400">{item.genre ?? "Uncategorized"}</p>
+                  <h3 className="mt-3 text-xl font-black text-white">
+                    {item.title}
+                  </h3>
+                  <p className="mt-1 text-sm text-slate-400">
+                    {item.genre ?? "Uncategorized"}
+                  </p>
                   {item.feedbackMessage ? (
-                    <p className="mt-3 text-sm leading-6 text-slate-300">{item.feedbackMessage}</p>
+                    <p className="mt-3 text-sm leading-6 text-slate-300">
+                      {item.feedbackMessage}
+                    </p>
                   ) : null}
                 </div>
                 <button
@@ -355,7 +427,11 @@ export default function SubmissionPage() {
             ) : null}
             <label className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-cyan-300/30 bg-cyan-300/10 px-4 py-2.5 text-sm font-semibold text-cyan-100 hover:bg-cyan-300/15">
               <Upload size={16} />
-              {isUploadingManuscript ? "Uploading..." : manuscriptUrl ? "Replace manuscript image" : "Upload manuscript image"}
+              {isUploadingManuscript
+                ? "Uploading..."
+                : manuscriptUrl
+                  ? "Replace manuscript image"
+                  : "Upload manuscript image"}
               <input
                 className="sr-only"
                 type="file"
@@ -403,8 +479,93 @@ export default function SubmissionPage() {
               {selected?.status === "Requires_Revision" ? "Resubmit" : "Submit"}
             </button>
           </div>
-          {selected ? <div className="mt-5 rounded-lg border border-white/10 bg-slate-950/50 p-3"><div className="flex items-center justify-between gap-2"><p className="text-xs font-semibold uppercase tracking-[.16em] text-slate-400">Feedback pins ({feedbackPins.length})</p><button type="button" className="text-xs font-semibold text-cyan-200" onClick={() => void mangaErpApi.getSubmissionFeedbackPins(selected.id,true).then(setFeedbackPins).catch(e => toast.error("Could not load pin history",e instanceof Error?e.message:"Unknown error"))}>Load history</button></div><div className="mt-3 space-y-2">{feedbackPins.map(pin=><div key={pin.id} className="rounded-md border border-white/10 p-2 text-xs text-slate-300"><b className="text-white">{pin.pageIdentifier} · {pin.category}</b><p className="mt-1">{pin.comment}</p></div>)}{!feedbackPins.length?<p className="text-xs text-slate-500">No feedback pins.</p>:null}</div></div>:null}
-          {selected ? <div className="mt-4 rounded-lg border border-fuchsia-300/20 bg-fuchsia-500/10 p-3"><div className="flex items-center justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-[.16em] text-fuchsia-100">Board review results</p><p className="mt-1 text-xs text-slate-300">Decision, feedback, annotations and review status.</p></div><button type="button" onClick={() => void loadReviewResults()} disabled={isLoadingReviewResults} className="rounded-md border border-fuchsia-200/30 px-3 py-2 text-xs font-semibold text-fuchsia-100 disabled:opacity-50">{isLoadingReviewResults ? "Loading..." : "Load results"}</button></div>{reviewResults ? <dl className="mt-3 space-y-2">{Object.entries(reviewResults).map(([key, value]) => <div key={key} className="rounded-md border border-fuchsia-100/10 bg-slate-950/40 p-2"><dt className="text-[11px] uppercase tracking-[.12em] text-fuchsia-100/70">{key}</dt><dd className="mt-1 whitespace-pre-wrap break-words text-xs text-slate-100">{typeof value === "object" ? JSON.stringify(value, null, 2) : String(value ?? "—")}</dd></div>)}</dl> : <p className="mt-3 text-xs text-slate-400">Load the result after Editorial Board review is available.</p>}</div> : null}
+          {selected ? (
+            <div className="mt-5 rounded-lg border border-white/10 bg-slate-950/50 p-3">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs font-semibold uppercase tracking-[.16em] text-slate-400">
+                  Feedback pins ({feedbackPins.length})
+                </p>
+                <button
+                  type="button"
+                  className="text-xs font-semibold text-cyan-200"
+                  onClick={() =>
+                    void mangaErpApi
+                      .getSubmissionFeedbackPins(selected.id, true)
+                      .then(setFeedbackPins)
+                      .catch((e) =>
+                        toast.error(
+                          "Could not load pin history",
+                          e instanceof Error ? e.message : "Unknown error",
+                        ),
+                      )
+                  }
+                >
+                  Load history
+                </button>
+              </div>
+              <div className="mt-3 space-y-2">
+                {feedbackPins.map((pin) => (
+                  <div
+                    key={pin.id}
+                    className="rounded-md border border-white/10 p-2 text-xs text-slate-300"
+                  >
+                    <b className="text-white">
+                      {pin.pageIdentifier} · {pin.category}
+                    </b>
+                    <p className="mt-1">{pin.comment}</p>
+                  </div>
+                ))}
+                {!feedbackPins.length ? (
+                  <p className="text-xs text-slate-500">No feedback pins.</p>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
+          {selected ? (
+            <div className="mt-4 rounded-lg border border-fuchsia-300/20 bg-fuchsia-500/10 p-3">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[.16em] text-fuchsia-100">
+                    Board review results
+                  </p>
+                  <p className="mt-1 text-xs text-slate-300">
+                    Decision, feedback, annotations and review status.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void loadReviewResults()}
+                  disabled={isLoadingReviewResults}
+                  className="rounded-md border border-fuchsia-200/30 px-3 py-2 text-xs font-semibold text-fuchsia-100 disabled:opacity-50"
+                >
+                  {isLoadingReviewResults ? "Loading..." : "Load results"}
+                </button>
+              </div>
+              {reviewResults ? (
+                <dl className="mt-3 space-y-2">
+                  {Object.entries(reviewResults).map(([key, value]) => (
+                    <div
+                      key={key}
+                      className="rounded-md border border-fuchsia-100/10 bg-slate-950/40 p-2"
+                    >
+                      <dt className="text-[11px] uppercase tracking-[.12em] text-fuchsia-100/70">
+                        {key}
+                      </dt>
+                      <dd className="mt-1 whitespace-pre-wrap break-words text-xs text-slate-100">
+                        {typeof value === "object"
+                          ? JSON.stringify(value, null, 2)
+                          : String(value ?? "—")}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              ) : (
+                <p className="mt-3 text-xs text-slate-400">
+                  Load the result after Editorial Board review is available.
+                </p>
+              )}
+            </div>
+          ) : null}
         </form>
       </section>
     </div>

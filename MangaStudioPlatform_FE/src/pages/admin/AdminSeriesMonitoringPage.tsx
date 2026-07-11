@@ -7,6 +7,7 @@ import type { MangaSeriesDto } from "../../shared/types/mangaErp";
 
 const statusOptions = ["", "Active", "Hiatus", "Cancelled"];
 
+// Màn hình chỉ theo dõi series toàn hệ thống; thao tác chỉnh sửa series vẫn thuộc workflow của Mangaka.
 export default function AdminSeriesMonitoringPage() {
   const toast = useToast();
   const [series, setSeries] = useState<MangaSeriesDto[]>([]);

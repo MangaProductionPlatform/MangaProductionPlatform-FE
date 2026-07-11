@@ -11,6 +11,7 @@ const roles = [
 ] as const;
 const statuses = [[0, "PendingActivation"], [1, "Active"], [2, "Suspended"], [3, "Deactivated"]] as const;
 
+// Trang quản lý một tài khoản riêng lẻ; thay đổi role/status được gửi qua endpoint chuyên biệt.
 export default function AdminUserDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();

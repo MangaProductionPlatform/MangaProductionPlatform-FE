@@ -14,6 +14,7 @@ const provisionRoles: { value: ProvisionRole; label: string }[] = [
   { value: 5, label: "Editor-in-Chief" },
 ];
 
+// Chỉ Admin có thể provision tài khoản; tài khoản mới vẫn cần đi qua bước kích hoạt riêng.
 export default function AdminCreateUserPage() {
   const toast = useToast();
   const [fullName, setFullName] = useState("");

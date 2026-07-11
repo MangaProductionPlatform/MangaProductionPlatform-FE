@@ -81,6 +81,7 @@ function decodeCocoCounts(counts: unknown, size: unknown, fallbackSize: SamImage
 }
 
 function decodeSamMask(maskRle: unknown, fallbackSize: SamImageSize | null): MaskOverlay | null {
+  // Dịch vụ SAM có thể trả pixel thô hoặc COCO RLE; chuẩn hóa để cùng hiển thị trên một canvas.
   if (!maskRle) return null;
 
   if (Array.isArray(maskRle)) {
@@ -126,6 +127,7 @@ export default function TaskAssignmentPage() {
   const selectedChapter = chapters.find((item) => item.id === chapterId);
 
   async function loadSeriesAndChapters() {
+    // Khởi tạo workspace bằng series/chapter đầu tiên mà Mangaka đang sở hữu.
     setIsLoading(true);
     setMessage("");
 
@@ -179,7 +181,7 @@ export default function TaskAssignmentPage() {
   }
 
   useEffect(() => {
-    // Initial backend fetch; state updates happen after the request resolves.
+    // Chỉ tải dữ liệu khởi tạo một lần khi mở màn hình.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadSeriesAndChapters();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -191,6 +193,7 @@ export default function TaskAssignmentPage() {
         setRecommendedAssistants([]);
         return;
       }
+      // Danh sách này chỉ gợi ý; Mangaka vẫn là người quyết định Assistant nhận task.
       void mangaErpApi.getRecommendedAssistants(chapterId)
         .then(setRecommendedAssistants)
         .catch(() => setRecommendedAssistants([]));
@@ -497,11 +500,10 @@ export default function TaskAssignmentPage() {
                 key={chapter.id}
                 type="button"
                 onClick={() => setChapterId(chapter.id)}
-                className={`w-full rounded-xl border p-4 text-left transition ${
-                  chapterId === chapter.id
+                className={`w-full rounded-xl border p-4 text-left transition ${chapterId === chapter.id
                     ? "border-cyan-400 bg-cyan-400/10"
                     : "border-slate-800 bg-slate-950 hover:border-cyan-400/50"
-                }`}
+                  }`}
               >
                 <h3 className="font-semibold text-white">
                   Ch. {chapter.chapterNumber} - {chapter.title}

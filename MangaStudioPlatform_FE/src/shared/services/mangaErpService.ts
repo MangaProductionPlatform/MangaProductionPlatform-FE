@@ -151,7 +151,7 @@ export const mangaErpApi = {
     };
   },
 
-  async listUsers(filters: { roleFilter?: number; statusFilter?: number } = {}) {
+  async listUsers(filters: { roleFilter?: number; statusFilter?: number; } = {}) {
     const params = new URLSearchParams();
     if (filters.roleFilter !== undefined) {
       params.set("roleFilter", String(filters.roleFilter));
@@ -193,13 +193,13 @@ export const mangaErpApi = {
   },
 
   async resendActivation(id: string) {
-    return request<{ message: string }>("identity", `/api/v1/admin/accounts/${id}/resend-activation`, {
+    return request<{ message: string; }>("identity", `/api/v1/admin/accounts/${id}/resend-activation`, {
       method: "POST",
     });
   },
 
   async deleteUser(id: string) {
-    return request<{ message: string }>("identity", `/api/v1/admin/accounts/${id}`, {
+    return request<{ message: string; }>("identity", `/api/v1/admin/accounts/${id}`, {
       method: "DELETE",
     });
   },
@@ -213,12 +213,12 @@ export const mangaErpApi = {
   },
 
   async getAdminRoles() {
-    const data = await request<{ roles?: AdminRoleDto[]; Roles?: AdminRoleDto[] }>("identity", "/api/v1/admin/roles");
+    const data = await request<{ roles?: AdminRoleDto[]; Roles?: AdminRoleDto[]; }>("identity", "/api/v1/admin/roles");
     return data.roles ?? data.Roles ?? [];
   },
 
-  async updateSamConfig(payload: { Url: string; InternalApiKey: string }) {
-    return request<{ message: string }>("identity", "/api/v1/admin/sam-config", {
+  async updateSamConfig(payload: { Url: string; InternalApiKey: string; }) {
+    return request<{ message: string; }>("identity", "/api/v1/admin/sam-config", {
       method: "PATCH",
       body: JSON.stringify(payload),
     });
@@ -239,7 +239,7 @@ export const mangaErpApi = {
   },
 
   async updateProfile(payload: UpdateProfilePayload) {
-    return request<{ message: string }>("identity", "/api/v1/users/profile", {
+    return request<{ message: string; }>("identity", "/api/v1/users/profile", {
       method: "PUT",
       body: JSON.stringify(payload),
     });
@@ -315,7 +315,7 @@ export const mangaErpApi = {
   },
 
   async createDraftSubmission(payload: CreateSubmissionPayload) {
-    return request<{ submissionId?: string; SubmissionId?: string }>(
+    return request<{ submissionId?: string; SubmissionId?: string; }>(
       "submission",
       "/api/v1/submissions/draft",
       {
@@ -374,7 +374,7 @@ export const mangaErpApi = {
   },
 
   async exportBoardReports() {
-    const user = JSON.parse(localStorage.getItem("currentUser") || "null") as { accessToken?: string } | null;
+    const user = JSON.parse(localStorage.getItem("currentUser") || "null") as { accessToken?: string; } | null;
     const response = await fetch(`${API_BASE_URL ?? ""}/api/v1/board/reports/export?format=csv`, {
       headers: user?.accessToken ? { Authorization: `Bearer ${user.accessToken}` } : {},
     });
@@ -555,7 +555,7 @@ export const mangaErpApi = {
 
   async getAssignedPageTasks(status?: string) {
     const query = status ? `?status=${encodeURIComponent(status)}` : "";
-    const data = await request<Record<string, unknown>[] | { items?: Record<string, unknown>[]; Items?: Record<string, unknown>[] }>(
+    const data = await request<Record<string, unknown>[] | { items?: Record<string, unknown>[]; Items?: Record<string, unknown>[]; }>(
       "task",
       `/api/v1/tasks/assigned${query}`,
     );
@@ -576,7 +576,7 @@ export const mangaErpApi = {
   },
 
   async getChapterPageTasks(chapterId: string) {
-    const data = await request<Record<string, unknown>[] | { items?: Record<string, unknown>[]; Items?: Record<string, unknown>[] }>(
+    const data = await request<Record<string, unknown>[] | { items?: Record<string, unknown>[]; Items?: Record<string, unknown>[]; }>(
       "task",
       `/api/v1/tasks/chapter/${chapterId}`,
     );
@@ -665,7 +665,7 @@ export const mangaErpApi = {
 
   async getQaQueue(status = "Pending") {
     void status;
-    const data = await request<Record<string, unknown>[] | { items?: Record<string, unknown>[]; Items?: Record<string, unknown>[] }>(
+    const data = await request<Record<string, unknown>[] | { items?: Record<string, unknown>[]; Items?: Record<string, unknown>[]; }>(
       "qa",
       "/api/v1/qa/queue",
     );
@@ -698,7 +698,7 @@ export const mangaErpApi = {
   },
 
   async getQaSessionPages(chapterId: string) {
-    const data = await request<Record<string, unknown>[] | { items?: Record<string, unknown>[]; Items?: Record<string, unknown>[] }>(
+    const data = await request<Record<string, unknown>[] | { items?: Record<string, unknown>[]; Items?: Record<string, unknown>[]; }>(
       "qa",
       `/api/v1/qa/chapters/${chapterId}/pages`,
     );
@@ -722,7 +722,7 @@ export const mangaErpApi = {
   },
 
   async getQaSessionPins(chapterId: string) {
-    const data = await request<Record<string, unknown>[] | { items?: Record<string, unknown>[]; Items?: Record<string, unknown>[] }>(
+    const data = await request<Record<string, unknown>[] | { items?: Record<string, unknown>[]; Items?: Record<string, unknown>[]; }>(
       "qa",
       `/api/v1/qa/chapters/${chapterId}/pins`,
     );
@@ -764,7 +764,7 @@ export const mangaErpApi = {
     return request<boolean>("qa", `/api/v1/qa/pins/${pinId}`, { method: "DELETE" });
   },
 
-  async completeQaSession(chapterId: string, payload: CompleteQaSessionPayload & { BatchToken?: string }) {
+  async completeQaSession(chapterId: string, payload: CompleteQaSessionPayload & { BatchToken?: string; }) {
     if (payload.Decision === "Approved") {
       return request("qa", `/api/v1/qa/chapters/${chapterId}/approve`, { method: "POST" });
     }
@@ -848,12 +848,12 @@ export const mangaErpApi = {
       notes: pickAny<string | null | undefined>(item, ["notes", "Notes"]),
     }) satisfies QaRevisionTaskDto;
 
-    const readItems = (data: Record<string, unknown>[] | { items?: Record<string, unknown>[]; Items?: Record<string, unknown>[] }) => (
+    const readItems = (data: Record<string, unknown>[] | { items?: Record<string, unknown>[]; Items?: Record<string, unknown>[]; }) => (
       Array.isArray(data) ? data : data.items ?? data.Items ?? []
     );
 
     try {
-      const data = await request<Record<string, unknown>[] | { items?: Record<string, unknown>[]; Items?: Record<string, unknown>[] }>(
+      const data = await request<Record<string, unknown>[] | { items?: Record<string, unknown>[]; Items?: Record<string, unknown>[]; }>(
         "task",
         `/api/v1/tasks?type=${encodeURIComponent(type)}`,
       );
@@ -922,7 +922,7 @@ export const mangaErpApi = {
   },
 
   async getReadyForPublish() {
-    const data = await request<Record<string, unknown>[] | { items?: Record<string, unknown>[]; Items?: Record<string, unknown>[] }>(
+    const data = await request<Record<string, unknown>[] | { items?: Record<string, unknown>[]; Items?: Record<string, unknown>[]; }>(
       "publishing",
       "/api/v1/publishing/chapters/ready",
     );

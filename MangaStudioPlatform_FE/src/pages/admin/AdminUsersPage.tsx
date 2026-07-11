@@ -5,6 +5,7 @@ import { mangaErpApi } from "../../shared/services/mangaErpService";
 import type { AdminUserDto } from "../../shared/types/mangaErp";
 import { useToast } from "../../shared/components/toastContext";
 
+// Bộ lọc được gửi về backend để danh sách người dùng luôn phản ánh dữ liệu phân quyền hiện tại.
 export default function AdminUsersPage() {
   const toast = useToast();
   const [users, setUsers] = useState<AdminUserDto[]>([]);

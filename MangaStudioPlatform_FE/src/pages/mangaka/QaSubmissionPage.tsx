@@ -81,6 +81,7 @@ export default function QaSubmissionPage() {
         setRevisionTasks([]);
         return;
       }
+      // QA pin là dữ liệu gốc của vòng Studio sửa lỗi trong MF3.
       const pins = await mangaErpApi.getQaSessionPins(id);
       const [summaryResult, feedbackResult, historyResult] = await Promise.allSettled([
         mangaErpApi.getQaSummary(id),
@@ -102,6 +103,7 @@ export default function QaSubmissionPage() {
   };
 
   const loadTasks = async (id: string) => {
+    // Khi bỏ chọn chapter, xóa toàn bộ trạng thái QA cũ để không submit nhầm chapter.
     setChapterId(id);
     if (!id) {
       setTasks([]);
@@ -159,7 +161,7 @@ export default function QaSubmissionPage() {
       setIsLoading(false);
       toast.error("Could not load your series", error instanceof Error ? error.message : "Unknown error");
     });
-    // Initial load only; subsequent selection changes are user-driven.
+    // Chỉ tải series ban đầu một lần; các lần đổi sau do người dùng chọn.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -167,6 +169,7 @@ export default function QaSubmissionPage() {
     const resolvedImageUrl = resolvedImageByPin[task.pinId]?.trim() ?? "";
     setIsSubmitting(true);
     try {
+      // Thao tác này không đóng pin; chỉ chuyển pin sang bước Editor xác minh.
       await mangaErpApi.resolveQaPin(task.pinId, {
         ResolvedImageUrl: resolvedImageUrl,
         Notes: noteByPin[task.pinId]?.trim() || "Đã sửa pin QA theo yêu cầu.",
@@ -181,6 +184,7 @@ export default function QaSubmissionPage() {
   };
 
   const assignFix = async (task: QaRevisionTaskDto) => {
+    // Giao từng pin cho Assistant không làm thay đổi task sản xuất gốc của chapter.
     const assistantId = assistantByPin[task.pinId]?.trim();
     if (!assistantId) {
       toast.error("Assistant ID is required", "Paste the assistant user ID to assign this QA pin.");
@@ -210,6 +214,7 @@ export default function QaSubmissionPage() {
       toast.error("Chapter cannot be submitted again", `Current status is ${chapterStatus || "unknown"}. Only Draft or QA Revision Required chapters can be submitted for QA.`);
       return;
     }
+    // MF3 chặn nộp lại khi vẫn còn pin do Editor tạo nhưng Studio chưa báo đã sửa.
     if (unresolvedRevisionTasks.length > 0) {
       toast.error("Revision pins remain", "Report every QA revision pin as fixed before resubmitting.");
       return;

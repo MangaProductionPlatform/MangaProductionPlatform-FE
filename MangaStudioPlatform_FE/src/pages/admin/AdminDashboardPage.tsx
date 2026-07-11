@@ -4,6 +4,7 @@ import { useToast } from "../../shared/components/toastContext";
 import { mangaErpApi } from "../../shared/services/mangaErpService";
 import type { AdminDashboardDto } from "../../shared/types/mangaErp";
 
+// Dashboard chỉ tổng hợp số liệu vận hành do backend trả về, không tự suy diễn dữ liệu ở client.
 export default function AdminDashboardPage() {
   const toast = useToast();
   const [dashboard, setDashboard] = useState<AdminDashboardDto | null>(null);

@@ -4,6 +4,7 @@ import { useToast } from "../../shared/components/toastContext";
 import { mangaErpApi } from "../../shared/services/mangaErpService";
 import type { AdminDashboardDto, AdminWorkflowStatsDto, RankingListDto, RankingPeriod } from "../../shared/types/mangaErp";
 
+// Báo cáo hiển thị dữ liệu tổng hợp hiện có; không tạo số liệu thay thế khi backend chưa trả về.
 export default function AdminReportsAnalyticsPage() {
   const toast = useToast();
   const [dashboard, setDashboard] = useState<AdminDashboardDto | null>(null);
