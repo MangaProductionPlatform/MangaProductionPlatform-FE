@@ -270,6 +270,41 @@ export type ChapterDto = {
   pageTasks?: PageTaskDto[];
 };
 
+export type RecommendedAssistantDto = {
+  assistantId: string;
+  assistantName: string;
+  avatarUrl?: string | null;
+  penName?: string | null;
+  activeTasksCount: number;
+};
+
+export type AssistantIncomeDto = {
+  totalFinishedTasks: number;
+  estimatedIncome: number;
+  currency: string;
+  ratePerTask: number;
+};
+
+export type StudioTasksBoardDto = {
+  seriesId: string;
+  chapters: Array<{
+    chapterId: string;
+    chapterTitle: string;
+    chapterNumber: number;
+    tasks: Array<{
+      taskId: string;
+      pageNumber: number;
+      status: string;
+      taskType: string;
+      description?: string | null;
+      deadline?: string | null;
+      assistantId?: string | null;
+      assistantName?: string | null;
+      assistantAvatarUrl?: string | null;
+    }>;
+  }>;
+};
+
 export type PageTaskDto = {
   id: string;
   chapterId?: string;

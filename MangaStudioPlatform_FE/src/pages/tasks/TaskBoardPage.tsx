@@ -1,35 +1,14 @@
-import { ClipboardCheck, Info } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ClipboardCheck, RefreshCw } from "lucide-react";
+import { mangaErpApi } from "../../shared/services/mangaErpService";
+import type { MangaSeriesDto, StudioTasksBoardDto } from "../../shared/types/mangaErp";
+import { useToast } from "../../shared/components/toastContext";
 
 export default function TaskBoardPage() {
-  return (
-    <div className="space-y-6">
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-200">
-          Task Assignment
-        </p>
-        <h2 className="mt-2 text-3xl font-black text-white">
-          Assistant production board
-        </h2>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
-          No backend endpoint exists yet for listing or creating task-board
-          assignments, so this page no longer displays local placeholder task data.
-        </p>
-      </div>
-
-      <section className="rounded-lg border border-white/10 bg-slate-900/75 p-8 text-center">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg bg-cyan-300 text-slate-950">
-          <ClipboardCheck size={22} />
-        </div>
-        <h3 className="mt-4 text-lg font-bold text-white">No backend tasks</h3>
-        <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-400">
-          Task service currently supports layer submission and layer review by
-          `pageTaskId`, but it does not expose a task board list/create API.
-        </p>
-        <div className="mx-auto mt-5 inline-flex items-center gap-2 rounded-lg border border-amber-300/20 bg-amber-300/10 px-4 py-2 text-sm text-amber-100">
-          <Info size={16} />
-          Waiting for backend task-board API
-        </div>
-      </section>
-    </div>
-  );
+  const toast = useToast(); const [series, setSeries] = useState<MangaSeriesDto[]>([]); const [seriesId, setSeriesId] = useState(""); const [board, setBoard] = useState<StudioTasksBoardDto | null>(null); const [loading, setLoading] = useState(true);
+  const loadBoard = async (id = seriesId) => { if (!id) { setBoard(null); return; } setLoading(true); try { setBoard(await mangaErpApi.getStudioTasksBoard(id)); } catch (error) { toast.error("Could not load task board", error instanceof Error ? error.message : "Unknown error"); } finally { setLoading(false); } };
+  // Mangaka owns this shared workspace and supplies the selectable studio context.
+  useEffect(() => { const timer = window.setTimeout(() => { void mangaErpApi.getMySeries().then((items) => { setSeries(items); const first = items[0]?.id ?? ""; setSeriesId(first); if (first) void loadBoard(first); else setLoading(false); }).catch((error: unknown) => { setLoading(false); toast.error("Could not load studios", error instanceof Error ? error.message : "Unknown error"); }); }, 0); return () => window.clearTimeout(timer); // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return <div className="space-y-6"><header className="flex flex-wrap items-end justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-[.28em] text-cyan-200">Studio</p><h1 className="mt-2 text-3xl font-black text-white">Task board</h1></div><button type="button" title="Refresh task board" onClick={() => void loadBoard()} className="icon-button"><RefreshCw size={17}/></button></header><select className="input max-w-md" value={seriesId} onChange={(event) => { setSeriesId(event.target.value); void loadBoard(event.target.value); }}><option value="">Select series</option>{series.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select><div className="space-y-5">{board?.chapters.map((chapter) => <section key={chapter.chapterId} className="border border-white/10 bg-slate-900 p-5"><h2 className="flex items-center gap-2 font-bold text-white"><ClipboardCheck size={18} className="text-cyan-200"/>Ch. {chapter.chapterNumber}: {chapter.chapterTitle}</h2><div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">{chapter.tasks.map((task) => <article key={task.taskId} className="border border-white/10 bg-slate-950 p-4"><p className="font-semibold text-white">Page {task.pageNumber} · {task.taskType}</p><p className="mt-2 text-sm text-slate-400">{task.status}{task.assistantName ? ` · ${task.assistantName}` : ""}</p><p className="mt-2 text-sm text-slate-300">{task.description || "No task note"}</p></article>)}{!chapter.tasks.length ? <p className="text-sm text-slate-500">No page tasks in this chapter.</p> : null}</div></section>)}{!loading && !board?.chapters.length ? <p className="border border-dashed border-slate-700 p-8 text-center text-sm text-slate-500">No studio task data is available.</p> : null}</div></div>;
 }

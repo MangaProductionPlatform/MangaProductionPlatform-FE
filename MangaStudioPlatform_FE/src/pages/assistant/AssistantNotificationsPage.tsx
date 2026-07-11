@@ -1,5 +1,5 @@
-import { EmptyBackendState } from "../../shared/components/EmptyBackendState";
+import { NotificationCenter } from "../../shared/components/NotificationCenter";
 
 export default function AssistantNotificationsPage() {
-  return <EmptyBackendState eyebrow="Assistant" title="Notifications" description="Notification APIs are not available yet." />;
+  return <NotificationCenter eyebrow="Assistant" />;
 }
