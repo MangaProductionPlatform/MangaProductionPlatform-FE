@@ -1,5 +1,5 @@
-import { EmptyBackendState } from "../../shared/components/EmptyBackendState";
+import { NotificationCenter } from "../../shared/components/NotificationCenter";
 
 export default function EditorNotificationsPage() {
-  return <EmptyBackendState eyebrow="Editor" title="Editor notifications" description="Notification APIs are not available yet." />;
+  return <NotificationCenter eyebrow="Tantou Editor" />;
 }

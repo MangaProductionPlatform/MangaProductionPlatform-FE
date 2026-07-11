@@ -1,5 +1,3 @@
-import { EmptyBackendState } from "../../shared/components/EmptyBackendState";
+import { RankingWorkspace } from "../../shared/components/RankingWorkspace";
 
-export default function RankingAnalyticsPage() {
-  return <EmptyBackendState eyebrow="Board" title="Ranking analytics" description="Use the Ranking page for backend ranking-board data." />;
-}
+export default function RankingAnalyticsPage() { return <RankingWorkspace eyebrow="Editorial Board" title="Ranking & analytics" allowRefresh />; }

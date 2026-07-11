@@ -162,21 +162,23 @@ export function AppRouter() {
       </Route>
 
 
-      <Route path="/admin" element={<AdminLayout />}>
-        <Route index element={<Navigate to="dashboard" replace />} />
-        <Route path="dashboard" element={<AdminDashboardPage />} />
-        <Route path="users" element={<AdminUsersPage />} />
-        <Route path="users/create" element={<AdminCreateUserPage />} />
-        <Route path="users/:id" element={<AdminUserDetailPage />} />
-        <Route path="roles" element={<AdminRolesPage />} />
-        <Route path="series" element={<AdminSeriesMonitoringPage />} />
-        <Route path="workflow" element={<AdminWorkflowMonitoringPage />} />
-        <Route path="ai" element={<AdminAiManagementPage />} />
-        <Route path="reports" element={<AdminReportsAnalyticsPage />} />
-        <Route path="storage" element={<AdminStoragePage />} />
-        <Route path="moderation" element={<AdminModerationPage />} />
-        <Route path="settings" element={<AdminSystemSettingsPage />} />
-        <Route path="notifications" element={<AdminNotificationsPage />} />
+      <Route element={<RequireRole roles={["admin"]} />}>
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<AdminDashboardPage />} />
+          <Route path="users" element={<AdminUsersPage />} />
+          <Route path="users/create" element={<AdminCreateUserPage />} />
+          <Route path="users/:id" element={<AdminUserDetailPage />} />
+          <Route path="roles" element={<AdminRolesPage />} />
+          <Route path="series" element={<AdminSeriesMonitoringPage />} />
+          <Route path="workflow" element={<AdminWorkflowMonitoringPage />} />
+          <Route path="ai" element={<AdminAiManagementPage />} />
+          <Route path="reports" element={<AdminReportsAnalyticsPage />} />
+          <Route path="storage" element={<AdminStoragePage />} />
+          <Route path="moderation" element={<AdminModerationPage />} />
+          <Route path="settings" element={<AdminSystemSettingsPage />} />
+          <Route path="notifications" element={<AdminNotificationsPage />} />
+        </Route>
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

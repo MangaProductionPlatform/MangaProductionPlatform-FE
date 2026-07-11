@@ -22,7 +22,7 @@ export default function AdminCreateUserPage() {
   const [role, setRole] = useState<ProvisionRole>(3);
   const [managingTantouId, setManagingTantouId] = useState("");
   const [tantouUsers, setTantouUsers] = useState<AdminUserDto[]>([]);
-  const [isLoadingEditors, setIsLoadingEditors] = useState(false);
+  const [isLoadingEditors, setIsLoadingEditors] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const selectedRole = useMemo(
@@ -34,7 +34,6 @@ export default function AdminCreateUserPage() {
     let ignore = false;
 
     async function loadTantouEditors() {
-      setIsLoadingEditors(true);
       try {
         const result = await mangaErpApi.listUsers({ roleFilter: 2 });
         if (!ignore) {

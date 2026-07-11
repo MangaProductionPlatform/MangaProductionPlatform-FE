@@ -1,5 +1,5 @@
-import { EmptyBackendState } from "../../shared/components/EmptyBackendState";
+import { NotificationCenter } from "../../shared/components/NotificationCenter";
 
 export default function BoardNotificationsPage() {
-  return <EmptyBackendState eyebrow="Board" title="Board notifications" description="The backend does not expose notification APIs yet." />;
+  return <NotificationCenter eyebrow="Editorial Board" />;
 }
