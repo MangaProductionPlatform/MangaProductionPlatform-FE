@@ -5,6 +5,7 @@ import type {
   AdminDashboardDto,
   AdminRoleDto,
   AdminWorkflowStatsDto,
+  AssistantIncomeDto,
   AdminUserDto,
   BoardDashboardDto,
   BoardPerformanceReportDto,
@@ -44,6 +45,7 @@ import type {
   RankingListDto,
   RankingPeriod,
   ReadyForPublishChapterDto,
+  RecommendedAssistantDto,
   RequestRevisionPayload,
   ReassignPageTaskPayload,
   ResolveQaPinPayload,
@@ -61,6 +63,7 @@ import type {
   SubmissionSummaryDto,
   SubmissionVotesDto,
   StudioInvitationDto,
+  StudioTasksBoardDto,
   UpdateProfilePayload,
   UpdateAdminAccountPayload,
   UpdateQaPinPayload,
@@ -384,6 +387,14 @@ export const mangaErpApi = {
     return request<StudioInvitationDto[]>("series", `/api/v1/studios/${seriesId}/invitations`);
   },
 
+  async cancelSeriesInvitation(invitationId: string) {
+    return request<void>("series", `/api/v1/studios/invitations/${invitationId}/cancel`, { method: "POST" });
+  },
+
+  async getStudioTasksBoard(seriesId: string): Promise<StudioTasksBoardDto> {
+    return request<StudioTasksBoardDto>("chapter", `/api/v1/studios/${seriesId}/tasks/board`);
+  },
+
   async getPendingInvitations() {
     return request<StudioInvitationDto[]>("series", "/api/v1/studios/invitations/pending");
   },
@@ -408,9 +419,35 @@ export const mangaErpApi = {
     return data.map((chapter) => mapChapter(chapter, seriesId));
   },
 
+  async getEditorChapterQueue() {
+    const data = await request<Record<string, unknown>[]>("chapter", "/api/v1/chapters/my-queue");
+    return data.map((chapter) => ({
+      id: pickAny<string>(chapter, ["chapterId", "ChapterId", "id", "Id"]),
+      seriesId: pickAny<string>(chapter, ["seriesId", "SeriesId"]),
+      title: pickAny<string>(chapter, ["title", "Title"]),
+      chapterNumber: pickAny<number>(chapter, ["chapterNumber", "ChapterNumber"]),
+      totalPages: pickAny<number>(chapter, ["totalPages", "TotalPages"]),
+      status: pickAny<string>(chapter, ["status", "Status"]),
+      createdAt: pickAny<string | undefined>(chapter, ["createdAt", "CreatedAt"]),
+      approvedPages: pickAny<number | undefined>(chapter, ["approvedPages", "ApprovedPages"]),
+      progressPercent: pickAny<number | undefined>(chapter, ["progressPercent", "ProgressPercent"]),
+    }));
+  },
+
   async getChapter(id: string) {
     const data = await request<Record<string, unknown>>("chapter", `/api/v1/chapters/${id}`);
     return mapChapter(data);
+  },
+
+  async getRecommendedAssistants(chapterId: string): Promise<RecommendedAssistantDto[]> {
+    const data = await request<Record<string, unknown>[]>("chapter", `/api/v1/chapters/${chapterId}/recommend-assistants`);
+    return data.map((item) => ({
+      assistantId: pickAny<string>(item, ["assistantId", "AssistantId", "id", "Id"]),
+      assistantName: pickAny<string>(item, ["assistantName", "AssistantName", "fullName", "FullName", "name", "Name"]),
+      avatarUrl: pickAny<string | null | undefined>(item, ["avatarUrl", "AvatarUrl"]),
+      penName: pickAny<string | null | undefined>(item, ["penName", "PenName"]),
+      activeTasksCount: pickAny<number>(item, ["activeTasksCount", "ActiveTasksCount"]),
+    }));
   },
 
   async activatePage(chapterId: string, payload: ActivatePagePayload) {
@@ -456,6 +493,10 @@ export const mangaErpApi = {
     );
     const items = Array.isArray(data) ? data : data.items ?? data.Items ?? [];
     return items.map(mapPageTask);
+  },
+
+  async getAssistantIncome(): Promise<AssistantIncomeDto> {
+    return request<AssistantIncomeDto>("task", "/api/v1/assistant/tasks/income");
   },
 
   async getChapterPageTasks(chapterId: string) {
@@ -780,12 +821,21 @@ export const mangaErpApi = {
     return request<void>("publishing", `/api/v1/notifications/${notificationId}/read`, { method: "PATCH" });
   },
 
+  async getUnreadNotificationCount() {
+    const data = await request<Record<string, unknown>>("publishing", "/api/v1/notifications/unread-count");
+    return pickAny<number>(data, ["unreadCount", "UnreadCount"]);
+  },
+
   async markAllNotificationsRead() {
     return request<void>("publishing", "/api/v1/notifications/read-all", { method: "PATCH" });
   },
 
   async deleteNotification(notificationId: string) {
     return request<void>("publishing", `/api/v1/notifications/${notificationId}`, { method: "DELETE" });
+  },
+
+  async deleteAllReadNotifications() {
+    return request<void>("publishing", "/api/v1/notifications", { method: "DELETE" });
   },
 
   async publishChapter(chapterId: string) {

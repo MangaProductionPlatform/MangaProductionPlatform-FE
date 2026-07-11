@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { CheckCircle2, CircleDashed, FileCheck2, History, RefreshCw, Send, UploadCloud, UserPlus } from "lucide-react";
 import { useToast } from "../../shared/components/toastContext";
 import { mangaErpApi } from "../../shared/services/mangaErpService";
-import type { ChapterDto, MangaSeriesDto, PageTaskDto, QaBugPinDto, QaFeedbackHistoryDto, QaHistoryDto, QaRevisionTaskDto, QaSummaryDto } from "../../shared/types/mangaErp";
+import type { ChapterDto, MangaSeriesDto, PageTaskDto, QaBugPinDto, QaFeedbackHistoryDto, QaHistoryDto, QaRevisionTaskDto, QaSummaryDto, RecommendedAssistantDto } from "../../shared/types/mangaErp";
 
 const isApproved = (status: string) => ["approved", "accepted", "complete", "completed"].includes(status.toLowerCase());
 const taskStatus = (status?: string) => (status ?? "").replaceAll("_", "").toLowerCase();
@@ -34,6 +34,7 @@ export default function QaSubmissionPage() {
   const [chapters, setChapters] = useState<ChapterDto[]>([]);
   const [chapterId, setChapterId] = useState("");
   const [tasks, setTasks] = useState<PageTaskDto[]>([]);
+  const [recommendedAssistants, setRecommendedAssistants] = useState<RecommendedAssistantDto[]>([]);
   const [revisionTasks, setRevisionTasks] = useState<QaRevisionTaskDto[]>([]);
   const [resolvedImageByPin, setResolvedImageByPin] = useState<Record<string, string>>({});
   const [noteByPin, setNoteByPin] = useState<Record<string, string>>({});
@@ -104,6 +105,7 @@ export default function QaSubmissionPage() {
     setChapterId(id);
     if (!id) {
       setTasks([]);
+      setRecommendedAssistants([]);
       setRevisionTasks([]);
       setSummary(null);
       setFeedbackHistory(null);
@@ -112,10 +114,16 @@ export default function QaSubmissionPage() {
     }
     setIsLoading(true);
     try {
-      setTasks(await mangaErpApi.getChapterPageTasks(id));
+      const [pageTasks, assistants] = await Promise.all([
+        mangaErpApi.getChapterPageTasks(id),
+        mangaErpApi.getRecommendedAssistants(id),
+      ]);
+      setTasks(pageTasks);
+      setRecommendedAssistants(assistants);
       await loadRevisionTasks(id);
     } catch (error) {
       setTasks([]);
+      setRecommendedAssistants([]);
       toast.error("Could not check QA readiness", error instanceof Error ? error.message : "Unknown error");
     } finally {
       setIsLoading(false);
@@ -356,8 +364,11 @@ export default function QaSubmissionPage() {
                   <p className="flex items-center gap-2 text-sm font-semibold text-white"><UserPlus size={16} className="text-cyan-200" />Assign this pin to Assistant</p>
                   <div className="mt-3 grid gap-3 lg:grid-cols-[1fr_1.4fr_auto]">
                     <label className="text-sm text-slate-400">
-                      Assistant ID
-                      <input className="input mt-2" value={assistantByPin[task.pinId] ?? ""} onChange={(event) => setAssistantByPin((current) => ({ ...current, [task.pinId]: event.target.value }))} placeholder="assistant-uuid" />
+                      Assistant
+                      <select className="input mt-2" value={assistantByPin[task.pinId] ?? ""} onChange={(event) => setAssistantByPin((current) => ({ ...current, [task.pinId]: event.target.value }))}>
+                        <option value="">Select an active studio assistant</option>
+                        {recommendedAssistants.map((assistant) => <option key={assistant.assistantId} value={assistant.assistantId}>{assistant.assistantName}{assistant.penName ? ` (${assistant.penName})` : ""} · {assistant.activeTasksCount} active task(s)</option>)}
+                      </select>
                     </label>
                     <label className="text-sm text-slate-400">
                       Instructions

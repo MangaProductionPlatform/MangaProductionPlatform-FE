@@ -7,12 +7,15 @@ import { useToast } from "./toastContext";
 export function NotificationCenter({ eyebrow }: { eyebrow: string }) {
   const toast = useToast();
   const [items, setItems] = useState<NotificationDto[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
     setLoading(true);
     try {
-      setItems(await mangaErpApi.getMyNotifications());
+      const [notifications, unread] = await Promise.all([mangaErpApi.getMyNotifications(), mangaErpApi.getUnreadNotificationCount()]);
+      setItems(notifications);
+      setUnreadCount(unread);
     } catch (error) {
       toast.error("Could not load notifications", error instanceof Error ? error.message : "Unknown error");
     } finally {
@@ -28,6 +31,7 @@ export function NotificationCenter({ eyebrow }: { eyebrow: string }) {
     try {
       await mangaErpApi.markNotificationRead(id);
       setItems((current) => current.map((item) => item.id === id ? { ...item, isRead: true } : item));
+      setUnreadCount((current) => Math.max(0, current - 1));
     } catch (error) {
       toast.error("Could not mark notification read", error instanceof Error ? error.message : "Unknown error");
     }
@@ -37,8 +41,18 @@ export function NotificationCenter({ eyebrow }: { eyebrow: string }) {
     try {
       await mangaErpApi.markAllNotificationsRead();
       setItems((current) => current.map((item) => ({ ...item, isRead: true })));
+      setUnreadCount(0);
     } catch (error) {
       toast.error("Could not mark all read", error instanceof Error ? error.message : "Unknown error");
+    }
+  };
+
+  const removeRead = async () => {
+    try {
+      await mangaErpApi.deleteAllReadNotifications();
+      setItems((current) => current.filter((item) => !item.isRead));
+    } catch (error) {
+      toast.error("Could not clear read notifications", error instanceof Error ? error.message : "Unknown error");
     }
   };
 
@@ -53,8 +67,8 @@ export function NotificationCenter({ eyebrow }: { eyebrow: string }) {
 
   return <div className="space-y-6">
     <header className="flex flex-wrap items-end justify-between gap-3">
-      <div><p className="text-xs font-semibold uppercase tracking-[.28em] text-cyan-200">{eyebrow}</p><h1 className="mt-2 text-3xl font-black text-white">Notifications</h1></div>
-      <div className="flex gap-2"><button type="button" title="Refresh notifications" onClick={() => void load()} className="icon-button"><RefreshCw size={17} /></button><button type="button" onClick={() => void markAllRead()} className="inline-flex items-center gap-2 rounded-lg border border-cyan-300/30 px-3 py-2 text-sm font-semibold text-cyan-100"><CheckCheck size={16} />Mark all read</button></div>
+      <div><p className="text-xs font-semibold uppercase tracking-[.28em] text-cyan-200">{eyebrow}</p><h1 className="mt-2 text-3xl font-black text-white">Notifications <span className="text-cyan-200">{unreadCount || ""}</span></h1></div>
+      <div className="flex gap-2"><button type="button" title="Refresh notifications" onClick={() => void load()} className="icon-button"><RefreshCw size={17} /></button><button type="button" onClick={() => void markAllRead()} className="inline-flex items-center gap-2 rounded-lg border border-cyan-300/30 px-3 py-2 text-sm font-semibold text-cyan-100"><CheckCheck size={16} />Mark all read</button><button type="button" title="Clear read notifications" onClick={() => void removeRead()} className="icon-button text-rose-200"><Trash2 size={16}/></button></div>
     </header>
     {loading ? <p className="text-sm text-slate-400">Loading notifications...</p> : null}
     {!loading && !items.length ? <div className="flex min-h-48 flex-col items-center justify-center border border-dashed border-slate-700 px-6 text-center"><Bell size={28} className="text-cyan-200"/><p className="mt-3 font-semibold text-white">No notifications</p></div> : null}

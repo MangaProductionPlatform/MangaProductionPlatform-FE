@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type MouseEvent } from "react";
 import { BookOpen, ClipboardCheck, Plus, RefreshCw, Send, Wand2 } from "lucide-react";
 import { useToast } from "../../shared/components/toastContext";
 import { mangaErpApi } from "../../shared/services/mangaErpService";
-import type { ChapterDto, MangaSeriesDto } from "../../shared/types/mangaErp";
+import type { ChapterDto, MangaSeriesDto, RecommendedAssistantDto } from "../../shared/types/mangaErp";
 
 type SamImageSize = {
   width: number;
@@ -105,6 +105,7 @@ export default function TaskAssignmentPage() {
   const [chapterId, setChapterId] = useState("");
   const [pageNumber, setPageNumber] = useState(1);
   const [assistantId, setAssistantId] = useState("");
+  const [recommendedAssistants, setRecommendedAssistants] = useState<RecommendedAssistantDto[]>([]);
   const [taskType, setTaskType] = useState("Background");
   const [taskDescription, setTaskDescription] = useState("");
   const [regionMask, setRegionMask] = useState("");
@@ -183,6 +184,19 @@ export default function TaskAssignmentPage() {
     void loadSeriesAndChapters();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      if (!chapterId) {
+        setRecommendedAssistants([]);
+        return;
+      }
+      void mangaErpApi.getRecommendedAssistants(chapterId)
+        .then(setRecommendedAssistants)
+        .catch(() => setRecommendedAssistants([]));
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [chapterId]);
 
   useEffect(() => {
     if (!samPreviewUrl) return undefined;
@@ -543,6 +557,19 @@ export default function TaskAssignmentPage() {
                 onChange={(event) => setPageNumber(Number(event.target.value))}
                 className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none"
               />
+            </div>
+
+            <div>
+              <label className="text-sm text-slate-400">Recommended Assistant</label>
+
+              <select
+                value={recommendedAssistants.some((assistant) => assistant.assistantId === assistantId) ? assistantId : ""}
+                onChange={(event) => setAssistantId(event.target.value)}
+                className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none"
+              >
+                <option value="">Select an active studio assistant</option>
+                {recommendedAssistants.map((assistant) => <option key={assistant.assistantId} value={assistant.assistantId}>{assistant.assistantName}{assistant.penName ? ` (${assistant.penName})` : ""} · {assistant.activeTasksCount} active task(s)</option>)}
+              </select>
             </div>
 
             <div>
