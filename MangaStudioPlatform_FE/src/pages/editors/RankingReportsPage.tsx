@@ -1,5 +1,3 @@
-import { EmptyBackendState } from "../../shared/components/EmptyBackendState";
+import { RankingWorkspace } from "../../shared/components/RankingWorkspace";
 
-export default function RankingReportsPage() {
-  return <EmptyBackendState eyebrow="Editor" title="Ranking reports" description="Use the Ranking page for backend ranking-board data." />;
-}
+export default function RankingReportsPage() { return <RankingWorkspace eyebrow="Tantou Editor" title="Ranking & reports" />; }

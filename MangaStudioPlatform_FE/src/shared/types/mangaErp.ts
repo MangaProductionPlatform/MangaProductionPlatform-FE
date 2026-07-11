@@ -73,6 +73,144 @@ export type ListUsersResult = {
   totalCount: number;
 };
 
+export type AdminRoleDto = {
+  value: number;
+  name: string;
+  description?: string | null;
+};
+
+export type AdminDashboardDto = {
+  userStats: {
+    totalUsers: number;
+    activeUsers: number;
+    pendingActivation: number;
+    suspendedUsers: number;
+    totalMangaka: number;
+    totalAssistants: number;
+    totalTantouEditors: number;
+    totalEditorialBoard: number;
+    totalEditorInChief: number;
+    totalAdmins: number;
+  };
+  submissionStats: {
+    totalSubmissions: number;
+    draft: number;
+    pendingEBReview: number;
+    requiresRevision: number;
+    conflictEscalated: number;
+    ebApproved: number;
+    ebRejected: number;
+  };
+  seriesStats: {
+    totalSeries: number;
+    active: number;
+    hiatus: number;
+    cancelled: number;
+    pendingCancellationRequests: number;
+  };
+  generatedAt: string;
+};
+
+export type AdminWorkflowStatsDto = {
+  generatedAt: string;
+  submissionStats: Array<{ status: string; count: number }>;
+  chapterStats: Array<{ status: string; count: number }>;
+  taskStats: Array<{ status: string; count: number }>;
+};
+
+export type RankingPeriod = "Daily" | "Weekly" | "Monthly" | "AllTime";
+
+export type RankingItemDto = {
+  seriesId: string;
+  title?: string | null;
+  rank?: number | null;
+  period?: string | null;
+  score?: number | null;
+  votesCount?: number | null;
+  viewsCount?: number | null;
+};
+
+export type RankingListDto = {
+  period?: string | null;
+  generatedAt?: string | null;
+  items: RankingItemDto[];
+};
+
+export type EditorDashboardDto = {
+  overview: {
+    assignedSeriesCount: number;
+    chaptersWaitingForQa: number;
+    chaptersInRevision: number;
+    pinsAwaitingVerification: number;
+    approvedThisMonth: number;
+  };
+  qaQueue: Array<{ id: string; title: string; chapterNumber: number; seriesId: string; submittedAt?: string | null }>;
+  revisionWatchlist: Array<{
+    id: string;
+    title: string;
+    chapterNumber: number;
+    seriesId: string;
+    pins: { open: number; inFixing: number; fixed: number };
+  }>;
+  upcomingPublishing: Array<{ id: string; title: string; chapterNumber: number; seriesId: string; scheduledPublishAt?: string | null }>;
+  recentActivity: Array<{ action: string; description?: string | null; timestamp: string }>;
+};
+
+export type BoardDashboardDto = {
+  overview: {
+    proposalsWaitingForVote: number;
+    conflictsAwaitingResolution: number;
+    chaptersReadyForPublish: number;
+    scheduledPublicationsThisWeek: number;
+    cancellationRequestsPending: number;
+  };
+  proposalQueue: Array<{ id: string; title: string; submitterId: string; submittedAt?: string | null }>;
+  publishingQueue: Array<{ id: string; seriesId: string; title: string; chapterNumber: number; approvedAt?: string | null }>;
+  upcomingSchedule: Array<{ id: string; seriesId: string; title: string; chapterNumber: number; scheduledPublishAt?: string | null }>;
+  cancellationQueue: Array<{ id: string; title: string; requestedAt?: string | null; reason?: string | null }>;
+  rankingSnapshot: Array<{ seriesId: string; score: number; rank: number; calculatedAt?: string | null }>;
+  recentActivity: Array<{ action: string; description?: string | null; timestamp: string }>;
+};
+
+export type PublishingScheduleItemDto = {
+  chapterId: string;
+  seriesId: string;
+  title: string;
+  chapterNumber: number;
+  issueType?: string | null;
+  scheduledPublishAt: string;
+};
+
+export type CancellationQueueItemDto = {
+  seriesId: string;
+  title: string;
+  status?: string | null;
+  reason?: string | null;
+  requestedById?: string | null;
+  requestedAt?: string | null;
+};
+
+export type BoardReportDto = {
+  generatedAt?: string | null;
+  submissions: { totalInReview: number; pendingEB: number; conflictEscalated: number; approvedThisMonth: number; rejectedThisMonth: number };
+  cancellations: { pendingApproval: number; approvedThisMonth: number; rejectedThisMonth: number };
+};
+
+export type BoardPerformanceReportDto = {
+  generatedAt: string;
+  totalSubmissions: number;
+  totalResolved: number;
+  totalPending: number;
+  totalConflict: number;
+  approveRate: number;
+  rejectRate: number;
+  revisionRate: number;
+  avgProcessingHours: number;
+  statusBreakdown: Array<{ status: string; count: number }>;
+  voteBreakdown: Array<{ voteType: string; count: number }>;
+  submissionsPerMonth: Array<{ year: number; month: number; count: number }>;
+};
+
 export type ProvisionAccountPayload = {
   fullName: string;
   personalEmail: string;
@@ -318,15 +456,32 @@ export type UpdateProfilePayload = {
   bankAccountNumber?: string | null;
 };
 
+export type PublicationType = "Weekly" | "Monthly" | "Special";
+
 export type SchedulePublicationPayload = {
   ChapterId: string;
-  PublishDate: string;
-  Platforms: string[];
-  IsPremium: boolean;
-  PromotionNote?: string | null;
+  SeriesId: string;
+  IssueType: PublicationType;
+  ScheduledPublishAt: string;
 };
 
-export type PublicationType = "Weekly" | "Monthly" | "Special";
+export type ReadyForPublishChapterDto = {
+  chapterId: string;
+  seriesId: string;
+  title: string;
+  chapterNumber: number;
+  coverImageUrl?: string | null;
+  issueType?: PublicationType | string | null;
+  scheduledPublishAt?: string | null;
+  createdAt: string;
+};
+
+export type PublishChapterResult = {
+  chapterId: string;
+  status: string;
+  publicationUrl: string;
+  publishedAt: string;
+};
 
 export type UpdateAdminAccountPayload = {
   fullName: string;

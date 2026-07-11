@@ -2,7 +2,13 @@ import type {
   ActivatePagePayload,
   ActivateAccountPayload,
   ActivateAccountResult,
+  AdminDashboardDto,
+  AdminRoleDto,
+  AdminWorkflowStatsDto,
   AdminUserDto,
+  BoardDashboardDto,
+  BoardPerformanceReportDto,
+  BoardReportDto,
   BulkActivatePagesPayload,
   BulkReviewPageTaskPayload,
   CastSubmissionVotePayload,
@@ -10,6 +16,8 @@ import type {
   CreateChapterPayload,
   CreateSubmissionPayload,
   CurrentUser,
+  CancellationQueueItemDto,
+  EditorDashboardDto,
   AddQaPinPayload,
   AssignQaFixPayload,
   FeedbackPinDto,
@@ -31,6 +39,11 @@ import type {
   QaSessionDto,
   QaSummaryDto,
   CompleteQaSessionPayload,
+  PublishChapterResult,
+  PublishingScheduleItemDto,
+  RankingListDto,
+  RankingPeriod,
+  ReadyForPublishChapterDto,
   RequestRevisionPayload,
   ReassignPageTaskPayload,
   ResolveQaPinPayload,
@@ -188,6 +201,26 @@ export const mangaErpApi = {
     });
   },
 
+  async getAdminDashboard() {
+    return request<AdminDashboardDto>("identity", "/api/v1/admin/dashboard");
+  },
+
+  async getAdminWorkflowStats() {
+    return request<AdminWorkflowStatsDto>("identity", "/api/v1/admin/workflow-stats");
+  },
+
+  async getAdminRoles() {
+    const data = await request<{ roles?: AdminRoleDto[]; Roles?: AdminRoleDto[] }>("identity", "/api/v1/admin/roles");
+    return data.roles ?? data.Roles ?? [];
+  },
+
+  async updateSamConfig(payload: { Url: string; InternalApiKey: string }) {
+    return request<{ message: string }>("identity", "/api/v1/admin/sam-config", {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    });
+  },
+
   async provisionAccount(payload: ProvisionAccountPayload) {
     return request<ProvisionAccountResult>("identity", "/api/v1/admin/accounts/provision", {
       method: "POST",
@@ -217,6 +250,12 @@ export const mangaErpApi = {
   async getSeries(id: string) {
     const data = await request<Record<string, unknown>>("series", `/api/v1/series/${id}`);
     return mapSeries(data);
+  },
+
+  async getAllSeries(status?: string) {
+    const query = status ? `?status=${encodeURIComponent(status)}` : "";
+    const data = await request<Record<string, unknown>[]>("series", `/api/v1/series${query}`);
+    return data.map(mapSeries);
   },
 
   async uploadImage(file: File) {
@@ -731,10 +770,140 @@ export const mangaErpApi = {
   },
 
   async schedulePublication(payload: SchedulePublicationPayload) {
-    return request<void>("publishing", "/api/v1/publishing/schedules", {
+    return request<void>("publishing", "/api/v1/publishing/schedule", {
       method: "POST",
       body: JSON.stringify(payload),
     });
+  },
+
+  async markNotificationRead(notificationId: string) {
+    return request<void>("publishing", `/api/v1/notifications/${notificationId}/read`, { method: "PATCH" });
+  },
+
+  async markAllNotificationsRead() {
+    return request<void>("publishing", "/api/v1/notifications/read-all", { method: "PATCH" });
+  },
+
+  async deleteNotification(notificationId: string) {
+    return request<void>("publishing", `/api/v1/notifications/${notificationId}`, { method: "DELETE" });
+  },
+
+  async publishChapter(chapterId: string) {
+    return request<PublishChapterResult>("publishing", "/api/v1/publishing/publish", {
+      method: "POST",
+      body: JSON.stringify({ ChapterId: chapterId }),
+    });
+  },
+
+  async getReadyForPublish() {
+    const data = await request<Record<string, unknown>[] | { items?: Record<string, unknown>[]; Items?: Record<string, unknown>[] }>(
+      "publishing",
+      "/api/v1/publishing/chapters/ready",
+    );
+    const items = Array.isArray(data) ? data : data.items ?? data.Items ?? [];
+    return items.map((item) => ({
+      chapterId: pickAny<string>(item, ["chapterId", "ChapterId", "id", "Id"]),
+      seriesId: pickAny<string>(item, ["seriesId", "SeriesId"]),
+      title: pickAny<string>(item, ["title", "Title", "chapterTitle", "ChapterTitle"]),
+      chapterNumber: pickAny<number>(item, ["chapterNumber", "ChapterNumber"]),
+      coverImageUrl: pickAny<string | null | undefined>(item, ["coverImageUrl", "CoverImageUrl"]),
+      issueType: pickAny<string | null | undefined>(item, ["issueType", "IssueType"]),
+      scheduledPublishAt: pickAny<string | null | undefined>(item, ["scheduledPublishAt", "ScheduledPublishAt"]),
+      createdAt: pickAny<string>(item, ["createdAt", "CreatedAt"]),
+    })) satisfies ReadyForPublishChapterDto[];
+  },
+
+  async getEditorDashboard(): Promise<EditorDashboardDto> {
+    return request<EditorDashboardDto>("qa", "/api/v1/editor/dashboard");
+  },
+
+  async getBoardDashboard(): Promise<BoardDashboardDto> {
+    return request<BoardDashboardDto>("submission", "/api/v1/board/dashboard");
+  },
+
+  async getPublishingSchedule(): Promise<PublishingScheduleItemDto[]> {
+    const data = await request<Record<string, unknown>[]>("publishing", "/api/v1/publishing/schedule");
+    return data.map((item) => ({
+      chapterId: pickAny<string>(item, ["chapterId", "ChapterId", "id", "Id"]),
+      seriesId: pickAny<string>(item, ["seriesId", "SeriesId"]),
+      title: pickAny<string>(item, ["title", "Title", "chapterTitle", "ChapterTitle"]),
+      chapterNumber: pickAny<number>(item, ["chapterNumber", "ChapterNumber"]),
+      issueType: pickAny<string | null | undefined>(item, ["issueType", "IssueType"]),
+      scheduledPublishAt: pickAny<string>(item, ["scheduledPublishAt", "ScheduledPublishAt"]),
+    }));
+  },
+
+  async updatePublicationSchedule(chapterId: string, payload: SchedulePublicationPayload) {
+    return request<void>("publishing", `/api/v1/publishing/chapters/${chapterId}/schedule`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async cancelPublicationSchedule(chapterId: string) {
+    return request<void>("publishing", `/api/v1/publishing/chapters/${chapterId}/schedule`, { method: "DELETE" });
+  },
+
+  async getPublishingQueue() {
+    return request<Record<string, unknown>[]>("publishing", "/api/v1/publishing/chapters/my-queue");
+  },
+
+  async getCancellationQueue(): Promise<CancellationQueueItemDto[]> {
+    const data = await request<Record<string, unknown>[]>("series", "/api/v1/series/cancellation-queue");
+    return data.map((item) => ({
+      seriesId: pickAny<string>(item, ["seriesId", "SeriesId", "id", "Id"]),
+      title: pickAny<string>(item, ["title", "Title", "seriesTitle", "SeriesTitle"]),
+      status: pickAny<string | null | undefined>(item, ["status", "Status", "cancellationStatus", "CancellationStatus"]),
+      reason: pickAny<string | null | undefined>(item, ["reason", "Reason", "cancellationReason", "CancellationReason"]),
+      requestedById: pickAny<string | null | undefined>(item, ["requestedById", "RequestedById", "cancellationRequestedById", "CancellationRequestedById"]),
+      requestedAt: pickAny<string | null | undefined>(item, ["requestedAt", "RequestedAt", "cancellationRequestedAt", "CancellationRequestedAt"]),
+    }));
+  },
+
+  async approveCancellation(seriesId: string) {
+    return request<void>("series", `/api/v1/series/${seriesId}/approve-cancellation`, { method: "POST" });
+  },
+
+  async rejectCancellation(seriesId: string, reason: string) {
+    return request<void>("series", `/api/v1/series/${seriesId}/reject-cancellation`, {
+      method: "POST",
+      body: JSON.stringify({ reason }),
+    });
+  },
+
+  async getBoardReports(): Promise<BoardReportDto> {
+    return request<BoardReportDto>("submission", "/api/v1/board/reports");
+  },
+
+  async getBoardPerformanceReports(): Promise<BoardPerformanceReportDto> {
+    return request<BoardPerformanceReportDto>("submission", "/api/v1/board/performance-reports");
+  },
+
+  async getRankings(period: RankingPeriod = "Weekly", limit = 10) {
+    const data = await request<Record<string, unknown> | Record<string, unknown>[]>(
+      "publishing",
+      `/api/v1/rankings?period=${encodeURIComponent(period)}&limit=${encodeURIComponent(String(limit))}`,
+    );
+    const items = Array.isArray(data)
+      ? data
+      : pickAny<Record<string, unknown>[] | undefined>(data, ["items", "Items", "rankings", "Rankings"]) ?? [];
+    return {
+      period: Array.isArray(data) ? period : pickAny<string | null | undefined>(data, ["period", "Period"]),
+      generatedAt: Array.isArray(data) ? undefined : pickAny<string | null | undefined>(data, ["generatedAt", "GeneratedAt"]),
+      items: items.map((item) => ({
+        seriesId: pickAny<string>(item, ["seriesId", "SeriesId"]),
+        title: pickAny<string | null | undefined>(item, ["title", "Title", "seriesTitle", "SeriesTitle"]),
+        rank: pickAny<number | null | undefined>(item, ["rank", "Rank"]),
+        period: pickAny<string | null | undefined>(item, ["period", "Period"]),
+        score: pickAny<number | null | undefined>(item, ["score", "Score"]),
+        votesCount: pickAny<number | null | undefined>(item, ["votesCount", "VotesCount", "votes", "Votes"]),
+        viewsCount: pickAny<number | null | undefined>(item, ["viewsCount", "ViewsCount", "views", "Views"]),
+      })),
+    } satisfies RankingListDto;
+  },
+
+  async refreshRankings() {
+    return request("publishing", "/api/v1/rankings/refresh", { method: "POST" });
   },
 
 };
