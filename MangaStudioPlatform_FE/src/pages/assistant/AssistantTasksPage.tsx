@@ -73,7 +73,7 @@ export default function AssistantTasksPage() {
       </div>
 
       {isLoading ? (
-        <div className="rounded-2xl border border-slate-800 bg-slate-900 p-8 text-center text-slate-400">Loading assigned page tasks…</div>
+        <div className="grid gap-4">{Array.from({ length: 4 }).map((_, index) => <div key={index} className="skeleton-card"><div className="skeleton h-5 w-48"/><div className="skeleton mt-3 h-4 w-72 max-w-full"/><div className="flex justify-between gap-4"><div className="skeleton mt-5 h-4 w-40"/><div className="skeleton mt-5 h-10 w-28"/></div></div>)}</div>
       ) : tasks.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-700 bg-slate-900 p-10 text-center">
           <ClipboardList className="mx-auto text-slate-500" size={32} />
@@ -83,7 +83,7 @@ export default function AssistantTasksPage() {
       ) : (
         <div className="grid gap-4">
           {tasks.map((task) => (
-            <article key={task.id} className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
+            <article key={task.id} className="interactive-card rounded-2xl border border-slate-800 bg-slate-900 p-5">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-2"><ClipboardList size={18} className="text-cyan-300" /><h2 className="font-bold text-white">{task.chapterTitle ?? `Chapter ${task.chapterNumber ?? ""}`}</h2></div>

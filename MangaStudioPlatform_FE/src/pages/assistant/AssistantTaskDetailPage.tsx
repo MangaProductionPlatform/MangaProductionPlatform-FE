@@ -4,7 +4,7 @@ import { AlertTriangle, ArrowLeft, ClipboardPenLine, FileImage, Send, Upload } f
 import { Link, useParams } from "react-router-dom";
 import { useToast } from "../../shared/components/toastContext";
 import { mangaErpApi } from "../../shared/services/mangaErpService";
-import type { LayerType, NotificationDto, PageTaskDto } from "../../shared/types/mangaErp";
+import type { LayerType, NotificationDto, PageTaskDto, QaBugPinDto } from "../../shared/types/mangaErp";
 
 const layerTypes: LayerType[] = ["LineArt", "Background", "Coloring", "Text", "Effects", "Dialogue"];
 
@@ -13,6 +13,7 @@ export default function AssistantTaskDetailPage() {
   const toast = useToast();
   const [task, setTask] = useState<PageTaskDto | null>(null);
   const [revisionFeedback, setRevisionFeedback] = useState<NotificationDto | null>(null);
+  const [qaPin, setQaPin] = useState<QaBugPinDto | null>(null);
   const [layerType, setLayerType] = useState<LayerType>("LineArt");
   const [artworkUrl, setArtworkUrl] = useState("");
   const [isUploading, setIsUploading] = useState(false);
@@ -26,8 +27,9 @@ export default function AssistantTaskDetailPage() {
       mangaErpApi.getAssignedPageTasks(),
       mangaErpApi.getPageTask(id),
       mangaErpApi.getMyNotifications().catch(() => []),
+      mangaErpApi.getTaskQaPin(id).catch(() => null),
     ])
-      .then(([items, detail, notifications]) => {
+      .then(([items, detail, notifications, pin]) => {
         const summary = items.find((item) => item.id === id);
         setTask({
           ...summary,
@@ -44,6 +46,7 @@ export default function AssistantTaskDetailPage() {
           && notification.relatedEntityId?.toLowerCase() === id.toLowerCase(),
         );
         setRevisionFeedback(latestRevision ?? null);
+        if (pin) setQaPin(pin as QaBugPinDto);
       })
       .catch((error: unknown) => {
         setTask(null);
@@ -82,6 +85,10 @@ export default function AssistantTaskDetailPage() {
         FileUrlOriginal: artworkUrl.trim(),
         FileUrlOptimized: artworkUrl.trim(),
       });
+      if (qaPin?.id) {
+        await mangaErpApi.resolveQaPin(qaPin.id, {});
+        setQaPin(null);
+      }
       toast.success(task?.status.toLowerCase() === "revisionalert" ? "Corrected layer resubmitted" : "Layer submitted", "The Mangaka can now review this page task.");
       setArtworkUrl("");
     } catch (error) {
@@ -139,6 +146,7 @@ export default function AssistantTaskDetailPage() {
               {revisionFeedback?.createdAt ? <p className="mt-3 text-xs text-rose-200/60">Received {new Date(revisionFeedback.createdAt).toLocaleString()}</p> : null}
             </div>
           ) : null}
+          {qaPin ? <div className="mt-4 rounded-xl border border-amber-300/30 bg-amber-400/10 p-4"><p className="text-xs font-bold uppercase tracking-[.16em] text-amber-200">Open QA pin</p><p className="mt-2 text-sm text-amber-50">{qaPin.noteMessage || qaPin.description || "Editor requested a correction."}</p><p className="mt-2 text-xs text-amber-200/75">{qaPin.issueType ?? "Issue"} · {qaPin.severity ?? "Normal"} · status: {qaPin.status}</p></div> : null}
         </section>
 
         <section className="rounded-2xl border border-slate-800 bg-slate-900 p-6">

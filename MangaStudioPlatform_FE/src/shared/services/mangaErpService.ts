@@ -255,6 +255,49 @@ export const mangaErpApi = {
     return mapSeries(data);
   },
 
+  async getMangakaDashboard() {
+    return request<Record<string, unknown>>("series", "/api/v1/mangaka/dashboard");
+  },
+
+  async getAdminSettings() {
+    return request<Record<string, unknown>>("identity", "/api/v1/admin/settings");
+  },
+
+  async updateAdminSettings(payload: Record<string, unknown>) {
+    return request<Record<string, unknown> | void>("identity", "/api/v1/admin/settings", {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async getModerationQueue() {
+    return request<Record<string, unknown>[]>("identity", "/api/v1/moderation/queue");
+  },
+
+  async getModerationDetail(id: string) {
+    return request<Record<string, unknown>>("identity", `/api/v1/moderation/${id}`);
+  },
+
+  async approveModeration(id: string) {
+    return request<void>("identity", `/api/v1/moderation/${id}/approve`, { method: "POST" });
+  },
+
+  async rejectModeration(id: string) {
+    return request<void>("identity", `/api/v1/moderation/${id}/reject`, { method: "POST" });
+  },
+
+  async hideModerationContent(id: string) {
+    return request<void>("identity", `/api/v1/moderation/${id}/hide`, { method: "POST" });
+  },
+
+  async resolveModeration(id: string) {
+    return request<void>("identity", `/api/v1/moderation/${id}/resolve`, { method: "POST" });
+  },
+
+  async getSeriesAnalytics(seriesId: string) {
+    return request<Record<string, unknown>>("series", `/api/v1/series/${seriesId}/analytics`);
+  },
+
   async getAllSeries(status?: string) {
     const query = status ? `?status=${encodeURIComponent(status)}` : "";
     const data = await request<Record<string, unknown>[]>("series", `/api/v1/series${query}`);
@@ -316,6 +359,31 @@ export const mangaErpApi = {
     const query = statusFilter ? `?statusFilter=${encodeURIComponent(statusFilter)}` : "";
     const data = await request<Record<string, unknown>[]>("submission", `/api/v1/submissions/my${query}`);
     return data.map(mapSubmissionSummary);
+  },
+
+  async getMediaItems() {
+    return request<Record<string, unknown>[]>("media", "/api/v1/media");
+  },
+
+  async getMediaQuota() {
+    return request<Record<string, unknown>>("media", "/api/v1/media/quota");
+  },
+
+  async deleteMedia(publicId: string) {
+    return request<void>("media", `/api/v1/media/${encodeURIComponent(publicId)}`, { method: "DELETE" });
+  },
+
+  async exportBoardReports() {
+    const user = JSON.parse(localStorage.getItem("currentUser") || "null") as { accessToken?: string } | null;
+    const response = await fetch(`${API_BASE_URL ?? ""}/api/v1/board/reports/export?format=csv`, {
+      headers: user?.accessToken ? { Authorization: `Bearer ${user.accessToken}` } : {},
+    });
+    if (!response.ok) throw new Error(`API error ${response.status}`);
+    return response.blob();
+  },
+
+  async getSubmissionReviewResults(id: string) {
+    return request<Record<string, unknown>>("submission", `/api/v1/submissions/${id}/review-results`);
   },
 
   async getSubmissionQueue(): Promise<SubmissionSummaryDto[]> {
@@ -493,6 +561,14 @@ export const mangaErpApi = {
     );
     const items = Array.isArray(data) ? data : data.items ?? data.Items ?? [];
     return items.map(mapPageTask);
+  },
+
+  async getAssistantSubmissions() {
+    return request<Record<string, unknown>[]>("task", "/api/v1/assistants/submissions");
+  },
+
+  async getTaskQaPin(pageTaskId: string) {
+    return request<Record<string, unknown> | null>("qa", `/api/v1/qa/tasks/${pageTaskId}/qa-pin`);
   },
 
   async getAssistantIncome(): Promise<AssistantIncomeDto> {

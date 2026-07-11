@@ -18,6 +18,8 @@ export default function SubmissionPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingManuscript, setIsUploadingManuscript] = useState(false);
   const [feedbackPins, setFeedbackPins] = useState<FeedbackPinDto[]>([]);
+  const [reviewResults, setReviewResults] = useState<Record<string, unknown> | null>(null);
+  const [isLoadingReviewResults, setIsLoadingReviewResults] = useState(false);
 
   const loadSubmissions = async () => {
     setIsLoading(true);
@@ -82,12 +84,21 @@ export default function SubmissionPage() {
       ]);
       fillForm(detail);
       setFeedbackPins(pins);
+      setReviewResults(null);
     } catch (err) {
       toast.error(
         "Could not open submission",
         err instanceof Error ? err.message : "Please try again.",
       );
     }
+  };
+
+  const loadReviewResults = async () => {
+    if (!selected) return;
+    setIsLoadingReviewResults(true);
+    try { setReviewResults(await mangaErpApi.getSubmissionReviewResults(selected.id)); }
+    catch (err) { toast.error("Could not load review results", err instanceof Error ? err.message : "No review results are available yet."); }
+    finally { setIsLoadingReviewResults(false); }
   };
 
   const handleCreateDraft = async (event: FormEvent<HTMLFormElement>) => {
@@ -393,6 +404,7 @@ export default function SubmissionPage() {
             </button>
           </div>
           {selected ? <div className="mt-5 rounded-lg border border-white/10 bg-slate-950/50 p-3"><div className="flex items-center justify-between gap-2"><p className="text-xs font-semibold uppercase tracking-[.16em] text-slate-400">Feedback pins ({feedbackPins.length})</p><button type="button" className="text-xs font-semibold text-cyan-200" onClick={() => void mangaErpApi.getSubmissionFeedbackPins(selected.id,true).then(setFeedbackPins).catch(e => toast.error("Could not load pin history",e instanceof Error?e.message:"Unknown error"))}>Load history</button></div><div className="mt-3 space-y-2">{feedbackPins.map(pin=><div key={pin.id} className="rounded-md border border-white/10 p-2 text-xs text-slate-300"><b className="text-white">{pin.pageIdentifier} · {pin.category}</b><p className="mt-1">{pin.comment}</p></div>)}{!feedbackPins.length?<p className="text-xs text-slate-500">No feedback pins.</p>:null}</div></div>:null}
+          {selected ? <div className="mt-4 rounded-lg border border-fuchsia-300/20 bg-fuchsia-500/10 p-3"><div className="flex items-center justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-[.16em] text-fuchsia-100">Board review results</p><p className="mt-1 text-xs text-slate-300">Decision, feedback, annotations and review status.</p></div><button type="button" onClick={() => void loadReviewResults()} disabled={isLoadingReviewResults} className="rounded-md border border-fuchsia-200/30 px-3 py-2 text-xs font-semibold text-fuchsia-100 disabled:opacity-50">{isLoadingReviewResults ? "Loading..." : "Load results"}</button></div>{reviewResults ? <dl className="mt-3 space-y-2">{Object.entries(reviewResults).map(([key, value]) => <div key={key} className="rounded-md border border-fuchsia-100/10 bg-slate-950/40 p-2"><dt className="text-[11px] uppercase tracking-[.12em] text-fuchsia-100/70">{key}</dt><dd className="mt-1 whitespace-pre-wrap break-words text-xs text-slate-100">{typeof value === "object" ? JSON.stringify(value, null, 2) : String(value ?? "—")}</dd></div>)}</dl> : <p className="mt-3 text-xs text-slate-400">Load the result after Editorial Board review is available.</p>}</div> : null}
         </form>
       </section>
     </div>

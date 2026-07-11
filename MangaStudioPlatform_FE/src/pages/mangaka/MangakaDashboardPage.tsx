@@ -10,6 +10,7 @@ export default function MangakaDashboardPage() {
   const [submissions,setSubmissions]=useState<SubmissionSummaryDto[]>([]);
   const [series,setSeries]=useState<MangaSeriesDto[]>([]);
   const [loading,setLoading]=useState(true);
+  const [analytics,setAnalytics]=useState<Record<string,unknown>|null>(null);
   const load=async()=>{setLoading(true);try{const [submissionResult,seriesResult]=await Promise.all([mangaErpApi.getMySubmissions(),mangaErpApi.getMySeries()]);setSubmissions(submissionResult);setSeries(seriesResult);}catch(e){toast.error("Could not load MF1 dashboard",e instanceof Error?e.message:"Unknown error");}finally{setLoading(false);}};
   useEffect(()=>{
     // Initial backend fetch; state updates happen after the requests resolve.
@@ -17,6 +18,7 @@ export default function MangakaDashboardPage() {
     void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   },[]);
+  useEffect(()=>{ const first=series[0]; if(!first) return; mangaErpApi.getSeriesAnalytics(first.id).then(setAnalytics).catch(()=>setAnalytics(null)); },[series]);
   const stats=[
     {label:"Drafts",value:submissions.filter(x=>x.status==="Draft").length,icon:FilePenLine},
     {label:"Pending EB review",value:submissions.filter(x=>x.status==="Pending_EB_Review").length,icon:Send},
@@ -27,5 +29,6 @@ export default function MangakaDashboardPage() {
     <div className="grid gap-4 md:grid-cols-4">{stats.map(item=>{const Icon=item.icon;return <div key={item.label} className="rounded-2xl border border-white/10 bg-slate-900/75 p-5"><div className="flex justify-between text-slate-400"><span>{item.label}</span><Icon size={20} className="text-cyan-300"/></div><p className="mt-4 text-3xl font-black text-white">{loading?"…":item.value}</p></div>;})}</div>
     <section className="grid gap-4 md:grid-cols-2"><Link to="/mangaka/submissions" className="rounded-2xl border border-cyan-300/20 bg-cyan-300/10 p-6"><h2 className="text-xl font-bold text-white">Create or manage a proposal</h2><p className="mt-2 text-sm text-slate-300">Draft, update manuscript, submit and resubmit.</p></Link><Link to="/mangaka/series" className="rounded-2xl border border-white/10 bg-slate-900/75 p-6"><h2 className="text-xl font-bold text-white">Official Series</h2><p className="mt-2 text-sm text-slate-400">Approved Series become Active and allow Chapter creation.</p></Link></section>
     <section className="rounded-2xl border border-white/10 bg-slate-900/75 p-6"><div className="flex items-center justify-between"><h2 className="text-xl font-bold text-white">Recent submissions</h2><button className="text-sm font-semibold text-cyan-200" onClick={()=>void load()}>Refresh</button></div><div className="mt-4 space-y-3">{submissions.slice(0,5).map(x=><div key={x.id} className="flex justify-between gap-3 rounded-xl border border-white/10 bg-slate-950/60 p-4"><div><p className="font-semibold text-white">{x.title}</p><p className="mt-1 text-xs text-slate-500">{new Date(x.createdAt).toLocaleString()}</p></div><span className="h-fit rounded-md bg-cyan-300/10 px-2 py-1 text-sm text-cyan-100">{x.status}</span></div>)}{!loading&&!submissions.length?<p className="text-sm text-slate-400">No submissions yet.</p>:null}</div></section>
+    {analytics?<section className="rounded-2xl border border-cyan-300/20 bg-cyan-300/10 p-6"><h2 className="text-xl font-bold text-white">Series analytics</h2><p className="mt-2 text-sm text-slate-300">Live analytics for {series[0]?.title ?? "your series"}.</p><div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{Object.entries(analytics).slice(0,8).map(([key,value])=><div key={key} className="rounded-xl border border-cyan-100/10 bg-slate-950/40 p-3"><p className="text-xs uppercase text-cyan-100/70">{key}</p><p className="mt-1 break-words font-bold text-white">{typeof value === "object" ? JSON.stringify(value) : String(value)}</p></div>)}</div></section>:null}
   </div>;
 }

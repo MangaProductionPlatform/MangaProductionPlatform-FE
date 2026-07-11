@@ -1,11 +1,5 @@
-import { EmptyBackendState } from "../../shared/components/EmptyBackendState";
-
-export default function AdminSystemSettingsPage() {
-  return (
-    <EmptyBackendState
-      eyebrow="Admin"
-      title="System settings"
-      description="The backend does not expose system setting APIs yet."
-    />
-  );
-}
+import { useEffect, useState } from "react";
+import { Save } from "lucide-react";
+import { mangaErpApi } from "../../shared/services/mangaErpService";
+import { useToast } from "../../shared/components/toastContext";
+export default function AdminSystemSettingsPage() { const toast = useToast(); const [value, setValue] = useState("{}"); const [loading, setLoading] = useState(true); const load = async () => { setLoading(true); try { setValue(JSON.stringify(await mangaErpApi.getAdminSettings(), null, 2)); } catch (e) { toast.error("Could not load settings", e instanceof Error ? e.message : "Unknown error"); } finally { setLoading(false); } }; useEffect(() => { void load(); }, []); const save = async () => { try { await mangaErpApi.updateAdminSettings(JSON.parse(value) as Record<string, unknown>); toast.success("Settings saved", "System settings were updated."); } catch (e) { toast.error("Could not save settings", e instanceof Error ? e.message : "Enter valid JSON matching backend settings."); } }; return <div className="space-y-6"><header><p className="text-xs font-semibold uppercase tracking-[.28em] text-cyan-200">Admin</p><h1 className="mt-2 text-3xl font-black text-white">System settings</h1><p className="mt-2 text-sm text-slate-400">Configuration returned by the backend. Edit only keys supported by your backend.</p></header><section className="rounded-2xl border border-slate-800 bg-slate-900 p-6"><textarea className="input min-h-96 font-mono text-xs leading-6" value={value} disabled={loading} onChange={(e) => setValue(e.target.value)} /><div className="mt-4 flex gap-3"><button type="button" onClick={() => void load()} className="rounded-xl border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-200">Reload</button><button type="button" onClick={() => void save()} className="inline-flex items-center gap-2 rounded-xl bg-cyan-500 px-4 py-2 text-sm font-bold text-white"><Save size={16}/>Save settings</button></div></section></div>; }

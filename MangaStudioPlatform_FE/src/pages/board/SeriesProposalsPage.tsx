@@ -10,6 +10,7 @@ import type {
   SubmissionVoteType,
 } from "../../shared/types/mangaErp";
 import { useToast } from "../../shared/components/toastContext";
+import LoadingSkeleton from "../../shared/components/LoadingSkeleton";
 
 type BoardAction = "approve" | "revision" | "reject";
 
@@ -185,11 +186,7 @@ export default function SeriesProposalsPage() {
 
       <section className="grid gap-5 xl:grid-cols-[1fr_24rem]">
         <div className="space-y-3">
-          {isLoading ? (
-            <div className="rounded-lg border border-white/10 bg-slate-900/75 p-5 text-sm text-slate-300">
-              Loading proposal queue from backend...
-            </div>
-          ) : null}
+          {isLoading ? <LoadingSkeleton cards={3} /> : null}
 
           {!isLoading && queue.length === 0 ? (
             <div className="rounded-lg border border-white/10 bg-slate-900/75 p-5 text-sm text-slate-300">
