@@ -8,8 +8,8 @@ function envUrl(key: "VITE_API_BASE_URL") {
 export const API_BASE_URL = envUrl("VITE_API_BASE_URL");
 
 function requiredBaseUrl() {
-  if (API_BASE_URL) return API_BASE_URL;
   if (import.meta.env.DEV) return "";
+  if (API_BASE_URL) return API_BASE_URL;
   throw new Error("Missing VITE_API_BASE_URL.");
 }
 

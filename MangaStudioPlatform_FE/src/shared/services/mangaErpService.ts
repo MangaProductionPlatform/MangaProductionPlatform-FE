@@ -383,7 +383,7 @@ export const mangaErpApi = {
   },
 
   async getSubmissionReviewResults(id: string) {
-    return request<Record<string, unknown>>("submission", `/api/v1/submissions/${id}/review-results`);
+    return request<Record<string, unknown>>("submission", `/api/v1/manuscripts/${id}/review-results`);
   },
 
   async getSubmissionQueue(): Promise<SubmissionSummaryDto[]> {
