@@ -1,13 +1,7 @@
 import type { FormEvent } from "react";
 import { useEffect, useState } from "react";
-import {
-  ClipboardList,
-  Copy,
-  FileText,
-  Send,
-  Upload,
-  UserPlus,
-} from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
+import { ClipboardList, Copy, FileText, Send, Upload } from "lucide-react";
 import { mangaErpApi } from "../../shared/services/mangaErpService";
 import type { ChapterDto, MangaSeriesDto } from "../../shared/types/mangaErp";
 import { useToast } from "../../shared/components/toastContext";
@@ -18,6 +12,10 @@ type ChapterLike = ChapterDto & {
   Id?: string;
 };
 
+type ChapterManagementNavigationState = {
+  seriesId?: string;
+};
+
 function getChapterId(chapter: ChapterLike | null | undefined) {
   return (
     chapter?.id ?? chapter?.chapterId ?? chapter?.ChapterId ?? chapter?.Id ?? ""
@@ -26,6 +24,10 @@ function getChapterId(chapter: ChapterLike | null | undefined) {
 
 export default function ChapterManagementPage() {
   const toast = useToast();
+  const location = useLocation();
+  const navigationState =
+    location.state as ChapterManagementNavigationState | null;
+  const requestedSeriesId = navigationState?.seriesId;
   const [seriesList, setSeriesList] = useState<MangaSeriesDto[]>([]);
   const [chapters, setChapters] = useState<ChapterDto[]>([]);
   const [selectedChapter, setSelectedChapter] = useState<ChapterDto | null>(
@@ -37,11 +39,8 @@ export default function ChapterManagementPage() {
   const [totalPages, setTotalPages] = useState("24");
   const [assignedEditorId, setAssignedEditorId] = useState("");
   const [detailChapterId, setDetailChapterId] = useState("");
-  const [pageNumber, setPageNumber] = useState("1");
-  const [assistantId, setAssistantId] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isActivatingPage, setIsActivatingPage] = useState(false);
   const [isSubmittingQA, setIsSubmittingQA] = useState(false);
 
   const currentUser = JSON.parse(
@@ -61,10 +60,15 @@ export default function ChapterManagementPage() {
 
         setSeriesList(seriesResult);
 
-        const firstSeriesId = seriesResult[0]?.id ?? "";
-        setSelectedSeriesId((current) => current || firstSeriesId);
+        const preferredSeriesId =
+          requestedSeriesId &&
+          seriesResult.some((item) => item.id === requestedSeriesId)
+            ? requestedSeriesId
+            : (seriesResult[0]?.id ?? "");
 
-        if (!firstSeriesId) {
+        setSelectedSeriesId(preferredSeriesId);
+
+        if (!preferredSeriesId) {
           setChapters([]);
           setSelectedChapter(null);
           setDetailChapterId("");
@@ -72,7 +76,7 @@ export default function ChapterManagementPage() {
         }
 
         const chapterResult =
-          await mangaErpApi.getChaptersBySeries(firstSeriesId);
+          await mangaErpApi.getChaptersBySeries(preferredSeriesId);
 
         if (ignore) return;
 
@@ -112,7 +116,7 @@ export default function ChapterManagementPage() {
     return () => {
       ignore = true;
     };
-  }, [currentUser?.userId, toast]);
+  }, [currentUser?.userId, requestedSeriesId, toast]);
 
   useEffect(() => {
     if (!selectedSeriesId) return;
@@ -244,61 +248,6 @@ export default function ChapterManagementPage() {
       );
     } finally {
       setIsSubmitting(false);
-    }
-  };
-
-  const handleActivatePage = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    if (!detailChapterId) {
-      toast.error(
-        "No chapter selected",
-        "Select a backend chapter before activating a page.",
-      );
-      return;
-    }
-
-    if (!assistantId.trim()) {
-      toast.error(
-        "Assistant ID required",
-        "Enter the assistant user ID assigned to this page.",
-      );
-      return;
-    }
-
-    setIsActivatingPage(true);
-
-    try {
-      try {
-        await mangaErpApi.addBasePage(detailChapterId, Number(pageNumber));
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "";
-        if (!message.toLowerCase().includes("already exists")) {
-          throw err;
-        }
-      }
-
-      await mangaErpApi.activatePage(detailChapterId, {
-        PageNumber: Number(pageNumber),
-        AssignedAssistantId: assistantId.trim(),
-      });
-
-      toast.success(
-        "Page task activated",
-        `Page ${pageNumber} was created if needed and assigned in the backend.`,
-      );
-
-      const detail = await mangaErpApi.getChapter(detailChapterId);
-      setSelectedChapter(detail);
-    } catch (err) {
-      toast.error(
-        "Could not activate page",
-        err instanceof Error
-          ? err.message
-          : "Please check the page number and assistant ID.",
-      );
-    } finally {
-      setIsActivatingPage(false);
     }
   };
 
@@ -550,6 +499,24 @@ export default function ChapterManagementPage() {
                 })}
               </select>
 
+              {detailChapterId ? (
+                <Link
+                  to="/mangaka/task-assignment"
+                  state={{
+                    seriesId: selectedSeriesId,
+                    chapterId: detailChapterId,
+                  }}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-bold text-slate-950 hover:bg-cyan-100"
+                >
+                  <ClipboardList size={16} />
+                  Open Task Assignment
+                </Link>
+              ) : (
+                <p className="text-sm text-slate-400">
+                  Select a chapter to continue to task assignment.
+                </p>
+              )}
+
               {selectedChapter ? (
                 <div className="rounded-lg border border-white/10 bg-slate-950/60 p-4">
                   <p className="font-bold text-white">
@@ -601,50 +568,6 @@ export default function ChapterManagementPage() {
               )}
             </div>
           </section>
-
-          <form
-            onSubmit={handleActivatePage}
-            className="rounded-lg border border-white/10 bg-slate-900/75 p-5"
-          >
-            <div className="flex items-center gap-3">
-              <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-300 text-slate-950">
-                <UserPlus size={18} />
-              </span>
-
-              <div>
-                <h3 className="font-bold text-white">Activate Page Task</h3>
-                <p className="text-sm text-slate-400">Assign assistant by ID</p>
-              </div>
-            </div>
-
-            <div className="mt-5 space-y-3">
-              <input
-                required
-                min="1"
-                type="number"
-                className="input"
-                value={pageNumber}
-                onChange={(event) => setPageNumber(event.target.value)}
-                placeholder="Page number"
-              />
-
-              <input
-                required
-                className="input"
-                value={assistantId}
-                onChange={(event) => setAssistantId(event.target.value)}
-                placeholder="Assistant user ID"
-              />
-
-              <button
-                disabled={isActivatingPage}
-                className="inline-flex items-center justify-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-bold text-slate-950 hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <UserPlus size={16} />
-                {isActivatingPage ? "Activating..." : "Activate Page"}
-              </button>
-            </div>
-          </form>
 
           <form
             onSubmit={handleCreateChapter}

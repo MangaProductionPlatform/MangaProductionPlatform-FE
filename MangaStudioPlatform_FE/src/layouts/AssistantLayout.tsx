@@ -20,7 +20,12 @@ const menus = [
     icon: LayoutDashboard,
     end: true,
   },
-  { label: "My Tasks", path: "/assistant/tasks", icon: ClipboardList, end: true },
+  {
+    label: "My Tasks",
+    path: "/assistant/tasks",
+    icon: ClipboardList,
+    end: true,
+  },
   { label: "Assigned Chapters", path: "/assistant/chapters", icon: FolderOpen },
   { label: "Submissions", path: "/assistant/submissions", icon: UploadCloud },
   { label: "Notifications", path: "/assistant/notifications", icon: Bell },
@@ -47,7 +52,10 @@ export default function AssistantLayout() {
     <div className="app-shell">
       <div className="flex min-h-screen">
         <aside className="app-sidebar settings-sidebar sticky top-0 hidden h-dvh w-72 shrink-0 p-5 lg:block">
-          <NavLink to="/assistant/dashboard" className="flex items-center gap-3">
+          <NavLink
+            to="/assistant/dashboard"
+            className="flex items-center gap-3"
+          >
             <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-cyan-300 text-sm font-black text-slate-950">
               A
             </div>
@@ -98,19 +106,24 @@ export default function AssistantLayout() {
         </aside>
 
         <main className="min-w-0 flex-1">
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="app-logout-top hidden items-center gap-2 lg:inline-flex"
-            title="Logout"
-            aria-label="Logout"
-          >
-            <LogOut size={18} />
-            <span>Logout</span>
-          </button>
+          <div className="app-desktop-action-row hidden lg:flex">
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="app-logout-top inline-flex items-center gap-2"
+              title="Logout"
+              aria-label="Logout"
+            >
+              <LogOut size={18} />
+              <span>Logout</span>
+            </button>
+          </div>
           <header className="app-topbar sticky top-0 z-30 px-4 py-4 lg:hidden">
             <div className="flex items-center justify-between gap-3">
-              <NavLink to="/assistant/dashboard" className="flex items-center gap-3">
+              <NavLink
+                to="/assistant/dashboard"
+                className="flex items-center gap-3"
+              >
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-cyan-300 text-sm font-black text-slate-950">
                   A
                 </div>
@@ -131,7 +144,10 @@ export default function AssistantLayout() {
                 </button>
               </div>
             </div>
-            <nav className="mt-3 flex gap-2 overflow-x-auto pb-1" aria-label="Assistant navigation">
+            <nav
+              className="mt-3 flex gap-2 overflow-x-auto pb-1"
+              aria-label="Assistant navigation"
+            >
               {menus.map((item) => (
                 <NavLink
                   key={item.path}

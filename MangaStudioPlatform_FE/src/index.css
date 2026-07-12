@@ -291,10 +291,6 @@ tbody tr:hover {
 }
 
 .app-logout-top {
-  position: fixed;
-  top: 1.25rem;
-  right: 1.25rem;
-  z-index: 45;
   min-height: 2.75rem;
   border: 1px solid color-mix(in srgb, var(--danger) 24%, var(--border));
   border-radius: 999px;
@@ -304,6 +300,16 @@ tbody tr:hover {
   font-size: 0.875rem;
   font-weight: 800;
   box-shadow: var(--shadow);
+}
+
+.app-desktop-action-row {
+  min-height: 5.5rem;
+  align-items: center;
+  justify-content: flex-end;
+  border-bottom: 1px solid var(--border);
+  padding-inline: clamp(1rem, 3vw, 2rem);
+  background: color-mix(in srgb, var(--surface-strong) 74%, transparent);
+  backdrop-filter: blur(18px);
 }
 
 .app-logout-top:hover {
@@ -607,11 +613,11 @@ html[data-sidebar="icons"] .settings-sidebar .sidebar-action { justify-content: 
 
 @keyframes cover-marquee {
   from {
-    transform: translateX(0);
+    transform: translate3d(0, 0, 0);
   }
 
   to {
-    transform: translateX(calc(-50% - 0.5rem));
+    transform: translate3d(calc(-50% - 0.5rem), 0, 0);
   }
 }
 
@@ -654,8 +660,13 @@ html[data-sidebar="icons"] .settings-sidebar .sidebar-action { justify-content: 
 }
 
 .cover-marquee-track {
-  animation: cover-marquee 18s linear infinite;
+  animation: cover-marquee 30s linear infinite;
+  backface-visibility: hidden;
   will-change: transform;
+}
+
+.cover-marquee:hover .cover-marquee-track {
+  animation-play-state: paused;
 }
 
 .cover-card {
@@ -680,20 +691,6 @@ html[data-sidebar="icons"] .settings-sidebar .sidebar-action { justify-content: 
 
 .admin-users-page {
   width: min(100%, 74rem);
-}
-
-.admin-users-table {
-  scrollbar-width: thin;
-  scrollbar-color: color-mix(in srgb, var(--brand) 40%, transparent) transparent;
-}
-
-.admin-users-table::-webkit-scrollbar {
-  height: 0.6rem;
-}
-
-.admin-users-table::-webkit-scrollbar-thumb {
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--brand) 38%, transparent);
 }
 
 .hero-pan {

@@ -198,16 +198,18 @@ export default function DashboardLayout() {
         </aside>
 
         <main className="min-w-0 flex-1">
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="app-logout-top hidden items-center gap-2 lg:inline-flex"
-            title="Logout"
-            aria-label="Logout"
-          >
-            <LogOut size={18} />
-            <span>Logout</span>
-          </button>
+          <div className="app-desktop-action-row hidden lg:flex">
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="app-logout-top inline-flex items-center gap-2"
+              title="Logout"
+              aria-label="Logout"
+            >
+              <LogOut size={18} />
+              <span>Logout</span>
+            </button>
+          </div>
           <header className="app-topbar sticky top-0 z-30 px-4 py-4 lg:hidden">
             <div className="flex items-center justify-between gap-3">
               <NavLink to={homePath} className="flex items-center gap-3">

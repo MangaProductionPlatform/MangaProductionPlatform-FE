@@ -19,7 +19,12 @@ import { clearAuthSession } from "../shared/utils/authSession";
 import { QuickSettingsTrigger } from "../shared/components/QuickSettingsPanel";
 
 const menus = [
-  { label: "Dashboard", path: "/admin/dashboard", icon: LayoutDashboard, end: true },
+  {
+    label: "Dashboard",
+    path: "/admin/dashboard",
+    icon: LayoutDashboard,
+    end: true,
+  },
   { label: "Users", path: "/admin/users", icon: Users, end: true },
   { label: "Roles & Permissions", path: "/admin/roles", icon: LockKeyhole },
   { label: "Series Monitoring", path: "/admin/series", icon: Database },
@@ -60,7 +65,9 @@ export default function AdminLayout() {
                 <h1 className="text-lg font-bold leading-tight">
                   Studio Operations
                 </h1>
-                <p className="text-xs leading-5 text-slate-400">Admin governance</p>
+                <p className="text-xs leading-5 text-slate-400">
+                  Admin governance
+                </p>
               </div>
             </div>
           </NavLink>
@@ -91,7 +98,7 @@ export default function AdminLayout() {
                     `flex items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium transition ${
                       isActive
                         ? "bg-white text-slate-950"
-: "text-slate-300 hover:bg-white/10 hover:text-white"
+                        : "text-slate-300 hover:bg-white/10 hover:text-white"
                     }`
                   }
                 >
@@ -101,20 +108,21 @@ export default function AdminLayout() {
               );
             })}
           </nav>
-
         </aside>
 
         <main className="min-w-0 flex-1">
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="app-logout-top hidden items-center gap-2 lg:inline-flex"
-            title="Logout"
-            aria-label="Logout"
-          >
-            <LogOut size={18} />
-            <span>Logout</span>
-          </button>
+          <div className="app-desktop-action-row hidden lg:flex">
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="app-logout-top inline-flex items-center gap-2"
+              title="Logout"
+              aria-label="Logout"
+            >
+              <LogOut size={18} />
+              <span>Logout</span>
+            </button>
+          </div>
           <header className="app-topbar sticky top-0 z-30 px-4 py-4 lg:hidden">
             <div className="flex items-center justify-between gap-3">
               <NavLink to="/admin/dashboard" className="flex items-start gap-3">
@@ -123,7 +131,9 @@ export default function AdminLayout() {
                 </div>
                 <div className="min-w-0">
                   <p className="font-semibold">Studio Operations</p>
-                  <p className="text-xs leading-5 text-slate-400">Admin governance</p>
+                  <p className="text-xs leading-5 text-slate-400">
+                    Admin governance
+                  </p>
                 </div>
               </NavLink>
               <div className="flex items-center gap-2">
@@ -138,7 +148,10 @@ export default function AdminLayout() {
                 </button>
               </div>
             </div>
-            <nav className="mt-3 flex gap-2 overflow-x-auto pb-1" aria-label="Admin navigation">
+            <nav
+              className="mt-3 flex gap-2 overflow-x-auto pb-1"
+              aria-label="Admin navigation"
+            >
               {menus.map((item) => (
                 <NavLink
                   key={item.path}

@@ -5,18 +5,23 @@ type CoverMarqueeProps = {
 };
 
 export default function CoverMarquee({ compact = false }: CoverMarqueeProps) {
+  // Duplicate the complete cover sequence once so the track can restart seamlessly.
   const covers = [...mangaCoverImages, ...mangaCoverImages];
 
   return (
     <div className="cover-marquee overflow-hidden">
       <div className="cover-marquee-track flex w-max gap-4">
-        {covers.map((cover, index) => (
-          <article
-            key={`${cover.title}-${index}`}
-            className={`cover-card group relative overflow-hidden rounded-lg border border-white/10 bg-gradient-to-br ${cover.tone} shadow-[0_18px_45px_rgba(2,6,23,0.35)] ${
-              compact ? "cover-card--compact" : ""
-            }`}
-          >
+        {covers.map((cover, index) => {
+          const isDuplicate = index >= mangaCoverImages.length;
+
+          return (
+            <article
+              key={`${cover.title}-${index}`}
+              aria-hidden={isDuplicate || undefined}
+              className={`cover-card group relative overflow-hidden rounded-lg border border-white/10 bg-gradient-to-br ${cover.tone} shadow-[0_18px_45px_rgba(2,6,23,0.35)] ${
+                compact ? "cover-card--compact" : ""
+              }`}
+            >
             <div
               aria-label={`${cover.title} manga cover inspiration`}
               className="absolute inset-0 bg-cover bg-no-repeat opacity-95 transition duration-500 group-hover:scale-105"
@@ -35,8 +40,9 @@ export default function CoverMarquee({ compact = false }: CoverMarqueeProps) {
                 {cover.title}
               </h3>
             </div>
-          </article>
-        ))}
+            </article>
+          );
+        })}
       </div>
     </div>
   );

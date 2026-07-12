@@ -21,25 +21,28 @@ export const mangaCoverImages = [
     tone: "from-emerald-200 via-teal-300 to-sky-300",
   },
   {
-    title: "Black Blade",
-    genre: "Action",
-    image: "/images/studio/studio-art-04.jpg",
+    title: "Manga Man",
+    genre: "Classic manga",
+    image:
+      "https://commons.wikimedia.org/wiki/Special:FilePath/Manga_man_Mar_1930_cover.jpg?width=560",
     position: "center",
-    tone: "from-violet-300 via-fuchsia-300 to-orange-200",
+    tone: "from-orange-200 via-rose-300 to-violet-400",
   },
   {
-    title: "Archive Spell",
-    genre: "Magic",
-    image: "/images/studio/studio-art-05.jpg",
+    title: "Eshibun Nipponchi",
+    genre: "Classic manga",
+    image:
+      "https://commons.wikimedia.org/wiki/Special:FilePath/Eshibun_Nipponchi.jpg?width=560",
     position: "center",
-    tone: "from-slate-200 via-blue-300 to-rose-300",
+    tone: "from-red-300 via-amber-300 to-slate-300",
   },
   {
-    title: "Rain Note",
-    genre: "Drama",
-    image: "/images/studio/creative-workspace-02.jpg",
+    title: "Shochan no Boken",
+    genre: "Classic manga",
+    image:
+      "https://commons.wikimedia.org/wiki/Special:FilePath/Shochan_no_boken.jpg?width=560",
     position: "center",
-    tone: "from-lime-200 via-amber-300 to-pink-300",
+    tone: "from-sky-300 via-indigo-400 to-fuchsia-300",
   },
 ] as const;
 

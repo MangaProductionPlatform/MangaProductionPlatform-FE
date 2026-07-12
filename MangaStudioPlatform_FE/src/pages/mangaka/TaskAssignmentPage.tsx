@@ -1,8 +1,20 @@
 import { useEffect, useRef, useState, type MouseEvent } from "react";
-import { BookOpen, ClipboardCheck, Plus, RefreshCw, Send, Wand2 } from "lucide-react";
+import {
+  BookOpen,
+  ClipboardCheck,
+  Plus,
+  RefreshCw,
+  Send,
+  Wand2,
+} from "lucide-react";
+import { useLocation } from "react-router-dom";
 import { useToast } from "../../shared/components/toastContext";
 import { mangaErpApi } from "../../shared/services/mangaErpService";
-import type { ChapterDto, MangaSeriesDto, RecommendedAssistantDto } from "../../shared/types/mangaErp";
+import type {
+  ChapterDto,
+  MangaSeriesDto,
+  RecommendedAssistantDto,
+} from "../../shared/types/mangaErp";
 
 type SamImageSize = {
   width: number;
@@ -13,6 +25,11 @@ type MaskOverlay = {
   width: number;
   height: number;
   pixels: Uint8Array;
+};
+
+type TaskAssignmentNavigationState = {
+  seriesId?: string;
+  chapterId?: string;
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -34,13 +51,17 @@ function flattenMaskValues(value: unknown, output: number[] = []) {
   return output;
 }
 
-function decodeUncompressedMask(value: unknown, fallbackSize: SamImageSize | null): MaskOverlay | null {
+function decodeUncompressedMask(
+  value: unknown,
+  fallbackSize: SamImageSize | null,
+): MaskOverlay | null {
   if (!Array.isArray(value)) return null;
 
   const height = Array.isArray(value[0]) ? value.length : fallbackSize?.height;
-  const width = Array.isArray(value[0]) && Array.isArray(value[0])
-    ? (value[0] as unknown[]).length
-    : fallbackSize?.width;
+  const width =
+    Array.isArray(value[0]) && Array.isArray(value[0])
+      ? (value[0] as unknown[]).length
+      : fallbackSize?.width;
 
   if (!height || !width) return null;
 
@@ -55,11 +76,25 @@ function decodeUncompressedMask(value: unknown, fallbackSize: SamImageSize | nul
   };
 }
 
-function decodeCocoCounts(counts: unknown, size: unknown, fallbackSize: SamImageSize | null): MaskOverlay | null {
-  if (!Array.isArray(counts) || !counts.every((item) => typeof item === "number")) return null;
+function decodeCocoCounts(
+  counts: unknown,
+  size: unknown,
+  fallbackSize: SamImageSize | null,
+): MaskOverlay | null {
+  if (
+    !Array.isArray(counts) ||
+    !counts.every((item) => typeof item === "number")
+  )
+    return null;
 
-  const height = Array.isArray(size) && typeof size[0] === "number" ? size[0] : fallbackSize?.height;
-  const width = Array.isArray(size) && typeof size[1] === "number" ? size[1] : fallbackSize?.width;
+  const height =
+    Array.isArray(size) && typeof size[0] === "number"
+      ? size[0]
+      : fallbackSize?.height;
+  const width =
+    Array.isArray(size) && typeof size[1] === "number"
+      ? size[1]
+      : fallbackSize?.width;
   if (!height || !width) return null;
 
   const pixelCount = width * height;
@@ -80,7 +115,10 @@ function decodeCocoCounts(counts: unknown, size: unknown, fallbackSize: SamImage
   return { width, height, pixels };
 }
 
-function decodeSamMask(maskRle: unknown, fallbackSize: SamImageSize | null): MaskOverlay | null {
+function decodeSamMask(
+  maskRle: unknown,
+  fallbackSize: SamImageSize | null,
+): MaskOverlay | null {
   // Dịch vụ SAM có thể trả pixel thô hoặc COCO RLE; chuẩn hóa để cùng hiển thị trên một canvas.
   if (!maskRle) return null;
 
@@ -99,6 +137,9 @@ function decodeSamMask(maskRle: unknown, fallbackSize: SamImageSize | null): Mas
 
 export default function TaskAssignmentPage() {
   const toast = useToast();
+  const location = useLocation();
+  const navigationState =
+    location.state as TaskAssignmentNavigationState | null;
   const maskCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const [seriesList, setSeriesList] = useState<MangaSeriesDto[]>([]);
   const [selectedSeriesId, setSelectedSeriesId] = useState("");
@@ -106,13 +147,17 @@ export default function TaskAssignmentPage() {
   const [chapterId, setChapterId] = useState("");
   const [pageNumber, setPageNumber] = useState(1);
   const [assistantId, setAssistantId] = useState("");
-  const [recommendedAssistants, setRecommendedAssistants] = useState<RecommendedAssistantDto[]>([]);
+  const [recommendedAssistants, setRecommendedAssistants] = useState<
+    RecommendedAssistantDto[]
+  >([]);
   const [taskType, setTaskType] = useState("Background");
   const [taskDescription, setTaskDescription] = useState("");
   const [regionMask, setRegionMask] = useState("");
   const [samFile, setSamFile] = useState<File | null>(null);
   const [samPreviewUrl, setSamPreviewUrl] = useState("");
-  const [samEmbedding, setSamEmbedding] = useState<Awaited<ReturnType<typeof mangaErpApi.getSamEmbedding>> | null>(null);
+  const [samEmbedding, setSamEmbedding] = useState<Awaited<
+    ReturnType<typeof mangaErpApi.getSamEmbedding>
+  > | null>(null);
   const [samImageSize, setSamImageSize] = useState<SamImageSize | null>(null);
   const [maskBbox, setMaskBbox] = useState<number[] | null>(null);
   const [maskOverlay, setMaskOverlay] = useState<MaskOverlay | null>(null);
@@ -135,25 +180,39 @@ export default function TaskAssignmentPage() {
       const seriesResult = await mangaErpApi.getMySeries();
       setSeriesList(seriesResult);
 
-      const firstSeriesId = selectedSeriesId || seriesResult[0]?.id || "";
-      setSelectedSeriesId(firstSeriesId);
+      const requestedSeriesId = navigationState?.seriesId;
+      const preferredSeriesId =
+        requestedSeriesId &&
+        seriesResult.some((series) => series.id === requestedSeriesId)
+          ? requestedSeriesId
+          : selectedSeriesId || seriesResult[0]?.id || "";
 
-      if (!firstSeriesId) {
+      setSelectedSeriesId(preferredSeriesId);
+
+      if (!preferredSeriesId) {
         setChapters([]);
         setChapterId("");
         setMessage("Không tìm thấy series nào từ backend.");
         return;
       }
 
-      const chapterResult = await mangaErpApi.getChaptersBySeries(firstSeriesId);
+      const chapterResult =
+        await mangaErpApi.getChaptersBySeries(preferredSeriesId);
       setChapters(chapterResult);
 
-      const firstChapterId = chapterResult[0]?.id || "";
-      setChapterId((current) => current || firstChapterId);
+      const requestedChapterId = navigationState?.chapterId;
+      const preferredChapterId =
+        requestedChapterId &&
+        chapterResult.some((chapter) => chapter.id === requestedChapterId)
+          ? requestedChapterId
+          : chapterResult[0]?.id || "";
+
+      setChapterId(preferredChapterId);
     } catch (err) {
       setChapters([]);
       setChapterId("");
-      const detail = err instanceof Error ? err.message : "Could not load chapters.";
+      const detail =
+        err instanceof Error ? err.message : "Could not load chapters.";
       setMessage(detail);
       toast.error("Could not load chapter workspace", detail);
     } finally {
@@ -172,7 +231,8 @@ export default function TaskAssignmentPage() {
     } catch (err) {
       setChapters([]);
       setChapterId("");
-      const detail = err instanceof Error ? err.message : "Could not load chapters.";
+      const detail =
+        err instanceof Error ? err.message : "Could not load chapters.";
       setMessage(detail);
       toast.error("Could not load series chapters", detail);
     } finally {
@@ -194,7 +254,8 @@ export default function TaskAssignmentPage() {
         return;
       }
       // Danh sách này chỉ gợi ý; Mangaka vẫn là người quyết định Assistant nhận task.
-      void mangaErpApi.getRecommendedAssistants(chapterId)
+      void mangaErpApi
+        .getRecommendedAssistants(chapterId)
         .then(setRecommendedAssistants)
         .catch(() => setRecommendedAssistants([]));
     }, 0);
@@ -220,7 +281,10 @@ export default function TaskAssignmentPage() {
 
     canvas.width = maskOverlay.width;
     canvas.height = maskOverlay.height;
-    const imageData = context.createImageData(maskOverlay.width, maskOverlay.height);
+    const imageData = context.createImageData(
+      maskOverlay.width,
+      maskOverlay.height,
+    );
 
     maskOverlay.pixels.forEach((isSelected, index) => {
       if (!isSelected) return;
@@ -246,7 +310,10 @@ export default function TaskAssignmentPage() {
     try {
       await mangaErpApi.addBasePage(chapterId, pageNumber);
       setMessage("");
-      toast.success("Base page created", `Page ${pageNumber} is ready for task assignment.`);
+      toast.success(
+        "Base page created",
+        `Page ${pageNumber} is ready for task assignment.`,
+      );
     } catch (err) {
       const detail = err instanceof Error ? err.message : "Unknown error";
       setMessage(detail);
@@ -276,7 +343,9 @@ export default function TaskAssignmentPage() {
         try {
           JSON.parse(trimmedRegion);
         } catch {
-          setMessage("SAM region data is not valid JSON. Clear it or predict the region again.");
+          setMessage(
+            "SAM region data is not valid JSON. Clear it or predict the region again.",
+          );
           return;
         }
 
@@ -294,7 +363,10 @@ export default function TaskAssignmentPage() {
       });
       setMessage("");
       setTaskDescription("");
-      toast.success("Page task assigned", `Page ${pageNumber} is now in the Assistant task inbox.`);
+      toast.success(
+        "Page task assigned",
+        `Page ${pageNumber} is now in the Assistant task inbox.`,
+      );
     } catch (err) {
       const detail = err instanceof Error ? err.message : "Unknown error";
       setMessage(detail);
@@ -317,11 +389,18 @@ export default function TaskAssignmentPage() {
       const embedding = await mangaErpApi.getSamEmbedding(samFile);
       setSamEmbedding(embedding);
       if (embedding.imageSize?.length >= 2) {
-        setSamImageSize({ height: embedding.imageSize[0], width: embedding.imageSize[1] });
+        setSamImageSize({
+          height: embedding.imageSize[0],
+          width: embedding.imageSize[1],
+        });
       }
-      setMessage("SAM embedding created. Click directly on the page image to choose a region.");
+      setMessage(
+        "SAM embedding created. Click directly on the page image to choose a region.",
+      );
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : "Could not create SAM embedding.");
+      setMessage(
+        err instanceof Error ? err.message : "Could not create SAM embedding.",
+      );
     } finally {
       setIsSamBusy(false);
     }
@@ -345,15 +424,23 @@ export default function TaskAssignmentPage() {
       const decodedMask = decodeSamMask(mask.maskRle, samImageSize);
       setMaskBbox(mask.bbox?.length === 4 ? mask.bbox : null);
       setMaskOverlay(decodedMask);
-      setRegionMask(JSON.stringify({
-        maskRle: mask.maskRle ?? null,
-        bbox: mask.bbox,
-        score: mask.score,
-        point: { x: Number(clickX), y: Number(clickY) },
-      }));
-      setMessage(decodedMask ? "SAM region predicted and painted on the page. Save the region before assigning the task." : "SAM region predicted. Full mask format could not be painted, showing bounding box instead.");
+      setRegionMask(
+        JSON.stringify({
+          maskRle: mask.maskRle ?? null,
+          bbox: mask.bbox,
+          score: mask.score,
+          point: { x: Number(clickX), y: Number(clickY) },
+        }),
+      );
+      setMessage(
+        decodedMask
+          ? "SAM region predicted and painted on the page. Save the region before assigning the task."
+          : "SAM region predicted. Full mask format could not be painted, showing bounding box instead.",
+      );
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : "Could not predict SAM region.");
+      setMessage(
+        err instanceof Error ? err.message : "Could not predict SAM region.",
+      );
     } finally {
       setIsSamBusy(false);
     }
@@ -374,16 +461,26 @@ export default function TaskAssignmentPage() {
   const handleSamImageClick = (event: MouseEvent<HTMLImageElement>) => {
     const image = event.currentTarget;
     const rect = image.getBoundingClientRect();
-    const naturalWidth = image.naturalWidth || samImageSize?.width || rect.width;
-    const naturalHeight = image.naturalHeight || samImageSize?.height || rect.height;
-    const x = Math.round(((event.clientX - rect.left) / rect.width) * naturalWidth);
-    const y = Math.round(((event.clientY - rect.top) / rect.height) * naturalHeight);
+    const naturalWidth =
+      image.naturalWidth || samImageSize?.width || rect.width;
+    const naturalHeight =
+      image.naturalHeight || samImageSize?.height || rect.height;
+    const x = Math.round(
+      ((event.clientX - rect.left) / rect.width) * naturalWidth,
+    );
+    const y = Math.round(
+      ((event.clientY - rect.top) / rect.height) * naturalHeight,
+    );
 
     setClickX(String(Math.max(0, x)));
     setClickY(String(Math.max(0, y)));
     setMaskBbox(null);
     setMaskOverlay(null);
-    setMessage(samEmbedding ? "Point selected. Predict region to preview the mask." : "Point selected. Create embedding before predicting the region.");
+    setMessage(
+      samEmbedding
+        ? "Point selected. Predict region to preview the mask."
+        : "Point selected. Create embedding before predicting the region.",
+    );
   };
 
   const bboxStyle = (() => {
@@ -420,7 +517,9 @@ export default function TaskAssignmentPage() {
       });
       setMessage("SAM region and task type saved for this page.");
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : "Could not save SAM region.");
+      setMessage(
+        err instanceof Error ? err.message : "Could not save SAM region.",
+      );
     } finally {
       setIsSamBusy(false);
     }
@@ -433,9 +532,7 @@ export default function TaskAssignmentPage() {
           Mangaka Workflow
         </p>
 
-        <h1 className="mt-2 text-3xl font-black text-white">
-          Task Assignment
-        </h1>
+        <h1 className="mt-2 text-3xl font-black text-white">Task Assignment</h1>
 
         <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
           Mangaka tạo base page rồi phân công Assistant thực hiện artwork layer.
@@ -500,10 +597,11 @@ export default function TaskAssignmentPage() {
                 key={chapter.id}
                 type="button"
                 onClick={() => setChapterId(chapter.id)}
-                className={`w-full rounded-xl border p-4 text-left transition ${chapterId === chapter.id
+                className={`w-full rounded-xl border p-4 text-left transition ${
+                  chapterId === chapter.id
                     ? "border-cyan-400 bg-cyan-400/10"
                     : "border-slate-800 bg-slate-950 hover:border-cyan-400/50"
-                  }`}
+                }`}
               >
                 <h3 className="font-semibold text-white">
                   Ch. {chapter.chapterNumber} - {chapter.title}
@@ -562,20 +660,39 @@ export default function TaskAssignmentPage() {
             </div>
 
             <div>
-              <label className="text-sm text-slate-400">Recommended Assistant</label>
+              <label className="text-sm text-slate-400">
+                Recommended Assistant
+              </label>
 
               <select
-                value={recommendedAssistants.some((assistant) => assistant.assistantId === assistantId) ? assistantId : ""}
+                value={
+                  recommendedAssistants.some(
+                    (assistant) => assistant.assistantId === assistantId,
+                  )
+                    ? assistantId
+                    : ""
+                }
                 onChange={(event) => setAssistantId(event.target.value)}
                 className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none"
               >
                 <option value="">Select an active studio assistant</option>
-                {recommendedAssistants.map((assistant) => <option key={assistant.assistantId} value={assistant.assistantId}>{assistant.assistantName}{assistant.penName ? ` (${assistant.penName})` : ""} · {assistant.activeTasksCount} active task(s)</option>)}
+                {recommendedAssistants.map((assistant) => (
+                  <option
+                    key={assistant.assistantId}
+                    value={assistant.assistantId}
+                  >
+                    {assistant.assistantName}
+                    {assistant.penName ? ` (${assistant.penName})` : ""} ·{" "}
+                    {assistant.activeTasksCount} active task(s)
+                  </option>
+                ))}
               </select>
             </div>
 
             <div>
-              <label className="text-sm text-slate-400">Assistant user ID</label>
+              <label className="text-sm text-slate-400">
+                Assistant user ID
+              </label>
 
               <input
                 value={assistantId}
@@ -619,7 +736,9 @@ export default function TaskAssignmentPage() {
                 <input
                   type="file"
                   accept="image/png,image/jpeg,image/webp"
-                  onChange={(event) => handleSamFileChange(event.target.files?.[0] ?? null)}
+                  onChange={(event) =>
+                    handleSamFileChange(event.target.files?.[0] ?? null)
+                  }
                   className="mt-2 block w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-slate-100"
                 />
               </label>
@@ -674,7 +793,9 @@ export default function TaskAssignmentPage() {
             {samPreviewUrl ? (
               <div className="mt-4 overflow-hidden rounded-xl border border-slate-700 bg-slate-950">
                 <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 px-4 py-3">
-                  <p className="text-sm font-semibold text-white">Interactive page region</p>
+                  <p className="text-sm font-semibold text-white">
+                    Interactive page region
+                  </p>
                   <p className="text-xs text-slate-400">
                     Click image to set point ({clickX}, {clickY})
                   </p>
@@ -688,7 +809,10 @@ export default function TaskAssignmentPage() {
                       onClick={handleSamImageClick}
                       onLoad={(event) => {
                         const image = event.currentTarget;
-                        setSamImageSize({ width: image.naturalWidth, height: image.naturalHeight });
+                        setSamImageSize({
+                          width: image.naturalWidth,
+                          height: image.naturalHeight,
+                        });
                       }}
                     />
                     <canvas
@@ -705,8 +829,12 @@ export default function TaskAssignmentPage() {
                     <div
                       className="pointer-events-none absolute h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-amber-200 bg-amber-300/80 shadow-[0_0_24px_rgba(251,191,36,0.55)]"
                       style={{
-                        left: samImageSize ? `${(Number(clickX) / samImageSize.width) * 100}%` : "0%",
-                        top: samImageSize ? `${(Number(clickY) / samImageSize.height) * 100}%` : "0%",
+                        left: samImageSize
+                          ? `${(Number(clickX) / samImageSize.width) * 100}%`
+                          : "0%",
+                        top: samImageSize
+                          ? `${(Number(clickY) / samImageSize.height) * 100}%`
+                          : "0%",
                       }}
                     />
                   </div>
