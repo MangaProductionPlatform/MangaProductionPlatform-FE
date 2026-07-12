@@ -341,7 +341,7 @@ export default function MangakaDashboardPage() {
           Series Submission Dashboard
         </h1>
         <p className="mt-2 text-sm text-slate-400">
-          Real submission and official-series status returned by the backend.
+          Track proposal progress and the status of your official series.
         </p>
       </header>
 

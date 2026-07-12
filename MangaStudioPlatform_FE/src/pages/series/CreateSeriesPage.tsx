@@ -50,7 +50,7 @@ export default function CreateSeriesPage() {
         "Proposal submitted",
         submissionId
           ? `Submission ID: ${submissionId}. Sent to Editorial Board review.`
-          : "Your proposal was sent to the backend.",
+          : "Your proposal was submitted for review.",
       );
     } catch (err) {
       toast.error(

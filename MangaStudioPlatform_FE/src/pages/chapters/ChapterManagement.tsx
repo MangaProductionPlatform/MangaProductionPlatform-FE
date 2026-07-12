@@ -1,7 +1,7 @@
 import type { FormEvent } from "react";
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { ClipboardList, Copy, FileText, Send, Upload } from "lucide-react";
+import { ClipboardList, Copy, Send, Upload } from "lucide-react";
 import { mangaErpApi } from "../../shared/services/mangaErpService";
 import type { ChapterDto, MangaSeriesDto } from "../../shared/types/mangaErp";
 import { useToast } from "../../shared/components/toastContext";
@@ -222,7 +222,7 @@ export default function ChapterManagementPage() {
 
       toast.success(
         "Chapter created",
-        `${chapterTitle} was saved to the backend.`,
+        `${chapterTitle} has been added to this series.`,
       );
 
       const createdTitle = chapterTitle;
@@ -255,7 +255,7 @@ export default function ChapterManagementPage() {
     if (!detailChapterId) {
       toast.error(
         "No chapter selected",
-        "Select a backend chapter before submitting QA.",
+        "Select a chapter before submitting QA.",
       );
       return;
     }
@@ -272,7 +272,7 @@ export default function ChapterManagementPage() {
 
       toast.success(
         "Submitted for QA",
-        "The backend accepted the QA submission.",
+        "The chapter has been sent to the editorial QA queue.",
       );
 
       const detail = await mangaErpApi.getChapter(detailChapterId);
@@ -298,11 +298,11 @@ export default function ChapterManagementPage() {
           </p>
 
           <h2 className="mt-2 text-3xl font-black text-white">
-            Backend chapters
+            Chapter management
           </h2>
 
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
-            Create and track chapter records from the running Chapter service.
+            Create chapters, track their progress, and prepare them for QA.
           </p>
         </div>
 
@@ -323,20 +323,20 @@ export default function ChapterManagementPage() {
             <h3 className="text-lg font-bold text-white">Current Chapters</h3>
 
             <p className="mt-1 text-sm text-slate-400">
-              Only backend chapter records are shown here.
+              Review your chapters, pages, and production progress.
             </p>
           </div>
 
           <div className="mt-6 space-y-4">
             {isLoading ? (
               <div className="rounded-lg border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
-                Loading chapters from backend...
+                Loading chapters...
               </div>
             ) : null}
 
             {!isLoading && chapters.length === 0 ? (
               <div className="rounded-lg border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
-                No chapters found from backend.
+                No chapters have been created yet.
               </div>
             ) : null}
 
@@ -424,7 +424,7 @@ export default function ChapterManagementPage() {
                           if (!chapterId) {
                             toast.error(
                               "Missing chapter ID",
-                              "Backend did not return a valid chapter ID.",
+                              "The chapter could not be identified. Please try again.",
                             );
                             return;
                           }
@@ -436,7 +436,7 @@ export default function ChapterManagementPage() {
                             .then(() =>
                               toast.success(
                                 "Submitted for QA",
-                                "The backend accepted the QA submission.",
+                                "The chapter has been sent to the editorial QA queue.",
                               ),
                             )
                             .catch((err) =>
@@ -556,7 +556,7 @@ export default function ChapterManagementPage() {
                       ))
                     ) : (
                       <div className="rounded-lg border border-white/10 bg-white/5 p-3 text-sm text-slate-300">
-                        No page tasks from backend yet.
+                        No page tasks have been created yet.
                       </div>
                     )}
                   </div>
@@ -580,7 +580,9 @@ export default function ChapterManagementPage() {
 
               <div>
                 <h3 className="font-bold text-white">Create Chapter</h3>
-                <p className="text-sm text-slate-400">Backend chapter record</p>
+                <p className="text-sm text-slate-400">
+                  Add a new chapter to the selected series.
+                </p>
               </div>
             </div>
 
@@ -590,7 +592,7 @@ export default function ChapterManagementPage() {
                 value={selectedSeriesId}
                 onChange={(event) => setSelectedSeriesId(event.target.value)}
               >
-                <option value="">Select backend series</option>
+                <option value="">Select series</option>
 
                 {seriesList.map((series) => (
                   <option key={series.id} value={series.id}>
@@ -637,18 +639,6 @@ export default function ChapterManagementPage() {
                 onChange={(event) => setAssignedEditorId(event.target.value)}
                 placeholder="Assigned Tantou Editor ID"
               />
-
-              <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-cyan-300/30 bg-cyan-300/5 p-5 text-center">
-                <FileText className="text-cyan-200" size={28} />
-
-                <span className="mt-2 text-sm font-semibold text-white">
-                  No uploaded pages yet
-                </span>
-
-                <span className="text-xs text-slate-400">
-                  This form creates the backend chapter record only.
-                </span>
-              </div>
 
               <button
                 disabled={isSubmitting}

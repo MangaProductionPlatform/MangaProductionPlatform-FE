@@ -21,7 +21,10 @@ export default function AdminAiManagementPage() {
       toast.success("SAM config updated", result.message);
       setInternalApiKey("");
     } catch (error) {
-      toast.error("Could not update SAM config", error instanceof Error ? error.message : "Unknown error");
+      toast.error(
+        "Could not update SAM config",
+        error instanceof Error ? error.message : "Unknown error",
+      );
     } finally {
       setIsSaving(false);
     }
@@ -30,21 +33,29 @@ export default function AdminAiManagementPage() {
   return (
     <div className="space-y-6">
       <header>
-        <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-200">Admin</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-200">
+          Admin
+        </p>
         <h2 className="mt-2 text-3xl font-black text-white">AI management</h2>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
-          Runtime configuration for the SAM service used by segmentation and image validation.
+          Runtime configuration for the SAM service used by segmentation and
+          image validation.
         </p>
       </header>
 
-      <form onSubmit={submit} className="rounded-lg border border-white/10 bg-slate-900/75 p-5">
+      <form
+        onSubmit={submit}
+        className="rounded-lg border border-white/10 bg-slate-900/75 p-5"
+      >
         <div className="flex items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-cyan-300/10 text-cyan-200">
             <Bot size={20} />
           </div>
           <div>
             <h3 className="font-bold text-white">SAM service configuration</h3>
-            <p className="text-sm text-slate-400">Backend endpoint: PATCH /api/v1/admin/sam-config</p>
+            <p className="text-sm text-slate-400">
+              Manage the image segmentation service settings.
+            </p>
           </div>
         </div>
 
@@ -66,7 +77,7 @@ export default function AdminAiManagementPage() {
               type="password"
               value={internalApiKey}
               onChange={(event) => setInternalApiKey(event.target.value)}
-              placeholder="Leave blank only if backend accepts blank key"
+              placeholder="Leave blank when no API key is required"
             />
           </label>
         </div>

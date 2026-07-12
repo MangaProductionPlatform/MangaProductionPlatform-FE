@@ -532,10 +532,17 @@ export const mangaErpApi = {
     });
   },
 
-  async addBasePage(chapterId: string, pageNumber: number) {
+  async addBasePage(
+    chapterId: string,
+    pageNumber: number,
+    baseImageUrl: string,
+  ) {
     return request("chapter", `/api/v1/chapters/${chapterId}/pages`, {
       method: "POST",
-      body: JSON.stringify({ PageNumber: pageNumber }),
+      body: JSON.stringify({
+        PageNumber: pageNumber,
+        BaseImageUrl: baseImageUrl,
+      }),
     });
   },
 
@@ -709,6 +716,7 @@ export const mangaErpApi = {
       pageNumber: pickAny<number>(item, ["pageNumber", "PageNumber"]),
       description: pickAny<string | null | undefined>(item, ["description", "Description"]),
       imageUrl: pickAny<string | null | undefined>(item, ["imageUrl", "ImageUrl"]),
+      baseImageUrl: pickAny<string | null | undefined>(item, ["baseImageUrl", "BaseImageUrl"]),
       compositeUrl: pickAny<string | null | undefined>(item, ["compositeUrl", "CompositeUrl", "previewCompositeUrl", "PreviewCompositeUrl"]),
       previewCompositeUrl: pickAny<string | null | undefined>(item, ["previewCompositeUrl", "PreviewCompositeUrl", "compositeUrl", "CompositeUrl"]),
       fileUrlOriginal: pickAny<string | null | undefined>(item, ["fileUrlOriginal", "FileUrlOriginal"]),

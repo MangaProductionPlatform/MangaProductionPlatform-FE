@@ -94,6 +94,7 @@ export function mapPageTask(item: Record<string, unknown>): PageTaskDto {
     pageNumber: Number(pick<number>(item, "pageNumber")),
     status: pick<string>(item, "status") ?? pick<string>(item, "taskStatus") ?? "Unknown",
     assignedAssistantId: pick<string | null | undefined>(item, "assignedAssistantId"),
+    baseImageUrl: pick<string | null | undefined>(item, "baseImageUrl"),
     previewCompositeUrl: pick<string | null | undefined>(item, "previewCompositeUrl"),
     description: pick<string | null | undefined>(item, "description"),
     taskType: pick<string | null | undefined>(item, "taskType"),

@@ -214,7 +214,7 @@ export default function SeriesProposalsPage() {
           </h2>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
             {isEditorInChief
-              ? "Escalated conflicts and active proposals from the backend queue."
+              ? "Escalated conflicts and active proposals awaiting board review."
               : "Submissions you can vote on in the current Editorial Board round."}
           </p>
         </div>

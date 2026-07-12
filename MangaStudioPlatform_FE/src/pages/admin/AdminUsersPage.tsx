@@ -158,7 +158,7 @@ export default function AdminUsersPage() {
               <Users size={22} />
             </div>
             <p className="mt-4 text-sm text-slate-300">
-              No users returned by backend.
+              No users are available.
             </p>
           </div>
         ) : null}

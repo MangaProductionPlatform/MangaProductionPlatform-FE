@@ -49,7 +49,7 @@ export default function AdminSystemSettingsPage() {
         "Could not save settings",
         error instanceof Error
           ? error.message
-          : "Enter valid JSON matching backend settings.",
+          : "Enter valid JSON for the available system settings.",
       );
     } finally {
       setIsSaving(false);
@@ -64,8 +64,8 @@ export default function AdminSystemSettingsPage() {
         </p>
         <h1 className="mt-2 text-3xl font-black text-white">System settings</h1>
         <p className="mt-2 text-sm text-slate-400">
-          Configuration returned by the backend. Edit only keys supported by
-          your backend.
+          Platform configuration. Edit only the keys supported by your current
+          settings.
         </p>
       </header>
 

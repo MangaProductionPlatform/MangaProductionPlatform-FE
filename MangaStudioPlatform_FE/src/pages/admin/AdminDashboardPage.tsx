@@ -15,7 +15,10 @@ export default function AdminDashboardPage() {
     try {
       setDashboard(await mangaErpApi.getAdminDashboard());
     } catch (error) {
-      toast.error("Could not load admin dashboard", error instanceof Error ? error.message : "Unknown error");
+      toast.error(
+        "Could not load admin dashboard",
+        error instanceof Error ? error.message : "Unknown error",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -28,7 +31,11 @@ export default function AdminDashboardPage() {
         const result = await mangaErpApi.getAdminDashboard();
         if (!ignore) setDashboard(result);
       } catch (error) {
-        if (!ignore) toast.error("Could not load admin dashboard", error instanceof Error ? error.message : "Unknown error");
+        if (!ignore)
+          toast.error(
+            "Could not load admin dashboard",
+            error instanceof Error ? error.message : "Unknown error",
+          );
       } finally {
         if (!ignore) setIsLoading(false);
       }
@@ -49,27 +56,60 @@ export default function AdminDashboardPage() {
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-200">Admin</p>
-          <h2 className="mt-2 text-3xl font-black text-white">Admin dashboard</h2>
+          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-200">
+            Admin
+          </p>
+          <h2 className="mt-2 text-3xl font-black text-white">
+            Admin dashboard
+          </h2>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
-            Cross-module overview from the backend admin dashboard API.
+            Cross-module overview of platform activity and operational status.
           </p>
         </div>
-        <button type="button" onClick={() => void loadDashboard()} disabled={isLoading} className="btn-secondary inline-flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => void loadDashboard()}
+          disabled={isLoading}
+          className="btn-secondary inline-flex items-center gap-2"
+        >
           <RefreshCw size={16} className={isLoading ? "animate-spin" : ""} />
           Refresh
         </button>
       </header>
 
-      {isLoading ? <p className="rounded-lg border border-white/10 bg-slate-900/75 p-5 text-sm text-slate-300">Loading dashboard...</p> : null}
+      {isLoading ? (
+        <p className="rounded-lg border border-white/10 bg-slate-900/75 p-5 text-sm text-slate-300">
+          Loading dashboard...
+        </p>
+      ) : null}
 
       {dashboard ? (
         <>
           <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <Metric icon={Users} label="Total users" value={userStats?.totalUsers ?? 0} detail={`${userStats?.activeUsers ?? 0} active`} />
-            <Metric icon={Users} label="Pending activation" value={userStats?.pendingActivation ?? 0} detail={`${userStats?.suspendedUsers ?? 0} suspended`} />
-            <Metric icon={FileText} label="Submissions" value={submissionStats?.totalSubmissions ?? 0} detail={`${submissionStats?.pendingEBReview ?? 0} pending EB`} />
-            <Metric icon={Database} label="Series" value={seriesStats?.totalSeries ?? 0} detail={`${seriesStats?.active ?? 0} active`} />
+            <Metric
+              icon={Users}
+              label="Total users"
+              value={userStats?.totalUsers ?? 0}
+              detail={`${userStats?.activeUsers ?? 0} active`}
+            />
+            <Metric
+              icon={Users}
+              label="Pending activation"
+              value={userStats?.pendingActivation ?? 0}
+              detail={`${userStats?.suspendedUsers ?? 0} suspended`}
+            />
+            <Metric
+              icon={FileText}
+              label="Submissions"
+              value={submissionStats?.totalSubmissions ?? 0}
+              detail={`${submissionStats?.pendingEBReview ?? 0} pending EB`}
+            />
+            <Metric
+              icon={Database}
+              label="Series"
+              value={seriesStats?.totalSeries ?? 0}
+              detail={`${seriesStats?.active ?? 0} active`}
+            />
           </section>
 
           <section className="grid gap-5 xl:grid-cols-3">
@@ -101,13 +141,19 @@ export default function AdminDashboardPage() {
                 ["Active", seriesStats?.active ?? 0],
                 ["Hiatus", seriesStats?.hiatus ?? 0],
                 ["Cancelled", seriesStats?.cancelled ?? 0],
-                ["Pending cancellation", seriesStats?.pendingCancellationRequests ?? 0],
+                [
+                  "Pending cancellation",
+                  seriesStats?.pendingCancellationRequests ?? 0,
+                ],
               ]}
             />
           </section>
 
           <p className="text-xs text-slate-500">
-            Generated at {dashboard.generatedAt ? new Date(dashboard.generatedAt).toLocaleString() : "-"}
+            Generated at{" "}
+            {dashboard.generatedAt
+              ? new Date(dashboard.generatedAt).toLocaleString()
+              : "-"}
           </p>
         </>
       ) : null}
@@ -115,7 +161,17 @@ export default function AdminDashboardPage() {
   );
 }
 
-function Metric({ icon: Icon, label, value, detail }: { icon: typeof Users; label: string; value: number; detail: string }) {
+function Metric({
+  icon: Icon,
+  label,
+  value,
+  detail,
+}: {
+  icon: typeof Users;
+  label: string;
+  value: number;
+  detail: string;
+}) {
   return (
     <article className="rounded-lg border border-white/10 bg-slate-900/75 p-5">
       <div className="flex items-center justify-between gap-3">
@@ -132,13 +188,22 @@ function Metric({ icon: Icon, label, value, detail }: { icon: typeof Users; labe
   );
 }
 
-function Breakdown({ title, items }: { title: string; items: Array<[string, number]> }) {
+function Breakdown({
+  title,
+  items,
+}: {
+  title: string;
+  items: Array<[string, number]>;
+}) {
   return (
     <section className="rounded-lg border border-white/10 bg-slate-900/75 p-5">
       <h3 className="font-bold text-white">{title}</h3>
       <div className="mt-4 space-y-3">
         {items.map(([label, count]) => (
-          <div key={label} className="flex items-center justify-between gap-3 rounded-lg bg-slate-950 px-3 py-2 text-sm">
+          <div
+            key={label}
+            className="flex items-center justify-between gap-3 rounded-lg bg-slate-950 px-3 py-2 text-sm"
+          >
             <span className="text-slate-300">{label}</span>
             <span className="font-bold text-cyan-100">{count}</span>
           </div>

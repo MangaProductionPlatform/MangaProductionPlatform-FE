@@ -225,7 +225,7 @@ export function ChapterPublishingPanel() {
             className="input mt-2"
             value={seriesId}
             onChange={(event) => setSeriesId(event.target.value)}
-            placeholder="Series ID required by backend"
+            placeholder="Enter series ID"
           />
         </label>
       </div>

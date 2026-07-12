@@ -61,7 +61,7 @@ export default function SeriesDetailPage() {
 
       {isLoading ? (
         <div className="rounded-lg border border-white/10 bg-slate-900/75 p-6 text-sm text-slate-300">
-          Loading series detail from backend...
+          Loading series details...
         </div>
       ) : null}
 
@@ -83,7 +83,7 @@ export default function SeriesDetailPage() {
               {series.genre ?? "Uncategorized"}
             </p>
             <p className="mt-4 max-w-3xl text-sm leading-6 text-slate-300">
-              {series.description || "No description from backend."}
+              {series.description || "No description is available yet."}
             </p>
           </div>
         </section>
@@ -91,7 +91,7 @@ export default function SeriesDetailPage() {
 
       {!isLoading && !series ? (
         <div className="rounded-lg border border-white/10 bg-slate-900/75 p-6 text-sm text-slate-300">
-          No series detail found from backend.
+          Series details are not available.
         </div>
       ) : null}
 
@@ -100,7 +100,7 @@ export default function SeriesDetailPage() {
           <div>
             <h3 className="text-lg font-bold text-white">Chapter Activity</h3>
             <p className="mt-1 text-sm text-slate-400">
-              Latest chapter status from backend.
+              Latest chapter status and publication progress.
             </p>
           </div>
           <Link
@@ -133,7 +133,7 @@ export default function SeriesDetailPage() {
             ))
           ) : (
             <div className="rounded-lg border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
-              No chapters found from backend for this series.
+              No chapters are available for this series yet.
             </div>
           )}
         </div>

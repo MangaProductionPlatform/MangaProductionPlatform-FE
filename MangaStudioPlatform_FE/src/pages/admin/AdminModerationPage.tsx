@@ -160,7 +160,7 @@ export default function AdminModerationPage() {
             </pre>
           ) : (
             <p className="mt-3 text-sm leading-6 text-slate-400">
-              Select Detail on a report to inspect backend-provided information.
+              Select Detail on a report to review the available information.
             </p>
           )}
         </aside>

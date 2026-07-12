@@ -5,8 +5,8 @@ export default function ReviewPage() {
   return (
     <EmptyBackendState
       icon={CheckCircle2}
-      title="No backend review results API yet"
-      description="Assistant review results, annotations, page previews, and approval actions will appear after the backend exposes review-result endpoints."
+      title="Review results are not available yet"
+      description="Review outcomes, annotations, page previews, and approval actions will appear here when they are available."
     />
   );
 }

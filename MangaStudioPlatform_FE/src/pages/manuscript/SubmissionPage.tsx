@@ -300,7 +300,7 @@ export default function SubmissionPage() {
           </h2>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
             Draft, edit, submit, and resubmit series proposals through the MF1
-            backend.
+            review workflow.
           </p>
         </div>
         <button
@@ -317,7 +317,7 @@ export default function SubmissionPage() {
         <div className="space-y-3">
           {isLoading ? (
             <div className="rounded-lg border border-white/10 bg-slate-900/75 p-5 text-sm text-slate-300">
-              Loading submissions from backend...
+              Loading submissions...
             </div>
           ) : null}
 

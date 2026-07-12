@@ -313,6 +313,7 @@ export type PageTaskDto = {
   pageNumber: number;
   status: string;
   assignedAssistantId?: string | null;
+  baseImageUrl?: string | null;
   previewCompositeUrl?: string | null;
   description?: string | null;
   taskType?: string | null;
@@ -718,6 +719,7 @@ export type QaReviewPageDto = {
   pageNumber: number;
   description?: string | null;
   imageUrl?: string | null;
+  baseImageUrl?: string | null;
   compositeUrl?: string | null;
   previewCompositeUrl?: string | null;
   fileUrlOriginal?: string | null;

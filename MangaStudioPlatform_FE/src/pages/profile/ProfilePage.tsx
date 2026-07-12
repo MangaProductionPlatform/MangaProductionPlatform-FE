@@ -46,7 +46,7 @@ export default function ProfilePage() {
         drawingSoftwares: canEditDrawingSoftware ? drawingSoftwares : undefined,
         bankAccountNumber: bankAccountNumber.trim() || null,
       });
-      toast.success("Profile updated", "Your backend profile was saved.");
+      toast.success("Profile updated", "Your profile was saved.");
     } catch (err) {
       toast.error(
         "Could not update profile",
@@ -83,7 +83,7 @@ export default function ProfilePage() {
             </p>
             <span className="mt-4 inline-flex items-center gap-2 rounded-lg border border-cyan-300/20 bg-cyan-300/10 px-3 py-2 text-sm font-semibold text-cyan-100">
               <ShieldCheck size={16} />
-              Backend session
+              Account session
             </span>
           </div>
         </aside>

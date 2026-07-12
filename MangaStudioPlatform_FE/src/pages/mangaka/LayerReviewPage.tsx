@@ -97,7 +97,7 @@ export default function LayerReviewPage() {
     try {
       // Từ chối layer bắt buộc có feedback để Assistant biết chính xác cần sửa gì.
       await mangaErpApi.reviewPageTask(selected.id, { IsAccepted: isAccepted, RejectionNote: isAccepted ? "" : feedback.trim() });
-      toast.success(isAccepted ? "Layer approved" : "Changes requested", isAccepted ? `Page ${selected.pageNumber} was accepted for backend compositing.` : "A revision request was returned to the assistant.");
+      toast.success(isAccepted ? "Layer approved" : "Changes requested", isAccepted ? `Page ${selected.pageNumber} was accepted and is ready to merge.` : "A revision request was returned to the assistant.");
       setFeedback("");
       setPendingLayer(null);
       // Tải lại để giao diện nhận status/version do backend cập nhật sau review.

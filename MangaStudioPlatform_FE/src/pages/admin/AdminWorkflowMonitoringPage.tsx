@@ -70,8 +70,7 @@ export default function AdminWorkflowMonitoringPage() {
             Workflow monitoring
           </h2>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
-            Backend status breakdown across submissions, chapters, and page
-            tasks.
+            Status breakdown across submissions, chapters, and page tasks.
           </p>
         </div>
         <button
@@ -111,7 +110,7 @@ export default function AdminWorkflowMonitoringPage() {
       {!isLoading && !stats ? (
         <div className="rounded-lg border border-dashed border-slate-700 p-8 text-center text-sm text-slate-400">
           <GitBranch className="mx-auto text-slate-500" />
-          <p className="mt-3">No workflow stats returned by backend.</p>
+          <p className="mt-3">No workflow statistics are available.</p>
         </div>
       ) : null}
     </div>

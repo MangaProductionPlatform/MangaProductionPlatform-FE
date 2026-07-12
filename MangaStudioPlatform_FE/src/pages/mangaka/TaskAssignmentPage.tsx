@@ -155,6 +155,7 @@ export default function TaskAssignmentPage() {
   const [regionMask, setRegionMask] = useState("");
   const [samFile, setSamFile] = useState<File | null>(null);
   const [samPreviewUrl, setSamPreviewUrl] = useState("");
+  const [baseImageUrl, setBaseImageUrl] = useState("");
   const [samEmbedding, setSamEmbedding] = useState<Awaited<
     ReturnType<typeof mangaErpApi.getSamEmbedding>
   > | null>(null);
@@ -192,7 +193,7 @@ export default function TaskAssignmentPage() {
       if (!preferredSeriesId) {
         setChapters([]);
         setChapterId("");
-        setMessage("Không tìm thấy series nào từ backend.");
+        setMessage("Không tìm thấy series nào trong workspace của bạn.");
         return;
       }
 
@@ -300,7 +301,15 @@ export default function TaskAssignmentPage() {
 
   const handleCreateBasePage = async () => {
     if (!chapterId) {
-      setMessage("Vui lòng chọn chapter thật từ backend.");
+      setMessage("Vui lòng chọn chapter trước khi tiếp tục.");
+      return;
+    }
+
+    if (!samFile) {
+      const detail =
+        "Choose the original page image before creating a base page.";
+      setMessage(detail);
+      toast.error("Original page image is required", detail);
       return;
     }
 
@@ -308,7 +317,20 @@ export default function TaskAssignmentPage() {
     setMessage("");
 
     try {
-      await mangaErpApi.addBasePage(chapterId, pageNumber);
+      // BaseImageUrl is immutable source material; upload it once before the page exists.
+      let uploadedBaseImageUrl = baseImageUrl;
+
+      if (!uploadedBaseImageUrl) {
+        const uploadResult = await mangaErpApi.uploadImage(samFile);
+        uploadedBaseImageUrl = uploadResult.url;
+        setBaseImageUrl(uploadedBaseImageUrl);
+      }
+
+      await mangaErpApi.addBasePage(
+        chapterId,
+        pageNumber,
+        uploadedBaseImageUrl,
+      );
       setMessage("");
       toast.success(
         "Base page created",
@@ -325,7 +347,7 @@ export default function TaskAssignmentPage() {
 
   const handleActivateTask = async () => {
     if (!chapterId) {
-      setMessage("Vui lòng chọn chapter thật từ backend.");
+      setMessage("Vui lòng chọn chapter trước khi tiếp tục.");
       return;
     }
 
@@ -449,6 +471,7 @@ export default function TaskAssignmentPage() {
   const handleSamFileChange = (file: File | null) => {
     setSamFile(file);
     setSamPreviewUrl(file ? URL.createObjectURL(file) : "");
+    setBaseImageUrl("");
     setSamEmbedding(null);
     setSamImageSize(null);
     setMaskBbox(null);
@@ -496,7 +519,7 @@ export default function TaskAssignmentPage() {
 
   const handleSaveRegion = async () => {
     if (!chapterId) {
-      setMessage("Select a backend chapter first.");
+      setMessage("Select a chapter first.");
       return;
     }
 
@@ -570,7 +593,7 @@ export default function TaskAssignmentPage() {
               }}
               className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none"
             >
-              <option value="">Select backend series</option>
+              <option value="">Select series</option>
               {seriesList.map((series) => (
                 <option key={series.id} value={series.id}>
                   {series.title}
@@ -588,7 +611,7 @@ export default function TaskAssignmentPage() {
 
             {!isLoading && chapters.length === 0 && (
               <div className="rounded-xl border border-slate-800 bg-slate-950 p-4 text-sm text-slate-400">
-                Không có chapter nào từ backend.
+                Không có chapter nào trong series này.
               </div>
             )}
 
@@ -638,7 +661,7 @@ export default function TaskAssignmentPage() {
                 onChange={(event) => setChapterId(event.target.value)}
                 className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none"
               >
-                <option value="">Select backend chapter</option>
+                <option value="">Select chapter</option>
                 {chapters.map((chapter) => (
                   <option key={chapter.id} value={chapter.id}>
                     Ch. {chapter.chapterNumber} - {chapter.title}
@@ -732,7 +755,7 @@ export default function TaskAssignmentPage() {
 
             <div className="mt-4 grid gap-3 md:grid-cols-2">
               <label className="text-sm text-slate-400">
-                Page image
+                Original page image
                 <input
                   type="file"
                   accept="image/png,image/jpeg,image/webp"
@@ -842,6 +865,12 @@ export default function TaskAssignmentPage() {
               </div>
             ) : null}
 
+            <p className="mt-3 text-xs leading-5 text-slate-400">
+              This image is uploaded as the immutable original page when you
+              create the base page. Assistant layers and composite previews will
+              not replace it.
+            </p>
+
             <label className="mt-3 block text-sm text-slate-400">
               Generated SAM region data
               <textarea
@@ -894,7 +923,9 @@ export default function TaskAssignmentPage() {
               className="flex items-center justify-center gap-2 rounded-xl border border-cyan-300/30 bg-cyan-300/10 px-5 py-3 font-semibold text-cyan-200 hover:bg-cyan-300/15 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Plus size={18} />
-              {isCreatingPage ? "Creating..." : "Create Base Page"}
+              {isCreatingPage
+                ? "Uploading & creating..."
+                : "Upload & Create Base Page"}
             </button>
 
             <button

@@ -51,6 +51,7 @@ const pageImageOf = (page: QaReviewPageDto | null) =>
   page?.compositeUrl ??
   page?.fileUrlOptimized ??
   page?.fileUrlOriginal ??
+  page?.baseImageUrl ??
   page?.imageUrl ??
   "";
 
@@ -345,7 +346,7 @@ export default function AnnotationsPage() {
       });
       toast.success(
         "Revision requested",
-        "The backend will notify the Studio and move the chapter into revision.",
+        "The Studio has been notified and the chapter is now ready for revision.",
       );
       setBatchToken(makeBatchToken());
       await loadChapterReview(activeChapterId);
@@ -606,7 +607,7 @@ export default function AnnotationsPage() {
                       QA summary
                     </p>
                     <p className="mt-1 text-sm text-slate-300">
-                      Backend approval gate:{" "}
+                      Approval readiness:{" "}
                       {summary.canApprove
                         ? "Ready to approve"
                         : "Pins still need work"}
@@ -692,7 +693,7 @@ export default function AnnotationsPage() {
                       <div className="flex min-h-72 items-center justify-center rounded-lg border border-dashed border-slate-700 px-4 text-center text-sm text-slate-500">
                         Load a QA session and select a page. This page uses the
                         QA pages API, not the task chapter API, so Editor can
-                        view the composite preview when the backend returns it.
+                        view the latest composite preview when it is available.
                       </div>
                     )}
                     <p className="mt-2 text-xs text-slate-500">

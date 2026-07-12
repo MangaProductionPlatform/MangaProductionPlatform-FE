@@ -65,7 +65,7 @@ export default function AdminCreateUserPage() {
     if (nameParts.length < 2) {
       toast.error(
         "Full name is invalid",
-        "Backend requires at least first and last name, for example: Cuong FPT.",
+        "Enter at least a first and last name, for example: Cuong FPT.",
       );
       return;
     }
@@ -77,7 +77,8 @@ export default function AdminCreateUserPage() {
         personalEmail: personalEmail.trim(),
         phoneNumber: phoneNumber.trim() || null,
         role,
-        managingTantouId: role === 3 && managingTantouId ? managingTantouId : null,
+        managingTantouId:
+          role === 3 && managingTantouId ? managingTantouId : null,
       });
 
       toast.success(
@@ -92,7 +93,9 @@ export default function AdminCreateUserPage() {
     } catch (err) {
       toast.error(
         "Could not create account",
-        err instanceof Error ? err.message : "Please check the form and try again.",
+        err instanceof Error
+          ? err.message
+          : "Please check the form and try again.",
       );
     } finally {
       setIsSubmitting(false);
@@ -217,7 +220,9 @@ export default function AdminCreateUserPage() {
             className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-bold text-slate-950 hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <Send size={16} />
-            {isSubmitting ? "Creating..." : "Create account & send activation link"}
+            {isSubmitting
+              ? "Creating..."
+              : "Create account & send activation link"}
           </button>
         </div>
       </form>

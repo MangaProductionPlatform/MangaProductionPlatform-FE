@@ -186,6 +186,19 @@ export default function AssistantTaskDetailPage() {
             ) : null}
           </dl>
 
+          {task?.baseImageUrl ? (
+            <div className="mt-5 rounded-xl border border-slate-800 bg-slate-950 p-4">
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-cyan-200">
+                Original page reference
+              </p>
+              <img
+                src={task.baseImageUrl}
+                alt={`Original page ${task.pageNumber} reference from Mangaka`}
+                className="mt-3 max-h-80 w-full rounded-lg object-contain"
+              />
+            </div>
+          ) : null}
+
           <div className="mt-5 rounded-xl border border-cyan-400/20 bg-cyan-500/10 p-4">
             <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-cyan-200">
               <ClipboardPenLine size={16} /> Initial assignment

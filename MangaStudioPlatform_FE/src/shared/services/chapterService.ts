@@ -11,6 +11,7 @@ export type CreateChapterPayload = {
 
 export type CreateBasePagePayload = {
   PageNumber: number;
+  BaseImageUrl: string;
 };
 
 export type ActivatePageTaskPayload = {
@@ -38,13 +39,18 @@ export const chapterService = {
     return request("chapter", `/api/v1/chapters/${chapterId}`);
   },
 
-  createBasePage(chapterId: string, pageNumber: number) {
-  return request("chapter", `/api/v1/chapters/${chapterId}/pages`, {
-    method: "POST",
-    body: JSON.stringify({
-      PageNumber: pageNumber,
-    }),
-  });
+  createBasePage(
+    chapterId: string,
+    pageNumber: number,
+    baseImageUrl: string,
+  ) {
+    return request("chapter", `/api/v1/chapters/${chapterId}/pages`, {
+      method: "POST",
+      body: JSON.stringify({
+        PageNumber: pageNumber,
+        BaseImageUrl: baseImageUrl,
+      }),
+    });
   },
 
   activatePageTask(chapterId: string, payload: ActivatePageTaskPayload) {

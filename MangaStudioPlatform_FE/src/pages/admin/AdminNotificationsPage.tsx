@@ -76,7 +76,7 @@ export default function AdminNotificationsPage() {
         {!isLoading && notifications.length === 0 ? (
           <div className="rounded-lg border border-dashed border-slate-700 p-8 text-center text-sm text-slate-400">
             <Bell className="mx-auto text-slate-500" />
-            <p className="mt-3">No notifications returned by backend.</p>
+            <p className="mt-3">No notifications are available.</p>
           </div>
         ) : null}
         {notifications.map((item) => (

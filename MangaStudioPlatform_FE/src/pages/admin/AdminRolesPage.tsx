@@ -48,7 +48,7 @@ export default function AdminRolesPage() {
           <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-200">Admin</p>
           <h2 className="mt-2 text-3xl font-black text-white">Roles and permissions</h2>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
-            Static system roles returned by the backend for account provisioning and access review.
+            System roles available for account provisioning and access review.
           </p>
         </div>
         <button type="button" onClick={() => void loadRoles()} disabled={isLoading} className="btn-secondary inline-flex items-center gap-2">
@@ -77,12 +77,12 @@ export default function AdminRolesPage() {
       {!isLoading && roles.length === 0 ? (
         <div className="rounded-lg border border-dashed border-slate-700 p-8 text-center text-sm text-slate-400">
           <LockKeyhole className="mx-auto text-slate-500" />
-          <p className="mt-3">No roles returned by the backend.</p>
+          <p className="mt-3">No roles are available.</p>
         </div>
       ) : null}
 
       <p className="rounded-lg border border-amber-300/20 bg-amber-500/10 p-4 text-sm text-amber-100">
-        Permission editing is not exposed by the backend yet; this page is intentionally read-only.
+        Permission editing is not available yet; this page is currently read-only.
       </p>
     </div>
   );

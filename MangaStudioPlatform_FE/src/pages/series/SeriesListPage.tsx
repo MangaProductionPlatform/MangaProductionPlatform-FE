@@ -53,7 +53,7 @@ export default function SeriesListPage() {
             Manga created by you
           </h2>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
-            Approved backend series appear here. New titles submitted from this
+            Approved series appear here. New titles submitted from this
             workspace start as proposals and do not appear here until approved.
           </p>
         </div>
@@ -79,15 +79,14 @@ export default function SeriesListPage() {
       <section className="grid gap-5 xl:grid-cols-2">
         {isLoading ? (
           <div className="rounded-lg border border-white/10 bg-slate-900/75 p-5 text-sm text-slate-300">
-            Loading series from backend...
+            Loading series...
           </div>
         ) : null}
 
         {!isLoading && seriesList.length === 0 ? (
           <div className="rounded-lg border border-white/10 bg-slate-900/75 p-6 text-sm text-slate-300">
-            No approved series found from backend yet. If you just submitted a
-            proposal, check MangaSubmissionDB; it will only appear here after
-            the approval flow creates a series record.
+            No approved series are available yet. Submitted proposals appear
+            here after the approval workflow creates an official series.
           </div>
         ) : null}
 

@@ -3,28 +3,28 @@ import { ArrowRight, BookOpen, FileText, PlusCircle, Trophy } from "lucide-react
 import CoverMarquee from "../../shared/components/CoverMarquee";
 import { mangaWorkspaceImage } from "../../shared/visuals/mangaVisuals";
 
-const backendSections = [
+const workspaceSections = [
   {
     title: "Series",
-    description: "View series records returned by the Series service.",
+    description: "View and manage your approved series.",
     path: "/app/series",
     icon: BookOpen,
   },
   {
     title: "Submit Proposal",
-    description: "Create a real submission through the Submission service.",
+    description: "Create and submit a new series proposal.",
     path: "/app/series/create",
     icon: PlusCircle,
   },
   {
     title: "Chapters",
-    description: "Create and inspect Chapter service records.",
+    description: "Create chapters and follow their production progress.",
     path: "/app/chapters",
     icon: FileText,
   },
   {
     title: "Ranking",
-    description: "Open ranking data returned by the Ranking service.",
+    description: "View current series ranking and performance.",
     path: "/app/ranking",
     icon: Trophy,
   },
@@ -39,11 +39,11 @@ export default function DashboardPage() {
             Mangaka Dashboard
           </p>
           <h2 className="mt-3 max-w-3xl text-3xl font-black text-white sm:text-4xl">
-            Backend-connected workspace
+            Manga production workspace
           </h2>
           <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-300">
-            Use the sections below to demo data created by the running backend
-            services.
+            Manage your series, proposals, chapters, and performance in one
+            workspace.
           </p>
         </div>
         <div className="relative min-h-56 overflow-hidden border-t border-white/10 lg:border-l lg:border-t-0">
@@ -59,7 +59,7 @@ export default function DashboardPage() {
       <CoverMarquee compact />
 
       <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-        {backendSections.map((section) => {
+        {workspaceSections.map((section) => {
           const Icon = section.icon;
 
           return (

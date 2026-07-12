@@ -59,7 +59,7 @@ export default function AdminSeriesMonitoringPage() {
           <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-200">Admin</p>
           <h2 className="mt-2 text-3xl font-black text-white">Series monitoring</h2>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
-            All official series returned by the backend Series service.
+            Monitor all official series currently active on the platform.
           </p>
         </div>
         <button type="button" onClick={() => void loadSeries()} disabled={isLoading} className="btn-secondary inline-flex items-center gap-2">
@@ -104,7 +104,7 @@ export default function AdminSeriesMonitoringPage() {
         {!isLoading && series.length === 0 ? (
           <div className="p-8 text-center text-sm text-slate-400">
             <Database className="mx-auto text-slate-500" />
-            <p className="mt-3">No series returned by backend.</p>
+            <p className="mt-3">No official series are available.</p>
           </div>
         ) : null}
         {!isLoading && series.length > 0 ? (

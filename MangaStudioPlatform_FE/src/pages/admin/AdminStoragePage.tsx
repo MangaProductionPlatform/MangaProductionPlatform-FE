@@ -103,7 +103,7 @@ export default function AdminStoragePage() {
           <div>
             <h3 className="font-bold text-white">Media upload</h3>
             <p className="text-sm text-slate-400">
-              Backend endpoint: POST /api/v1/media/upload
+              Upload and manage media shared across the workspace.
             </p>
           </div>
         </div>
