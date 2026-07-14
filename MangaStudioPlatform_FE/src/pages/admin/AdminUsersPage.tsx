@@ -164,16 +164,26 @@ export default function AdminUsersPage() {
         ) : null}
 
         {!isLoading && users.length > 0 ? (
-          <table className="w-full table-fixed divide-y divide-white/10 text-xs lg:text-sm">
+          <table className="w-full min-w-0 table-fixed divide-y divide-white/10 text-xs lg:text-sm">
             <thead className="bg-white/5 text-left text-[0.65rem] uppercase tracking-[0.16em] text-slate-500 lg:text-xs lg:tracking-[0.18em]">
               <tr>
-                <th className="w-[17%] px-2 py-3 sm:px-3 lg:px-4">Name</th>
-                <th className="w-[24%] px-2 py-3 sm:px-3 lg:px-4">Username</th>
-                <th className="w-[13%] px-2 py-3 sm:px-3 lg:px-4">Role</th>
-                <th className="w-[15%] px-2 py-3 sm:px-3 lg:px-4">Status</th>
-                <th className="w-[12%] px-2 py-3 sm:px-3 lg:px-4">Phone</th>
-                <th className="w-[10%] px-2 py-3 sm:px-3 lg:px-4">Created</th>
-                <th className="w-[9%] px-2 py-3 text-right sm:px-3 lg:px-4">
+                <th className="w-[18%] px-2 py-3 sm:px-3 lg:px-4">Name</th>
+                <th className="w-[27%] px-2 py-3 sm:px-3 lg:px-4 2xl:w-[24%]">
+                  Username
+                </th>
+                <th className="w-[15%] px-2 py-3 sm:px-3 lg:px-4 2xl:w-[13%]">
+                  Role
+                </th>
+                <th className="w-[16%] px-2 py-3 sm:px-3 lg:px-4 2xl:w-[15%]">
+                  Status
+                </th>
+                <th className="hidden w-[12%] px-2 py-3 sm:px-3 lg:px-4 2xl:table-cell">
+                  Phone
+                </th>
+                <th className="w-[12%] px-2 py-3 sm:px-3 lg:px-4 2xl:w-[10%]">
+                  Created
+                </th>
+                <th className="w-[12%] px-2 py-3 text-right sm:px-3 lg:px-4 2xl:w-[8%]">
                   Actions
                 </th>
               </tr>
@@ -198,7 +208,7 @@ export default function AdminUsersPage() {
                   <td className="break-words px-2 py-3 sm:px-3 lg:px-4">
                     {formatDisplayLabel(user.accountStatus)}
                   </td>
-                  <td className="break-all px-2 py-3 sm:px-3 lg:px-4">
+                  <td className="hidden break-all px-2 py-3 sm:px-3 lg:px-4 2xl:table-cell">
                     {user.phoneNumber ?? "-"}
                   </td>
                   <td className="break-words px-2 py-3 sm:px-3 lg:px-4">
@@ -207,7 +217,7 @@ export default function AdminUsersPage() {
                   <td className="px-2 py-3 text-right sm:px-3 lg:px-4">
                     <Link
                       to={`/admin/users/${user.userId}`}
-                      className="inline-flex min-h-9 items-center justify-center rounded-lg bg-cyan-300 px-2.5 py-2 text-xs font-bold text-slate-950 hover:bg-cyan-200 lg:px-3"
+                      className="inline-flex min-h-9 max-w-full items-center justify-center rounded-lg bg-cyan-300 px-2.5 py-2 text-xs font-bold text-slate-950 hover:bg-cyan-200 lg:px-3"
                     >
                       Manage
                     </Link>
