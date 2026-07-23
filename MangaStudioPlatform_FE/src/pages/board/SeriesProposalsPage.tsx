@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   CheckCircle2,
   Eye,
@@ -35,6 +36,7 @@ const actionLabel: Record<BoardAction, string> = {
 
 export default function SeriesProposalsPage() {
   const toast = useToast();
+  const [searchParams] = useSearchParams();
   const [queue, setQueue] = useState<SubmissionSummaryDto[]>([]);
   const [selected, setSelected] = useState<SubmissionDetailDto | null>(null);
   const [reason, setReason] = useState("");
@@ -59,6 +61,7 @@ export default function SeriesProposalsPage() {
   );
   const isEditorialBoard = currentUser?.role === "editorial_board";
   const isEditorInChief = currentUser?.role === "editor_in_chief";
+  const linkedSubmissionId = searchParams.get("id") ?? searchParams.get("submissionId");
 
   const loadQueue = async () => {
     setIsLoading(true);
@@ -102,6 +105,14 @@ export default function SeriesProposalsPage() {
       );
     }
   };
+
+  useEffect(() => {
+    if (linkedSubmissionId) {
+      void openSubmission(linkedSubmissionId);
+    }
+    // React to notification deep links only.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [linkedSubmissionId]);
 
   const buildFeedbackPins = () =>
     pinComment.trim()

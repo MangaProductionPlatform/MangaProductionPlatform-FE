@@ -1,15 +1,19 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Bell, RefreshCw } from "lucide-react";
 import { useToast } from "../../shared/components/toastContext";
 import { mangaErpApi } from "../../shared/services/mangaErpService";
-import type { NotificationDto } from "../../shared/types/mangaErp";
+import type { CurrentUser, NotificationDto } from "../../shared/types/mangaErp";
+import { getNotificationTarget } from "../../shared/utils/notificationNavigation";
 
 // Trang dùng luồng notification chung nhưng được giới hạn bởi quyền Admin từ backend.
 export default function AdminNotificationsPage() {
   const toast = useToast();
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState<NotificationDto[]>([]);
   const [unreadOnly, setUnreadOnly] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const currentUser = JSON.parse(localStorage.getItem("currentUser") || "null") as CurrentUser | null;
 
   const loadNotifications = async (nextUnreadOnly = unreadOnly, showLoading = true) => {
     if (showLoading) setIsLoading(true);
@@ -41,6 +45,30 @@ export default function AdminNotificationsPage() {
     // Initial backend load only.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const openNotification = async (item: NotificationDto) => {
+    if (!item.isRead) {
+      try {
+        await mangaErpApi.markNotificationRead(item.id);
+        setNotifications((current) => current.map((entry) => entry.id === item.id ? { ...entry, isRead: true } : entry));
+      } catch (error) {
+        toast.error("Could not mark notification read", error instanceof Error ? error.message : "Unknown error");
+      }
+    }
+
+    const target = getNotificationTarget(item, currentUser?.role);
+    if (!target) {
+      toast.info("No linked page", "This notification does not include a related destination.");
+      return;
+    }
+
+    if (/^https?:\/\//i.test(target)) {
+      window.location.assign(target);
+      return;
+    }
+
+    navigate(target);
+  };
 
   return (
     <div className="space-y-6">
@@ -80,7 +108,19 @@ export default function AdminNotificationsPage() {
           </div>
         ) : null}
         {notifications.map((item) => (
-          <article key={item.id} className={`rounded-lg border p-4 ${item.isRead ? "border-white/10 bg-slate-900/75" : "border-cyan-300/25 bg-cyan-300/10"}`}>
+          <article
+            key={item.id}
+            role="button"
+            tabIndex={0}
+            onClick={() => void openNotification(item)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                void openNotification(item);
+              }
+            }}
+            className={`cursor-pointer rounded-lg border p-4 transition hover:border-cyan-300/40 hover:bg-cyan-300/10 focus:outline-none focus:ring-2 focus:ring-cyan-300/50 ${item.isRead ? "border-white/10 bg-slate-900/75" : "border-cyan-300/25 bg-cyan-300/10"}`}
+          >
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <p className="font-semibold text-white">{item.title}</p>
