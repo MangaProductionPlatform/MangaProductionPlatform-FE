@@ -34,7 +34,6 @@ import BoardNotificationsPage from "../pages/board/BoardNotificationsPage";
 import BoardProfilePage from "../pages/board/BoardProfilePage";
 import CancellationReviewPage from "../pages/board/CancellationReviewPage";
 import PublishingSchedulePage from "../pages/board/PublishingSchedulePage";
-import RankingAnalyticsPage from "../pages/board/RankingAnalyticsPage";
 import ReportsPage from "../pages/board/ReportsPage";
 import SeriesProposalsPage from "../pages/board/SeriesProposalsPage";
 import VotingCenterPage from "../pages/board/VotingCenterPage";
@@ -103,7 +102,7 @@ export function AppRouter() {
           <Route path="board/series-proposals" element={<SeriesProposalsPage />} />
           <Route path="board/voting-center" element={<VotingCenterPage />} />
           <Route path="board/publishing-schedule" element={<PublishingSchedulePage />} />
-          <Route path="board/ranking-analytics" element={<RankingAnalyticsPage />} />
+          <Route path="board/ranking-analytics" element={<Navigate to="/app/board/dashboard" replace />} />
           <Route path="board/cancellation-review" element={<CancellationReviewPage />} />
           <Route path="board/reports" element={<ReportsPage />} />
           <Route path="board/notifications" element={<BoardNotificationsPage />} />
