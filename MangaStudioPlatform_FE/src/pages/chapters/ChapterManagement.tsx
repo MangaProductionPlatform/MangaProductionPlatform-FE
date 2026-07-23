@@ -462,6 +462,87 @@ export default function ChapterManagementPage() {
         </article>
 
         <aside className="space-y-5">
+          <form
+            onSubmit={handleCreateChapter}
+            className="rounded-lg border border-white/10 bg-slate-900/75 p-5"
+          >
+            <div className="flex items-center gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-cyan-300 text-slate-950">
+                <Upload size={18} />
+              </span>
+
+              <div>
+                <h3 className="font-bold text-white">Create Chapter</h3>
+                <p className="text-sm text-slate-400">
+                  Add a new chapter to the selected series.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-5 space-y-3">
+              <select
+                className="input"
+                value={selectedSeriesId}
+                onChange={(event) => setSelectedSeriesId(event.target.value)}
+              >
+                <option value="">Select series</option>
+
+                {seriesList.map((series) => (
+                  <option key={series.id} value={series.id}>
+                    {series.title}
+                  </option>
+                ))}
+              </select>
+
+              <input
+                required
+                className="input"
+                value={chapterTitle}
+                onChange={(event) => setChapterTitle(event.target.value)}
+                placeholder="Chapter title"
+              />
+
+              <div className="grid grid-cols-2 gap-3">
+                <input
+                  required
+                  className="input"
+                  min="1"
+                  step="0.1"
+                  type="number"
+                  value={chapterNumber}
+                  onChange={(event) => setChapterNumber(event.target.value)}
+                  placeholder="Chapter no."
+                />
+
+                <input
+                  required
+                  className="input"
+                  min="1"
+                  type="number"
+                  value={totalPages}
+                  onChange={(event) => setTotalPages(event.target.value)}
+                  placeholder="Total pages"
+                />
+              </div>
+
+              <input
+                required
+                className="input"
+                value={assignedEditorId}
+                onChange={(event) => setAssignedEditorId(event.target.value)}
+                placeholder="Assigned Tantou Editor ID"
+              />
+
+              <button
+                disabled={isSubmitting}
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-bold text-slate-950 hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <Upload size={16} />
+                {isSubmitting ? "Creating..." : "Create Chapter"}
+              </button>
+            </div>
+          </form>
+
           <section className="rounded-lg border border-white/10 bg-slate-900/75 p-5">
             <div className="flex items-center gap-3">
               <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-300 text-slate-950">
@@ -568,87 +649,6 @@ export default function ChapterManagementPage() {
               )}
             </div>
           </section>
-
-          <form
-            onSubmit={handleCreateChapter}
-            className="rounded-lg border border-white/10 bg-slate-900/75 p-5"
-          >
-            <div className="flex items-center gap-3">
-              <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-cyan-300 text-slate-950">
-                <Upload size={18} />
-              </span>
-
-              <div>
-                <h3 className="font-bold text-white">Create Chapter</h3>
-                <p className="text-sm text-slate-400">
-                  Add a new chapter to the selected series.
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-5 space-y-3">
-              <select
-                className="input"
-                value={selectedSeriesId}
-                onChange={(event) => setSelectedSeriesId(event.target.value)}
-              >
-                <option value="">Select series</option>
-
-                {seriesList.map((series) => (
-                  <option key={series.id} value={series.id}>
-                    {series.title}
-                  </option>
-                ))}
-              </select>
-
-              <input
-                required
-                className="input"
-                value={chapterTitle}
-                onChange={(event) => setChapterTitle(event.target.value)}
-                placeholder="Chapter title"
-              />
-
-              <div className="grid grid-cols-2 gap-3">
-                <input
-                  required
-                  className="input"
-                  min="1"
-                  step="0.1"
-                  type="number"
-                  value={chapterNumber}
-                  onChange={(event) => setChapterNumber(event.target.value)}
-                  placeholder="Chapter no."
-                />
-
-                <input
-                  required
-                  className="input"
-                  min="1"
-                  type="number"
-                  value={totalPages}
-                  onChange={(event) => setTotalPages(event.target.value)}
-                  placeholder="Total pages"
-                />
-              </div>
-
-              <input
-                required
-                className="input"
-                value={assignedEditorId}
-                onChange={(event) => setAssignedEditorId(event.target.value)}
-                placeholder="Assigned Tantou Editor ID"
-              />
-
-              <button
-                disabled={isSubmitting}
-                className="inline-flex items-center justify-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-bold text-slate-950 hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <Upload size={16} />
-                {isSubmitting ? "Creating..." : "Create Chapter"}
-              </button>
-            </div>
-          </form>
         </aside>
       </section>
     </div>

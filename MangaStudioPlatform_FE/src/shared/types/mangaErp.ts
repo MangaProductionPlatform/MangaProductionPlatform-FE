@@ -314,6 +314,7 @@ export type PageTaskDto = {
   status: string;
   assignedAssistantId?: string | null;
   baseImageUrl?: string | null;
+  imageUrl?: string | null;
   previewCompositeUrl?: string | null;
   description?: string | null;
   taskType?: string | null;

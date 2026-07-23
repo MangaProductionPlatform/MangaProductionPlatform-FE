@@ -4,6 +4,7 @@ import {
   AlertTriangle,
   ArrowLeft,
   ClipboardPenLine,
+  Download,
   FileImage,
   Send,
   Upload,
@@ -36,9 +37,26 @@ export default function AssistantTaskDetailPage() {
   const [qaPin, setQaPin] = useState<QaBugPinDto | null>(null);
   const [layerType, setLayerType] = useState<LayerType>("LineArt");
   const [artworkUrl, setArtworkUrl] = useState("");
+  const [submittedArtworkUrl, setSubmittedArtworkUrl] = useState<string | null>(
+    null,
+  );
   const [isUploading, setIsUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const [isLoadingTask, setIsLoadingTask] = useState(Boolean(id));
+
+  const existingSubmissionImageUrl =
+    task?.fileUrlOriginal ??
+    task?.fileUrlOptimized ??
+    task?.previewCompositeUrl ??
+    null;
+
+  const submissionImageUrl =
+    artworkUrl || submittedArtworkUrl || existingSubmissionImageUrl;
+
+  // Một số response cũ trả ảnh trang bằng imageUrl; ưu tiên baseImageUrl mới vì đó là ảnh gốc bất biến.
+  const originalReferenceImageUrl =
+    task?.baseImageUrl ?? task?.imageUrl ?? null;
 
   useEffect(() => {
     if (!id) return;
@@ -60,6 +78,13 @@ export default function AssistantTaskDetailPage() {
             detail.currentLayerType ?? summary?.currentLayerType,
           currentLayerVersion:
             detail.currentLayerVersion ?? summary?.currentLayerVersion,
+          baseImageUrl: detail.baseImageUrl ?? summary?.baseImageUrl,
+          imageUrl: detail.imageUrl ?? summary?.imageUrl,
+          fileUrlOriginal: detail.fileUrlOriginal ?? summary?.fileUrlOriginal,
+          fileUrlOptimized:
+            detail.fileUrlOptimized ?? summary?.fileUrlOptimized,
+          previewCompositeUrl:
+            detail.previewCompositeUrl ?? summary?.previewCompositeUrl,
           rejectionNote: detail.rejectionNote ?? summary?.rejectionNote,
         });
         const latestRevision = notifications.find(
@@ -104,6 +129,44 @@ export default function AssistantTaskDetailPage() {
     }
   };
 
+  const downloadImage = async (imageUrl: string, fileName: string) => {
+    setIsDownloading(true);
+
+    try {
+      // Tải dữ liệu ảnh về Blob để trình duyệt lưu file thay vì điều hướng sang URL ảnh khác domain.
+      const response = await fetch(imageUrl);
+
+      if (!response.ok) {
+        throw new Error(`Image download failed with status ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+
+      link.href = objectUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(objectUrl);
+
+      toast.success(
+        "Image download started",
+        "The image is being saved to your device.",
+      );
+    } catch (error) {
+      toast.error(
+        "Could not download image",
+        error instanceof Error
+          ? error.message
+          : "The image could not be downloaded.",
+      );
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
   const submit = async () => {
     if (!id || !artworkUrl.trim()) {
       toast.error(
@@ -115,16 +178,33 @@ export default function AssistantTaskDetailPage() {
 
     setIsSubmitting(true);
     try {
+      const submittedUrl = artworkUrl.trim();
+
       await mangaErpApi.submitPageTaskLayer(id, {
         LayerType: layerType,
-        FileUrlOriginal: artworkUrl.trim(),
-        FileUrlOptimized: artworkUrl.trim(),
+        FileUrlOriginal: submittedUrl,
+        FileUrlOptimized: submittedUrl,
       });
       if (qaPin?.id) {
         // Layer nộp lại sẽ báo QA pin liên kết đã được Studio sửa, chờ Editor xác minh.
         await mangaErpApi.resolveQaPin(qaPin.id, {});
         setQaPin(null);
       }
+
+      // Giữ lại bản vừa nộp trong giao diện, kể cả khi API chi tiết task chưa kịp trả URL mới.
+      setSubmittedArtworkUrl(submittedUrl);
+      setTask((currentTask) =>
+        currentTask
+          ? {
+              ...currentTask,
+              currentLayerType: layerType,
+              fileUrlOriginal: submittedUrl,
+              fileUrlOptimized: submittedUrl,
+              previewCompositeUrl: submittedUrl,
+            }
+          : currentTask,
+      );
+
       toast.success(
         task?.status.toLowerCase() === "revisionalert"
           ? "Corrected layer resubmitted"
@@ -186,14 +266,30 @@ export default function AssistantTaskDetailPage() {
             ) : null}
           </dl>
 
-          {task?.baseImageUrl ? (
+          {originalReferenceImageUrl ? (
             <div className="mt-5 rounded-xl border border-slate-800 bg-slate-950 p-4">
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-cyan-200">
-                Original page reference
-              </p>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-cyan-200">
+                  Original page reference
+                </p>
+                <button
+                  type="button"
+                  onClick={() =>
+                    void downloadImage(
+                      originalReferenceImageUrl,
+                      `chapter-${task?.chapterNumber ?? "page"}-page-${task?.pageNumber ?? "task"}-original`,
+                    )
+                  }
+                  disabled={isDownloading}
+                  className="inline-flex items-center gap-2 rounded-lg border border-cyan-300/30 bg-cyan-300/10 px-3 py-2 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-300/20"
+                >
+                  <Download size={15} />
+                  {isDownloading ? "Downloading..." : "Download image"}
+                </button>
+              </div>
               <img
-                src={task.baseImageUrl}
-                alt={`Original page ${task.pageNumber} reference from Mangaka`}
+                src={originalReferenceImageUrl}
+                alt={`Original page ${task?.pageNumber ?? "task"} reference from Mangaka`}
                 className="mt-3 max-h-80 w-full rounded-lg object-contain"
               />
             </div>
@@ -268,12 +364,41 @@ export default function AssistantTaskDetailPage() {
               </select>
             </label>
 
-            {artworkUrl ? (
-              <img
-                src={artworkUrl}
-                alt="Uploaded artwork layer preview"
-                className="max-h-96 w-full rounded-xl border border-slate-800 object-contain"
-              />
+            {submissionImageUrl ? (
+              <div className="rounded-xl border border-slate-800 bg-slate-950 p-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-violet-200">
+                    {artworkUrl
+                      ? "Artwork ready to submit"
+                      : "Latest submitted artwork"}
+                  </p>
+                  {!artworkUrl ? (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        void downloadImage(
+                          submissionImageUrl,
+                          `chapter-${task?.chapterNumber ?? "page"}-page-${task?.pageNumber ?? "task"}-artwork`,
+                        )
+                      }
+                      disabled={isDownloading}
+                      className="inline-flex items-center gap-2 rounded-lg border border-violet-300/30 bg-violet-300/10 px-3 py-2 text-xs font-semibold text-violet-100 transition hover:bg-violet-300/20"
+                    >
+                      <Download size={15} />
+                      {isDownloading ? "Downloading..." : "Download artwork"}
+                    </button>
+                  ) : null}
+                </div>
+                <img
+                  src={submissionImageUrl}
+                  alt={
+                    artworkUrl
+                      ? "Artwork layer ready to submit"
+                      : "Latest artwork layer submitted by the Assistant"
+                  }
+                  className="mt-3 max-h-96 w-full rounded-lg object-contain"
+                />
+              </div>
             ) : null}
 
             <label className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-cyan-300/30 bg-cyan-300/10 px-5 py-3 font-semibold text-cyan-100 hover:bg-cyan-300/15">
