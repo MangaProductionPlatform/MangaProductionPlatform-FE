@@ -162,10 +162,10 @@ export function AppRouter() {
           <Route path="users/create" element={<AdminCreateUserPage />} />
           <Route path="users/:id" element={<AdminUserDetailPage />} />
           <Route path="roles" element={<AdminRolesPage />} />
-          <Route path="reports" element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="series" element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="workflow" element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="ai" element={<Navigate to="/admin/dashboard" replace />} />
+          <Route path="reports" element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="storage" element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="moderation" element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="settings" element={<Navigate to="/admin/dashboard" replace />} />
