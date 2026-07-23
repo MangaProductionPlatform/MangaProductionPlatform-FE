@@ -21,6 +21,7 @@ export default function SubmissionPage() {
   const [manuscriptUrl, setManuscriptUrl] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingCover, setIsUploadingCover] = useState(false);
   const [isUploadingManuscript, setIsUploadingManuscript] = useState(false);
   const [feedbackPins, setFeedbackPins] = useState<FeedbackPinDto[]>([]);
   const [reviewResults, setReviewResults] = useState<Record<
@@ -126,13 +127,18 @@ export default function SubmissionPage() {
 
   const handleCreateDraft = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!coverImageUrl.trim()) {
+      toast.error("Cover image required", "Upload a cover image before creating the draft.");
+      return;
+    }
+
     setIsSaving(true);
     try {
       const result = await mangaErpApi.createDraftSubmission({
         title,
         genre: genre || null,
         description: description || null,
-        coverImageUrl: coverImageUrl || null,
+        coverImageUrl: coverImageUrl.trim(),
         manuscriptUrl: manuscriptUrl || null,
       });
       const id = result.submissionId ?? result.SubmissionId;
@@ -171,7 +177,7 @@ export default function SubmissionPage() {
         title,
         genre: genre || null,
         description: description || null,
-        coverImageUrl: coverImageUrl || null,
+        coverImageUrl: coverImageUrl.trim() || null,
       });
       toast.success("Metadata updated", "Draft metadata was saved.");
       await openSubmission(selected.id);
@@ -221,6 +227,33 @@ export default function SubmissionPage() {
       );
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const uploadCoverImage = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingCover(true);
+    try {
+      const result = await mangaErpApi.uploadImage(file);
+      setCoverImageUrl(result.url);
+      toast.success(
+        "Cover uploaded",
+        selected
+          ? "Click Update metadata to save it."
+          : "Create the draft to save it.",
+      );
+    } catch (err) {
+      toast.error(
+        "Could not upload cover",
+        err instanceof Error
+          ? err.message
+          : "Please choose a PNG, JPG, JPEG, or WEBP image.",
+      );
+    } finally {
+      setIsUploadingCover(false);
+      event.target.value = "";
     }
   };
 
@@ -418,6 +451,21 @@ export default function SubmissionPage() {
               onChange={(event) => setCoverImageUrl(event.target.value)}
               placeholder="Cover image URL"
             />
+            <label className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-cyan-300/30 bg-cyan-300/10 px-4 py-2.5 text-sm font-semibold text-cyan-100 hover:bg-cyan-300/15">
+              <Upload size={16} />
+              {isUploadingCover
+                ? "Uploading..."
+                : coverImageUrl
+                  ? "Replace cover image"
+                  : "Upload cover image"}
+              <input
+                className="sr-only"
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                disabled={isUploadingCover || isSaving}
+                onChange={(event) => void uploadCoverImage(event)}
+              />
+            </label>
             {manuscriptUrl ? (
               <img
                 src={manuscriptUrl}

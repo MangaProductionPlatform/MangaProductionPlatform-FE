@@ -14,6 +14,7 @@ export default function CreateSeriesPage() {
   const [coverImageUrl, setCoverImageUrl] = useState("");
   const [manuscriptUrl, setManuscriptUrl] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploadingCover, setIsUploadingCover] = useState(false);
   const [isUploadingManuscript, setIsUploadingManuscript] = useState(false);
 
   const currentUser = JSON.parse(localStorage.getItem("currentUser") || "null") as
@@ -28,6 +29,11 @@ export default function CreateSeriesPage() {
       return;
     }
 
+    if (!coverImageUrl.trim()) {
+      toast.error("Cover image required", "Upload a cover image before submitting.");
+      return;
+    }
+
     if (!manuscriptUrl.trim()) {
       toast.error("Manuscript image required", "Upload a manuscript image before submitting.");
       return;
@@ -39,7 +45,7 @@ export default function CreateSeriesPage() {
         title,
         description,
         genre,
-        coverImageUrl: coverImageUrl || null,
+        coverImageUrl: coverImageUrl.trim(),
         manuscriptUrl,
       });
       const submissionId = result.submissionId ?? result.SubmissionId;
@@ -59,6 +65,26 @@ export default function CreateSeriesPage() {
       );
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleCoverUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingCover(true);
+    try {
+      const result = await mangaErpApi.uploadImage(file);
+      setCoverImageUrl(result.url);
+      toast.success("Cover uploaded", "This cover will be used for the approved series.");
+    } catch (err) {
+      toast.error(
+        "Could not upload cover",
+        err instanceof Error ? err.message : "Please choose a PNG, JPG, JPEG, or WEBP image.",
+      );
+    } finally {
+      setIsUploadingCover(false);
+      event.target.value = "";
     }
   };
 
@@ -159,10 +185,21 @@ export default function CreateSeriesPage() {
                   <>
                     <ImagePlus className="mx-auto text-cyan-200" size={36} />
                     <span className="mt-3 text-sm font-semibold text-white">
-                      Cover image URL
+                      Upload a cover image
                     </span>
                   </>
                 )}
+                <label className="mt-4 inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-cyan-300/30 bg-cyan-300/10 px-4 py-2.5 text-sm font-semibold text-cyan-100 hover:bg-cyan-300/15">
+                  <Upload size={16} />
+                  {isUploadingCover ? "Uploading..." : coverImageUrl ? "Replace cover image" : "Upload cover image"}
+                  <input
+                    className="sr-only"
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    disabled={isUploadingCover || isSubmitting}
+                    onChange={(event) => void handleCoverUpload(event)}
+                  />
+                </label>
                 <input
                   className="input mt-4"
                   value={coverImageUrl}
