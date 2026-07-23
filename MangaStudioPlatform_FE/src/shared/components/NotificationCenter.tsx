@@ -1,14 +1,18 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Bell, CheckCheck, RefreshCw, Trash2 } from "lucide-react";
 import { mangaErpApi } from "../services/mangaErpService";
-import type { NotificationDto } from "../types/mangaErp";
+import type { CurrentUser, NotificationDto } from "../types/mangaErp";
+import { getNotificationTarget } from "../utils/notificationNavigation";
 import { useToast } from "./toastContext";
 
 export function NotificationCenter({ eyebrow }: { eyebrow: string }) {
   const toast = useToast();
+  const navigate = useNavigate();
   const [items, setItems] = useState<NotificationDto[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const currentUser = JSON.parse(localStorage.getItem("currentUser") || "null") as CurrentUser | null;
 
   const load = async () => {
     setLoading(true);
@@ -65,6 +69,31 @@ export function NotificationCenter({ eyebrow }: { eyebrow: string }) {
     }
   };
 
+  const openNotification = async (item: NotificationDto) => {
+    if (!item.isRead) {
+      try {
+        await mangaErpApi.markNotificationRead(item.id);
+        setItems((current) => current.map((entry) => entry.id === item.id ? { ...entry, isRead: true } : entry));
+        setUnreadCount((current) => Math.max(0, current - 1));
+      } catch (error) {
+        toast.error("Could not mark notification read", error instanceof Error ? error.message : "Unknown error");
+      }
+    }
+
+    const target = getNotificationTarget(item, currentUser?.role);
+    if (!target) {
+      toast.info("No linked page", "This notification does not include a related destination.");
+      return;
+    }
+
+    if (/^https?:\/\//i.test(target)) {
+      window.location.assign(target);
+      return;
+    }
+
+    navigate(target);
+  };
+
   return <div className="space-y-6">
     <header className="flex flex-wrap items-end justify-between gap-3">
       <div><p className="text-xs font-semibold uppercase tracking-[.28em] text-cyan-200">{eyebrow}</p><h1 className="mt-2 text-3xl font-black text-white">Notifications <span className="text-cyan-200">{unreadCount || ""}</span></h1></div>
@@ -72,9 +101,21 @@ export function NotificationCenter({ eyebrow }: { eyebrow: string }) {
     </header>
     {loading ? <p className="text-sm text-slate-400">Loading notifications...</p> : null}
     {!loading && !items.length ? <div className="flex min-h-48 flex-col items-center justify-center border border-dashed border-slate-700 px-6 text-center"><Bell size={28} className="text-cyan-200"/><p className="mt-3 font-semibold text-white">No notifications</p></div> : null}
-    <div className="space-y-3">{items.map((item) => <article key={item.id} className={`flex gap-4 border p-4 ${item.isRead ? "border-slate-800 bg-slate-950/40" : "border-cyan-300/30 bg-cyan-300/5"}`}>
+    <div className="space-y-3">{items.map((item) => <article
+      key={item.id}
+      role="button"
+      tabIndex={0}
+      onClick={() => void openNotification(item)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          void openNotification(item);
+        }
+      }}
+      className={`flex cursor-pointer gap-4 border p-4 transition hover:border-cyan-300/40 hover:bg-cyan-300/10 focus:outline-none focus:ring-2 focus:ring-cyan-300/50 ${item.isRead ? "border-slate-800 bg-slate-950/40" : "border-cyan-300/30 bg-cyan-300/5"}`}
+    >
       <div className="min-w-0 flex-1"><div className="flex flex-wrap justify-between gap-2"><h2 className="font-bold text-white">{item.title}</h2><time className="text-xs text-slate-500">{new Date(item.createdAt).toLocaleString()}</time></div><p className="mt-1 text-sm text-slate-300">{item.message}</p></div>
-      <div className="flex items-start gap-1">{!item.isRead ? <button type="button" title="Mark read" onClick={() => void markRead(item.id)} className="icon-button"><CheckCheck size={16}/></button> : null}<button type="button" title="Delete notification" onClick={() => void remove(item.id)} className="icon-button text-rose-200"><Trash2 size={16}/></button></div>
+      <div className="flex items-start gap-1">{!item.isRead ? <button type="button" title="Mark read" onClick={(event) => { event.stopPropagation(); void markRead(item.id); }} className="icon-button"><CheckCheck size={16}/></button> : null}<button type="button" title="Delete notification" onClick={(event) => { event.stopPropagation(); void remove(item.id); }} className="icon-button text-rose-200"><Trash2 size={16}/></button></div>
     </article>)}</div>
   </div>;
 }

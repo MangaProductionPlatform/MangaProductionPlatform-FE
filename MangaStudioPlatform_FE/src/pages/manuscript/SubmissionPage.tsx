@@ -1,5 +1,6 @@
 import type { ChangeEvent, FormEvent } from "react";
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Eye, FileText, RefreshCw, Save, Send, Upload } from "lucide-react";
 import { mangaErpApi } from "../../shared/services/mangaErpService";
 import type {
@@ -12,6 +13,7 @@ import WorkflowEmptyState from "../../shared/components/WorkflowEmptyState";
 
 export default function SubmissionPage() {
   const toast = useToast();
+  const [searchParams] = useSearchParams();
   const [items, setItems] = useState<SubmissionSummaryDto[]>([]);
   const [selected, setSelected] = useState<SubmissionDetailDto | null>(null);
   const [title, setTitle] = useState("");
@@ -29,6 +31,7 @@ export default function SubmissionPage() {
     unknown
   > | null>(null);
   const [isLoadingReviewResults, setIsLoadingReviewResults] = useState(false);
+  const linkedSubmissionId = searchParams.get("id") ?? searchParams.get("submissionId");
 
   const loadSubmissions = async () => {
     setIsLoading(true);
@@ -105,6 +108,14 @@ export default function SubmissionPage() {
       );
     }
   };
+
+  useEffect(() => {
+    if (linkedSubmissionId) {
+      void openSubmission(linkedSubmissionId);
+    }
+    // React to notification deep links only.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [linkedSubmissionId]);
 
   const loadReviewResults = async () => {
     if (!selected) return;
