@@ -43,7 +43,6 @@ const boardMenus = [
   { label: "Series Proposals", path: "/app/board/series-proposals", icon: BookOpen },
   { label: "Voting Center", path: "/app/board/voting-center", icon: ClipboardCheck },
   { label: "Publishing Schedule", path: "/app/board/publishing-schedule", icon: FileText },
-  { label: "Ranking & Analytics", path: "/app/board/ranking-analytics", icon: Trophy },
   { label: "Cancellation Review", path: "/app/board/cancellation-review", icon: PenTool },
   { label: "Reports", path: "/app/board/reports", icon: FileText },
   { label: "Notifications", path: "/app/board/notifications", icon: Bell },
