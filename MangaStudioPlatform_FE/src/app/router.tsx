@@ -4,19 +4,12 @@ import AssistantLayout from "../layouts/AssistantLayout";
 import DashboardLayout from "../layouts/DashboardLayout";
 import PublicLayout from "../layouts/PublicLayout";
 import { RequireRole } from "../shared/components/RequireRole";
-import AdminAiManagementPage from "../pages/admin/AdminAiManagementPage";
 import AdminCreateUserPage from "../pages/admin/AdminCreateUserPage";
 import AdminDashboardPage from "../pages/admin/AdminDashboardPage";
-import AdminModerationPage from "../pages/admin/AdminModerationPage";
 import AdminNotificationsPage from "../pages/admin/AdminNotificationsPage";
-import AdminReportsAnalyticsPage from "../pages/admin/AdminReportsAnalyticsPage";
 import AdminRolesPage from "../pages/admin/AdminRolesPage";
-import AdminSeriesMonitoringPage from "../pages/admin/AdminSeriesMonitoringPage";
-import AdminStoragePage from "../pages/admin/AdminStoragePage";
-import AdminSystemSettingsPage from "../pages/admin/AdminSystemSettingsPage";
 import AdminUserDetailPage from "../pages/admin/AdminUserDetailPage";
 import AdminUsersPage from "../pages/admin/AdminUsersPage";
-import AdminWorkflowMonitoringPage from "../pages/admin/AdminWorkflowMonitoringPage";
 import AnalyticsPage from "../pages/analytics/AnalyticsPage";
 import AssistantChaptersPage from "../pages/assistant/AssistantChaptersPage";
 import AssistantDashboardPage from "../pages/assistant/AssistantDashboardPage";
@@ -170,13 +163,13 @@ export function AppRouter() {
           <Route path="users/create" element={<AdminCreateUserPage />} />
           <Route path="users/:id" element={<AdminUserDetailPage />} />
           <Route path="roles" element={<AdminRolesPage />} />
-          <Route path="series" element={<AdminSeriesMonitoringPage />} />
-          <Route path="workflow" element={<AdminWorkflowMonitoringPage />} />
-          <Route path="ai" element={<AdminAiManagementPage />} />
-          <Route path="reports" element={<AdminReportsAnalyticsPage />} />
-          <Route path="storage" element={<AdminStoragePage />} />
-          <Route path="moderation" element={<AdminModerationPage />} />
-          <Route path="settings" element={<AdminSystemSettingsPage />} />
+          <Route path="series" element={<Navigate to="/admin/dashboard" replace />} />
+          <Route path="workflow" element={<Navigate to="/admin/dashboard" replace />} />
+          <Route path="ai" element={<Navigate to="/admin/dashboard" replace />} />
+          <Route path="reports" element={<Navigate to="/admin/dashboard" replace />} />
+          <Route path="storage" element={<Navigate to="/admin/dashboard" replace />} />
+          <Route path="moderation" element={<Navigate to="/admin/dashboard" replace />} />
+          <Route path="settings" element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="notifications" element={<AdminNotificationsPage />} />
         </Route>
       </Route>
