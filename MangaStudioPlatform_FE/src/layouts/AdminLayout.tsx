@@ -1,17 +1,10 @@
 import { Navigate, NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
-  BarChart3,
   Bell,
-  Bot,
-  Database,
-  Flag,
-  GitBranch,
-  HardDrive,
   LayoutDashboard,
   LockKeyhole,
   LogOut,
   Search,
-  Settings,
   Users,
 } from "lucide-react";
 import { useToast } from "../shared/components/toastContext";
@@ -27,13 +20,6 @@ const menus = [
   },
   { label: "Users", path: "/admin/users", icon: Users, end: true },
   { label: "Roles & Permissions", path: "/admin/roles", icon: LockKeyhole },
-  { label: "Series Monitoring", path: "/admin/series", icon: Database },
-  { label: "Workflow Monitoring", path: "/admin/workflow", icon: GitBranch },
-  { label: "AI Management", path: "/admin/ai", icon: Bot },
-  { label: "Reports & Analytics", path: "/admin/reports", icon: BarChart3 },
-  { label: "Storage", path: "/admin/storage", icon: HardDrive },
-  { label: "Moderation", path: "/admin/moderation", icon: Flag },
-  { label: "System Settings", path: "/admin/settings", icon: Settings },
   { label: "Notifications", path: "/admin/notifications", icon: Bell },
 ];
 
