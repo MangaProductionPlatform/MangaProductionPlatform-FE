@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { LockKeyhole, RefreshCw, ShieldCheck } from "lucide-react";
+import { Link } from "react-router-dom";
+import { ArrowRight, LockKeyhole, RefreshCw, ShieldCheck } from "lucide-react";
 import { useToast } from "../../shared/components/toastContext";
 import { mangaErpApi } from "../../shared/services/mangaErpService";
 import type { AdminRoleDto } from "../../shared/types/mangaErp";
@@ -59,7 +60,12 @@ export default function AdminRolesPage() {
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {roles.map((role) => (
-          <article key={role.value} className="rounded-lg border border-white/10 bg-slate-900/75 p-5">
+          <Link
+            key={role.value}
+            to={`/admin/roles/${role.value}`}
+            className="group rounded-lg border border-white/10 bg-slate-900/75 p-5 transition hover:-translate-y-0.5 hover:border-cyan-300/45 hover:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-300/60"
+            aria-label={`View ${role.name} role details`}
+          >
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-xs uppercase tracking-[.18em] text-slate-500">Role value {role.value}</p>
@@ -70,7 +76,11 @@ export default function AdminRolesPage() {
               </div>
             </div>
             <p className="mt-4 text-sm leading-6 text-slate-400">{role.description ?? "No description returned."}</p>
-          </article>
+            <span className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-cyan-200 opacity-0 transition group-hover:opacity-100 group-focus:opacity-100">
+              View detail
+              <ArrowRight size={16} />
+            </span>
+          </Link>
         ))}
       </section>
 

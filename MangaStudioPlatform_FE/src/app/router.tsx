@@ -7,6 +7,7 @@ import { RequireRole } from "../shared/components/RequireRole";
 import AdminCreateUserPage from "../pages/admin/AdminCreateUserPage";
 import AdminDashboardPage from "../pages/admin/AdminDashboardPage";
 import AdminNotificationsPage from "../pages/admin/AdminNotificationsPage";
+import AdminRoleDetailPage from "../pages/admin/AdminRoleDetailPage";
 import AdminRolesPage from "../pages/admin/AdminRolesPage";
 import AdminUserDetailPage from "../pages/admin/AdminUserDetailPage";
 import AdminUsersPage from "../pages/admin/AdminUsersPage";
@@ -162,6 +163,7 @@ export function AppRouter() {
           <Route path="users/create" element={<AdminCreateUserPage />} />
           <Route path="users/:id" element={<AdminUserDetailPage />} />
           <Route path="roles" element={<AdminRolesPage />} />
+          <Route path="roles/:roleValue" element={<AdminRoleDetailPage />} />
           <Route path="series" element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="workflow" element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="ai" element={<Navigate to="/admin/dashboard" replace />} />
