@@ -78,11 +78,6 @@ export default function DashboardLayout() {
     icon: BookOpen,
   },
   {
-    label: "Studio Assistants",
-    path: "/mangaka/assistants",
-    icon: User,
-  },
-  {
     label: "Chapter Management",
     path: "/mangaka/chapters",
     icon: BookOpen,
