@@ -185,26 +185,31 @@ export default function SeriesProposalsPage() {
         return;
       }
 
-      const [reviewsResult, allSubmissionsResult, dashboardResult] = await Promise.allSettled([
-        withTimeout(mangaErpApi.getEditorialReviews(), "EB review slots"),
+      const [allSubmissionsResult, queueResult, dashboardResult] = await Promise.allSettled([
         withTimeout(
           mangaErpApi.getEditorialAllSubmissions(),
           "EB submissions list",
+          12000,
         ),
-        withTimeout(mangaErpApi.getBoardDashboard(), "Board dashboard"),
+        withTimeout(mangaErpApi.getSubmissionQueue(), "Submission queue", 12000),
+        withTimeout(mangaErpApi.getBoardDashboard(), "Board dashboard", 12000),
       ]);
-      const reviews =
-        reviewsResult.status === "fulfilled" ? reviewsResult.value : [];
       const allSubmissions =
         allSubmissionsResult.status === "fulfilled"
           ? allSubmissionsResult.value
           : [];
+      const queueFallback =
+        queueResult.status === "fulfilled" ? queueResult.value : [];
       const boardDashboard =
         dashboardResult.status === "fulfilled" ? dashboardResult.value : null;
 
-      if (allSubmissionsResult.status === "rejected") {
+      if (
+        allSubmissionsResult.status === "rejected" &&
+        queueResult.status === "rejected" &&
+        dashboardResult.status === "rejected"
+      ) {
         setQueueLoadIssue(
-          `Could not load all EB-visible submissions: ${
+          `Could not load Board submissions: ${
             allSubmissionsResult.reason instanceof Error
               ? allSubmissionsResult.reason.message
               : "Unknown error"
@@ -212,89 +217,62 @@ export default function SeriesProposalsPage() {
         );
       }
 
-      if (reviewsResult.status === "rejected") {
-        setQueueLoadIssue(
-          `Could not load EB review slots: ${
-            reviewsResult.reason instanceof Error
-              ? reviewsResult.reason.message
-              : "Unknown error"
-          }`,
-        );
-      }
-
-      const items = reviews
-        .filter((review) => isSeriesSubmissionWork(review.workType))
-        .map((review) => ({
-          id: review.id,
-          title: review.workId,
-          status: review.status,
-          workType: review.workType,
-          workId: review.workId,
-          roundNumber: review.roundNumber,
-          createdAt: review.assignedAt,
-          assignment: review,
-        }) satisfies ProposalQueueItem);
-
-      const reviewByWorkId = new Map(
-        items.map((item) => [item.workId, item] as const),
-      );
-
       const allSubmissionItems = allSubmissions.map((submission) => {
-          const reviewItem = reviewByWorkId.get(submission.id);
           return {
-            id: reviewItem?.id ?? `submission-${submission.id}`,
+            id: `submission-${submission.id}`,
             title: submission.title,
             status: submission.status,
             workType: "SeriesSubmission",
             workId: submission.id,
-            roundNumber:
-              reviewItem?.roundNumber ?? submission.currentRound ?? 1,
+            roundNumber: submission.currentRound ?? 1,
             createdAt: submission.createdAt,
-            assignment: reviewItem?.assignment,
             assignmentMissing:
-              submission.status === "Pending_EB_Review" && !reviewItem?.assignment,
+              submission.status === "Pending_EB_Review",
           } satisfies ProposalQueueItem;
         });
 
-      const assignedWorkIds = new Set(items.map((item) => item.workId));
+      const knownWorkIds = new Set(allSubmissionItems.map((item) => item.workId));
+      const queueFallbackItems = queueFallback
+        .filter((submission) => !knownWorkIds.has(submission.id))
+        .map((submission) => ({
+          id: `queue-${submission.id}`,
+          title: submission.title,
+          status: submission.status,
+          workType: "SeriesSubmission",
+          workId: submission.id,
+          roundNumber: null,
+          genre: submission.genre,
+          createdAt: submission.createdAt,
+          assignmentMissing: submission.status === "Pending_EB_Review",
+        }) satisfies ProposalQueueItem);
+
+      queueFallbackItems.forEach((item) => knownWorkIds.add(item.workId));
       const boardPending = boardDashboard?.proposalQueue ?? [];
-      const unassignedPending = boardPending.filter(
-        (submission) =>
-          !assignedWorkIds.has(submission.id) &&
-          !allSubmissionItems.some((item) => item.workId === submission.id),
-      );
-      const unassignedItems = await Promise.all(
-        unassignedPending.map(async (submission) => {
-          return {
-            id: `pending-${submission.id}`,
-            title: submission.title,
-            status: "Pending_EB_Review",
-            workType: "SeriesSubmission",
-            workId: submission.id,
-            roundNumber: null,
-            createdAt: submission.submittedAt,
-            assignmentMissing: true,
-          } satisfies ProposalQueueItem;
-        }),
-      );
+      const boardPendingItems = boardPending
+        .filter((submission) => !knownWorkIds.has(submission.id))
+        .map((submission) => ({
+          id: `pending-${submission.id}`,
+          title: submission.title,
+          status: "Pending_EB_Review",
+          workType: "SeriesSubmission",
+          workId: submission.id,
+          roundNumber: null,
+          createdAt: submission.submittedAt,
+          assignmentMissing: true,
+        }) satisfies ProposalQueueItem);
 
-      if (!items.length && (boardDashboard?.proposalQueue.length ?? 0) > 0) {
-        setQueueLoadIssue(
-          `BE dashboard has ${boardDashboard!.proposalQueue.length} pending proposal(s), but /editorial-workflow/reviews returned no review slots for voting.`,
-        );
-      } else if (unassignedItems.length > 0) {
-        setQueueLoadIssue(
-          `${unassignedItems.length} pending proposal(s) are visible from the Board dashboard but do not have editable review slots yet.`,
-        );
-      }
+      const baseItems = [
+        ...allSubmissionItems,
+        ...queueFallbackItems,
+        ...boardPendingItems,
+      ];
 
-      const mergedItems =
-        allSubmissionItems.length > 0
-          ? allSubmissionItems
-          : [...items, ...unassignedItems];
-      setQueue(mergedItems);
-      void enrichQueueDetails(mergedItems);
-      if (selected && !mergedItems.some((item) => item.workId === selected.id)) {
+      setQueue(baseItems);
+      setIsLoading(false);
+      void enrichQueueDetails(baseItems);
+      void enrichReviewSlots(baseItems);
+
+      if (selected && !baseItems.some((item) => item.workId === selected.id)) {
         setSelected(null);
         setSelectedReview(null);
       }
@@ -306,6 +284,50 @@ export default function SeriesProposalsPage() {
       );
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const enrichReviewSlots = async (items: ProposalQueueItem[]) => {
+    const reviews = await withTimeout(
+      mangaErpApi.getEditorialReviews(),
+      "EB review slots",
+      15000,
+    ).catch(() => null);
+    if (!reviews) {
+      setQueueLoadIssue(
+        "Submissions loaded, but vote slots are still loading slowly. Open a proposal again after refresh if the vote buttons stay disabled.",
+      );
+      return;
+    }
+
+    const reviewByWorkId = new Map(
+      reviews
+        .filter((review) => isSeriesSubmissionWork(review.workType))
+        .map((review) => [review.workId, review] as const),
+    );
+
+    setQueue((current) =>
+      current.map((item) => {
+        const review = reviewByWorkId.get(item.workId);
+        if (!review) return item;
+        return {
+          ...item,
+          id: review.id,
+          roundNumber: review.roundNumber,
+          assignment: review,
+          assignmentMissing: false,
+        };
+      }),
+    );
+
+    if (selectedReview) {
+      const review = items.find((item) => item.workId === selected?.id)?.assignment;
+      if (review) {
+        const detail = await mangaErpApi
+          .getEditorialReviewDetail(review.id)
+          .catch(() => null);
+        setSelectedReview(detail);
+      }
     }
   };
 
