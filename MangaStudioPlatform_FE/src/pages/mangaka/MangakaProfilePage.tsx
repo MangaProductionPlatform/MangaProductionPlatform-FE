@@ -1,9 +1,41 @@
-import { User, Mail, ShieldCheck } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Mail, ShieldCheck, User, UserCheck } from "lucide-react";
+import { useToast } from "../../shared/components/toastContext";
+import { mangaErpApi } from "../../shared/services/mangaErpService";
+import type { CurrentUser, CurrentUserProfileDto } from "../../shared/types/mangaErp";
 
 export default function MangakaProfilePage() {
+  const toast = useToast();
+  const [profile, setProfile] = useState<CurrentUserProfileDto | null>(null);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const currentUser = JSON.parse(
     localStorage.getItem("currentUser") || "null"
-  );
+  ) as CurrentUser | null;
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function loadProfile() {
+      try {
+        const result = await mangaErpApi.getCurrentUserProfile();
+        if (!ignore) setProfile(result);
+      } catch (error) {
+        if (!ignore) {
+          toast.error(
+            "Could not load profile",
+            error instanceof Error ? error.message : "Please try again.",
+          );
+        }
+      } finally {
+        if (!ignore) setIsLoadingProfile(false);
+      }
+    }
+
+    void loadProfile();
+    return () => {
+      ignore = true;
+    };
+  }, [toast]);
 
   return (
     <div className="space-y-6">
@@ -38,7 +70,7 @@ export default function MangakaProfilePage() {
           </div>
         </div>
 
-        <div className="mt-8 grid gap-4 md:grid-cols-2">
+        <div className="mt-8 grid gap-4 md:grid-cols-3">
           <div className="rounded-xl border border-slate-800 bg-slate-950 p-4">
             <div className="flex items-center gap-2 text-slate-400">
               <Mail size={16} />
@@ -46,7 +78,7 @@ export default function MangakaProfilePage() {
             </div>
 
             <p className="mt-2 font-semibold text-white">
-              {currentUser?.email ?? "mangaka@studio.com"}
+              {profile?.email ?? currentUser?.email ?? "mangaka@studio.com"}
             </p>
           </div>
 
@@ -57,7 +89,20 @@ export default function MangakaProfilePage() {
             </div>
 
             <p className="mt-2 font-semibold text-cyan-300">
-              {currentUser?.role ?? "mangaka"}
+              {profile?.role ?? currentUser?.role ?? "mangaka"}
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-slate-800 bg-slate-950 p-4">
+            <div className="flex items-center gap-2 text-slate-400">
+              <UserCheck size={16} />
+              Managing Tantou
+            </div>
+
+            <p className="mt-2 break-all font-semibold text-fuchsia-200">
+              {isLoadingProfile
+                ? "Loading..."
+                : profile?.managingTantouId ?? "No Tantou assigned"}
             </p>
           </div>
         </div>

@@ -17,6 +17,7 @@ import type {
   CreateChapterPayload,
   CreateSubmissionPayload,
   CurrentUser,
+  CurrentUserProfileDto,
   CancellationQueueItemDto,
   EditorDashboardDto,
   AddQaPinPayload,
@@ -149,6 +150,10 @@ export const mangaErpApi = {
       accessToken: pick<string>(data, "accessToken"),
       refreshToken: pick<string>(data, "refreshToken"),
     };
+  },
+
+  async getCurrentUserProfile() {
+    return request<CurrentUserProfileDto>("identity", "/api/v1/users/me");
   },
 
   async listUsers(filters: { roleFilter?: number; statusFilter?: number; } = {}) {

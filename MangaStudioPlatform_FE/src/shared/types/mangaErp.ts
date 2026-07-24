@@ -25,6 +25,22 @@ export type CurrentUser = {
   refreshToken: string;
 };
 
+export type CurrentUserProfileDto = {
+  userId: string;
+  username: string;
+  email: string;
+  role: string;
+  accountStatus: string;
+  fullName?: string | null;
+  avatarUrl?: string | null;
+  penName?: string | null;
+  phoneNumber?: string | null;
+  drawingSoftwares?: string[] | null;
+  bankAccountNumber?: string | null;
+  managingTantouId?: string | null;
+  createdAt: string;
+};
+
 export type NotificationDto = {
   id: string;
   title: string;
