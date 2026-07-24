@@ -2,11 +2,15 @@ import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
+  ArrowDownUp,
   BookOpen,
+  CalendarDays,
   CheckCircle2,
+  Clock3,
   ExternalLink,
   Eye,
   FileImage,
+  Filter,
   RefreshCw,
   UserRound,
   XCircle,
@@ -24,6 +28,16 @@ import { useToast } from "../../shared/components/toastContext";
 import LoadingSkeleton from "../../shared/components/LoadingSkeleton";
 
 type BoardAction = "approve" | "reject";
+type ProgressFilter =
+  | "all"
+  | "voteable"
+  | "pending_eb"
+  | "pending_tantou"
+  | "approved"
+  | "rejected"
+  | "conflict";
+type SortMode = "priority" | "newest" | "oldest";
+type TimeFilter = "all" | "today" | "week" | "month" | "custom";
 
 type ProposalQueueItem = {
   id: string;
@@ -37,6 +51,7 @@ type ProposalQueueItem = {
   manuscriptUrl?: string | null;
   authorName?: string | null;
   description?: string | null;
+  createdAt?: string | null;
   assignment?: EditorialReviewAssignmentDto;
   conflict?: EditorialConflictItemDto;
   assignmentMissing?: boolean;
@@ -58,6 +73,56 @@ const readAuthorName = (detail: SubmissionDetailDto | null) =>
   detail?.submitter?.fullName ||
   detail?.submitter?.userId ||
   null;
+const readPreviewImage = (
+  item: Pick<ProposalQueueItem, "coverImageUrl" | "manuscriptUrl">,
+) => item.coverImageUrl || item.manuscriptUrl || null;
+const filterSelectClass =
+  "input h-12 py-0 pl-4 pr-10 leading-normal text-sm";
+const filterInputClass =
+  "input h-12 py-0 leading-normal text-sm";
+const getTimeValue = (value?: string | null) => {
+  if (!value) return 0;
+  const time = new Date(value).getTime();
+  return Number.isNaN(time) ? 0 : time;
+};
+const formatSubmittedAt = (value?: string | null) => {
+  const time = getTimeValue(value);
+  if (!time) return "No created time";
+  return new Intl.DateTimeFormat("en", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(time));
+};
+const getAgeLabel = (value?: string | null) => {
+  const time = getTimeValue(value);
+  if (!time) return "Unknown age";
+  const diffMs = Date.now() - time;
+  const diffHours = Math.max(0, Math.floor(diffMs / 36e5));
+  if (diffHours < 24) return diffHours <= 1 ? "New today" : `${diffHours}h old`;
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays < 7) return `${diffDays}d old`;
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)}w old`;
+  return `${Math.floor(diffDays / 30)}mo old`;
+};
+const getPriorityRank = (item: ProposalQueueItem) => {
+  if (item.status === "Pending_EB_Review" && item.assignment) return 0;
+  if (item.status === "Pending_EB_Review") return 1;
+  if (item.status === "Conflict_Escalated") return 2;
+  if (item.status === "Pending_Tantou_Review") return 3;
+  if (item.status === "EB_Rejected") return 4;
+  if (item.status === "EB_Approved") return 5;
+  return 6;
+};
+const withTimeout = <T,>(promise: Promise<T>, label: string, ms = 8000) =>
+  Promise.race([
+    promise,
+    new Promise<T>((_, reject) => {
+      window.setTimeout(() => reject(new Error(`${label} timed out`)), ms);
+    }),
+  ]);
 
 export default function SeriesProposalsPage() {
   const toast = useToast();
@@ -71,6 +136,12 @@ export default function SeriesProposalsPage() {
   const [runningAction, setRunningAction] = useState<BoardAction | null>(null);
   const [lastResult, setLastResult] = useState<string | null>(null);
   const [queueLoadIssue, setQueueLoadIssue] = useState<string | null>(null);
+  const [searchText, setSearchText] = useState("");
+  const [progressFilter, setProgressFilter] = useState<ProgressFilter>("all");
+  const [sortMode, setSortMode] = useState<SortMode>("priority");
+  const [timeFilter, setTimeFilter] = useState<TimeFilter>("all");
+  const [createdFrom, setCreatedFrom] = useState("");
+  const [createdTo, setCreatedTo] = useState("");
 
   const currentUser = useMemo(
     () =>
@@ -103,6 +174,7 @@ export default function SeriesProposalsPage() {
           workType: item.workType || "SeriesSubmission",
           workId: item.id,
           roundNumber: item.roundNumber,
+          createdAt: null,
           conflict: item,
         }));
         setQueue(items);
@@ -113,14 +185,32 @@ export default function SeriesProposalsPage() {
         return;
       }
 
-      const [reviewsResult, dashboardResult] = await Promise.allSettled([
-        mangaErpApi.getEditorialReviews(),
-        mangaErpApi.getBoardDashboard(),
+      const [reviewsResult, allSubmissionsResult, dashboardResult] = await Promise.allSettled([
+        withTimeout(mangaErpApi.getEditorialReviews(), "EB review slots"),
+        withTimeout(
+          mangaErpApi.getEditorialAllSubmissions(),
+          "EB submissions list",
+        ),
+        withTimeout(mangaErpApi.getBoardDashboard(), "Board dashboard"),
       ]);
       const reviews =
         reviewsResult.status === "fulfilled" ? reviewsResult.value : [];
+      const allSubmissions =
+        allSubmissionsResult.status === "fulfilled"
+          ? allSubmissionsResult.value
+          : [];
       const boardDashboard =
         dashboardResult.status === "fulfilled" ? dashboardResult.value : null;
+
+      if (allSubmissionsResult.status === "rejected") {
+        setQueueLoadIssue(
+          `Could not load all EB-visible submissions: ${
+            allSubmissionsResult.reason instanceof Error
+              ? allSubmissionsResult.reason.message
+              : "Unknown error"
+          }`,
+        );
+      }
 
       if (reviewsResult.status === "rejected") {
         setQueueLoadIssue(
@@ -132,53 +222,59 @@ export default function SeriesProposalsPage() {
         );
       }
 
-      const items = await Promise.all(
-        reviews
-          .filter((review) => isSeriesSubmissionWork(review.workType))
-          .map(async (review) => {
-            const detail = await mangaErpApi.getSubmission(review.workId).catch(
-              () => null,
-            );
-            return {
-              id: review.id,
-              title: detail?.title ?? review.workId,
-              status: review.status,
-              workType: review.workType,
-              workId: review.workId,
-              roundNumber: review.roundNumber,
-              genre: detail?.genre,
-              coverImageUrl: detail?.coverImageUrl,
-              manuscriptUrl: detail?.manuscriptUrl,
-              authorName: readAuthorName(detail),
-              description: detail?.description,
-              assignment: review,
-            };
-          }),
+      const items = reviews
+        .filter((review) => isSeriesSubmissionWork(review.workType))
+        .map((review) => ({
+          id: review.id,
+          title: review.workId,
+          status: review.status,
+          workType: review.workType,
+          workId: review.workId,
+          roundNumber: review.roundNumber,
+          createdAt: review.assignedAt,
+          assignment: review,
+        }) satisfies ProposalQueueItem);
+
+      const reviewByWorkId = new Map(
+        items.map((item) => [item.workId, item] as const),
       );
+
+      const allSubmissionItems = allSubmissions.map((submission) => {
+          const reviewItem = reviewByWorkId.get(submission.id);
+          return {
+            id: reviewItem?.id ?? `submission-${submission.id}`,
+            title: submission.title,
+            status: submission.status,
+            workType: "SeriesSubmission",
+            workId: submission.id,
+            roundNumber:
+              reviewItem?.roundNumber ?? submission.currentRound ?? 1,
+            createdAt: submission.createdAt,
+            assignment: reviewItem?.assignment,
+            assignmentMissing:
+              submission.status === "Pending_EB_Review" && !reviewItem?.assignment,
+          } satisfies ProposalQueueItem;
+        });
+
       const assignedWorkIds = new Set(items.map((item) => item.workId));
       const boardPending = boardDashboard?.proposalQueue ?? [];
       const unassignedPending = boardPending.filter(
-        (submission) => !assignedWorkIds.has(submission.id),
+        (submission) =>
+          !assignedWorkIds.has(submission.id) &&
+          !allSubmissionItems.some((item) => item.workId === submission.id),
       );
       const unassignedItems = await Promise.all(
         unassignedPending.map(async (submission) => {
-          const detail = await mangaErpApi.getSubmission(submission.id).catch(
-            () => null,
-          );
           return {
             id: `pending-${submission.id}`,
-            title: detail?.title ?? submission.title,
-            status: detail?.status ?? "Pending_EB_Review",
+            title: submission.title,
+            status: "Pending_EB_Review",
             workType: "SeriesSubmission",
             workId: submission.id,
             roundNumber: null,
-            genre: detail?.genre,
-            coverImageUrl: detail?.coverImageUrl,
-            manuscriptUrl: detail?.manuscriptUrl,
-            authorName: readAuthorName(detail),
-            description: detail?.description,
+            createdAt: submission.submittedAt,
             assignmentMissing: true,
-          };
+          } satisfies ProposalQueueItem;
         }),
       );
 
@@ -192,8 +288,12 @@ export default function SeriesProposalsPage() {
         );
       }
 
-      const mergedItems = [...items, ...unassignedItems];
+      const mergedItems =
+        allSubmissionItems.length > 0
+          ? allSubmissionItems
+          : [...items, ...unassignedItems];
       setQueue(mergedItems);
+      void enrichQueueDetails(mergedItems);
       if (selected && !mergedItems.some((item) => item.workId === selected.id)) {
         setSelected(null);
         setSelectedReview(null);
@@ -207,6 +307,126 @@ export default function SeriesProposalsPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const enrichQueueDetails = async (items: ProposalQueueItem[]) => {
+    const results = await Promise.allSettled(
+      items.map(async (item) => {
+        const detail = await withTimeout(
+          mangaErpApi.getSubmission(item.workId),
+          `Submission ${item.workId}`,
+          6000,
+        );
+        return { item, detail };
+      }),
+    );
+
+    const detailByWorkId = new Map<string, SubmissionDetailDto>();
+    results.forEach((result) => {
+      if (result.status === "fulfilled") {
+        detailByWorkId.set(result.value.item.workId, result.value.detail);
+      }
+    });
+    if (detailByWorkId.size === 0) return;
+
+    setQueue((current) =>
+      current.map((item) => {
+        const detail = detailByWorkId.get(item.workId);
+        if (!detail) return item;
+        return {
+          ...item,
+          title: detail.title,
+          status: detail.status,
+          genre: detail.genre,
+          coverImageUrl: detail.coverImageUrl,
+          manuscriptUrl: detail.manuscriptUrl,
+          authorName: readAuthorName(detail),
+          description: detail.description,
+          createdAt: detail.createdAt ?? item.createdAt,
+          assignmentMissing:
+            detail.status === "Pending_EB_Review" && !item.assignment,
+        };
+      }),
+    );
+  };
+
+  const filteredQueue = useMemo(() => {
+    const normalizedSearch = searchText.trim().toLowerCase();
+    const now = new Date();
+    let fromTime: number | null = null;
+    let toTime: number | null = null;
+
+    if (timeFilter === "today") {
+      fromTime = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+      toTime = now.getTime();
+    } else if (timeFilter === "week") {
+      fromTime = now.getTime() - 7 * 24 * 60 * 60 * 1000;
+      toTime = now.getTime();
+    } else if (timeFilter === "month") {
+      fromTime = now.getTime() - 30 * 24 * 60 * 60 * 1000;
+      toTime = now.getTime();
+    } else if (timeFilter === "custom") {
+      fromTime = createdFrom
+        ? new Date(`${createdFrom}T00:00:00`).getTime()
+        : null;
+      toTime = createdTo
+        ? new Date(`${createdTo}T23:59:59`).getTime()
+        : null;
+    }
+
+    return queue
+      .filter((item) => {
+        const textMatch =
+          !normalizedSearch ||
+          [item.title, item.genre, item.authorName, item.description, item.status]
+            .filter(Boolean)
+            .some((value) =>
+              String(value).toLowerCase().includes(normalizedSearch),
+            );
+        if (!textMatch) return false;
+
+        const progressMatch =
+          progressFilter === "all" ||
+          (progressFilter === "voteable" &&
+            item.status === "Pending_EB_Review" &&
+            Boolean(item.assignment)) ||
+          (progressFilter === "pending_eb" &&
+            item.status === "Pending_EB_Review") ||
+          (progressFilter === "pending_tantou" &&
+            item.status === "Pending_Tantou_Review") ||
+          (progressFilter === "approved" && item.status === "EB_Approved") ||
+          (progressFilter === "rejected" && item.status === "EB_Rejected") ||
+          (progressFilter === "conflict" &&
+            item.status === "Conflict_Escalated");
+        if (!progressMatch) return false;
+
+        const createdTime = getTimeValue(item.createdAt);
+        if (fromTime !== null && (!createdTime || createdTime < fromTime)) {
+          return false;
+        }
+        if (toTime !== null && (!createdTime || createdTime > toTime)) {
+          return false;
+        }
+        return true;
+      })
+      .sort((left, right) => {
+        if (sortMode === "priority") {
+          const priorityDiff = getPriorityRank(left) - getPriorityRank(right);
+          if (priorityDiff !== 0) return priorityDiff;
+        }
+        const newestFirst =
+          getTimeValue(right.createdAt) - getTimeValue(left.createdAt);
+        return sortMode === "oldest" ? -newestFirst : newestFirst;
+      });
+  }, [createdFrom, createdTo, progressFilter, queue, searchText, sortMode, timeFilter]);
+
+  const resetFilters = () => {
+    setSearchText("");
+    setProgressFilter("all");
+    setSortMode("priority");
+    setTimeFilter("all");
+    setCreatedFrom("");
+    setCreatedTo("");
   };
 
   useEffect(() => {
@@ -367,7 +587,7 @@ export default function SeriesProposalsPage() {
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
             {isEditorInChief
               ? "Escalated conflicts awaiting a final approve or reject decision."
-              : "Assigned series proposals awaiting your approve or reject vote."}
+              : "Series submissions visible to Editorial Board. Pending EB review proposals can be voted first-come-first-serve."}
           </p>
         </div>
         <button
@@ -380,13 +600,169 @@ export default function SeriesProposalsPage() {
         </button>
       </div>
 
+      <section className="rounded-lg border border-white/10 bg-slate-900/75 p-4">
+        <div className="mb-4 flex flex-wrap gap-2">
+          {[
+            { label: "Needs vote", progress: "voteable", time: "all" },
+            { label: "New today", progress: "all", time: "today" },
+            { label: "Last 7 days", progress: "all", time: "week" },
+            { label: "Pending EB", progress: "pending_eb", time: "all" },
+            { label: "Approved", progress: "approved", time: "all" },
+          ].map((chip) => {
+            const active =
+              progressFilter === chip.progress && timeFilter === chip.time;
+            return (
+              <button
+                key={chip.label}
+                type="button"
+                onClick={() => {
+                  setProgressFilter(chip.progress as ProgressFilter);
+                  setTimeFilter(chip.time as TimeFilter);
+                  setSortMode("priority");
+                  setCreatedFrom("");
+                  setCreatedTo("");
+                }}
+                className={`min-h-10 rounded-lg border px-3 text-sm font-bold transition ${
+                  active
+                    ? "border-cyan-300/60 bg-cyan-300/15 text-cyan-100"
+                    : "border-white/10 bg-white/5 text-slate-300 hover:bg-white/10"
+                }`}
+              >
+                {chip.label}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="flex flex-wrap items-end gap-3">
+          <label className="min-w-56 flex-1">
+            <span className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[.14em] text-slate-400">
+              <Filter size={14} />
+              Search
+            </span>
+            <input
+              value={searchText}
+              onChange={(event) => setSearchText(event.target.value)}
+              className={filterInputClass}
+              placeholder="Title, author, genre, status"
+            />
+          </label>
+
+          <label className="w-full min-w-44 sm:w-44">
+            <span className="mb-2 block text-xs font-semibold uppercase tracking-[.14em] text-slate-400">
+              Progress
+            </span>
+            <select
+              value={progressFilter}
+              onChange={(event) =>
+                setProgressFilter(event.target.value as ProgressFilter)
+              }
+              className={filterSelectClass}
+            >
+              <option value="all">All progress</option>
+              <option value="voteable">Ready to vote</option>
+              <option value="pending_eb">Pending EB vote</option>
+              <option value="pending_tantou">Pending Tantou</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+              <option value="conflict">Conflict escalated</option>
+            </select>
+          </label>
+
+          <label className="w-full min-w-40 sm:w-44">
+            <span className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[.14em] text-slate-400">
+              <Clock3 size={14} />
+              Time
+            </span>
+            <select
+              value={timeFilter}
+              onChange={(event) => {
+                const value = event.target.value as TimeFilter;
+                setTimeFilter(value);
+                if (value !== "custom") {
+                  setCreatedFrom("");
+                  setCreatedTo("");
+                }
+              }}
+              className={filterSelectClass}
+            >
+              <option value="all">All time</option>
+              <option value="today">Today</option>
+              <option value="week">Last 7 days</option>
+              <option value="month">Last 30 days</option>
+              <option value="custom">Custom range</option>
+            </select>
+          </label>
+
+          <label className="w-full min-w-40 sm:w-44">
+            <span className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[.14em] text-slate-400">
+              <ArrowDownUp size={14} />
+              Priority
+            </span>
+            <select
+              value={sortMode}
+              onChange={(event) => setSortMode(event.target.value as SortMode)}
+              className={filterSelectClass}
+            >
+              <option value="priority">Review priority</option>
+              <option value="newest">Newest first</option>
+              <option value="oldest">Oldest first</option>
+            </select>
+          </label>
+
+          <label className="w-full min-w-40 sm:w-44">
+            <span className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[.14em] text-slate-400">
+              <CalendarDays size={14} />
+              From
+            </span>
+            <input
+              type="date"
+              value={createdFrom}
+              onChange={(event) => {
+                setTimeFilter("custom");
+                setCreatedFrom(event.target.value);
+              }}
+              className={filterInputClass}
+            />
+          </label>
+
+          <label className="w-full min-w-40 sm:w-44">
+            <span className="mb-2 block text-xs font-semibold uppercase tracking-[.14em] text-slate-400">
+              To
+            </span>
+            <input
+              type="date"
+              value={createdTo}
+              onChange={(event) => {
+                setTimeFilter("custom");
+                setCreatedTo(event.target.value);
+              }}
+              className={filterInputClass}
+            />
+          </label>
+
+          <button
+            type="button"
+            onClick={resetFilters}
+            className="inline-flex h-11 min-w-20 items-center justify-center rounded-lg border border-white/10 bg-white/5 px-4 text-sm font-bold text-white hover:bg-white/10"
+          >
+            Clear
+          </button>
+        </div>
+        <p className="mt-3 text-xs text-slate-500">
+          Showing {filteredQueue.length} of {queue.length} submissions
+        </p>
+      </section>
+
       <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_30rem]">
         <div className="space-y-3">
           {isLoading ? <LoadingSkeleton cards={3} /> : null}
 
-          {!isLoading && queue.length === 0 ? (
+          {!isLoading && filteredQueue.length === 0 ? (
             <div className="rounded-lg border border-white/10 bg-slate-900/75 p-5 text-sm text-slate-300">
-              No proposals are available for your role.
+              {queue.length === 0
+                ? "No proposals are available for your role."
+                : "No submissions match the current filters."}
               {queueLoadIssue ? (
                 <p className="mt-3 leading-6 text-amber-100">
                   {queueLoadIssue}
@@ -395,88 +771,112 @@ export default function SeriesProposalsPage() {
             </div>
           ) : null}
 
-          {queue.map((item) => (
-            <article
-              key={item.id}
-              className={`rounded-lg border bg-slate-900/75 p-4 transition hover:border-cyan-300/40 hover:bg-slate-900 ${
-                selected?.id === item.workId
-                  ? "border-cyan-300/60"
-                  : "border-white/10"
-              }`}
-            >
-              <div className="grid gap-4 md:grid-cols-[7.5rem_minmax(0,1fr)_auto] md:items-start">
-                <div className="aspect-[3/4] overflow-hidden rounded-lg border border-white/10 bg-slate-950">
-                  {item.coverImageUrl ? (
-                    <img
-                      src={item.coverImageUrl}
-                      alt={`${item.title} cover`}
-                      loading="lazy"
-                      className="h-full w-full object-cover"
-                      onError={(event) => {
-                        event.currentTarget.style.display = "none";
-                      }}
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center text-slate-600">
-                      <FileImage size={28} />
-                    </div>
-                  )}
-                </div>
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded-md border border-cyan-300/20 bg-cyan-300/10 px-2 py-1 text-xs font-semibold text-cyan-100">
-                      {item.status}
-                    </span>
-                    <span className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-xs font-semibold text-slate-300">
-                      Round {item.roundNumber ?? 1}
-                    </span>
-                    {item.assignmentMissing ? (
-                      <span className="rounded-md border border-amber-300/20 bg-amber-300/10 px-2 py-1 text-xs font-semibold text-amber-100">
-                        No review slot
-                      </span>
-                    ) : null}
-                    {item.genre ? (
-                      <span className="rounded-md border border-fuchsia-300/20 bg-fuchsia-300/10 px-2 py-1 text-xs font-semibold text-fuchsia-100">
-                        {item.genre}
+          {filteredQueue.map((item) => {
+            const previewImage = readPreviewImage(item);
+            return (
+              <article
+                key={item.id}
+                className={`rounded-lg border bg-slate-900/75 p-4 transition hover:border-cyan-300/40 hover:bg-slate-900 ${
+                  selected?.id === item.workId
+                    ? "border-cyan-300/60"
+                    : "border-white/10"
+                }`}
+              >
+                <div className="grid gap-4 md:grid-cols-[7.5rem_minmax(0,1fr)_auto] md:items-start">
+                  <div className="relative aspect-[3/4] overflow-hidden rounded-lg border border-white/10 bg-slate-950">
+                    {previewImage ? (
+                      <img
+                        src={previewImage}
+                        alt={`${item.title} preview`}
+                        loading="lazy"
+                        className="h-full w-full object-cover"
+                        onError={(event) => {
+                          event.currentTarget.style.display = "none";
+                        }}
+                      />
+                    ) : (
+                      <div className="flex h-full w-full flex-col items-center justify-center gap-2 px-3 text-center text-slate-600">
+                        <FileImage size={28} />
+                        <span className="text-xs font-semibold">No cover</span>
+                      </div>
+                    )}
+                    {!item.coverImageUrl && item.manuscriptUrl ? (
+                      <span className="absolute bottom-2 left-2 rounded bg-slate-950/80 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-200">
+                        Manuscript
                       </span>
                     ) : null}
                   </div>
-                  <h3 className="mt-3 break-words text-2xl font-black text-white">
-                    {item.title}
-                  </h3>
-                  {item.authorName ? (
-                    <p className="mt-2 flex items-center gap-2 text-sm text-slate-300">
-                      <UserRound size={15} className="text-cyan-200" />
-                      {item.authorName}
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="rounded-md border border-cyan-300/20 bg-cyan-300/10 px-2 py-1 text-xs font-semibold text-cyan-100">
+                        {item.status}
+                      </span>
+                      <span className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-xs font-semibold text-slate-300">
+                        Round {item.roundNumber ?? 1}
+                      </span>
+                      {item.assignmentMissing ? (
+                        <span className="rounded-md border border-amber-300/20 bg-amber-300/10 px-2 py-1 text-xs font-semibold text-amber-100">
+                          No review slot
+                        </span>
+                      ) : null}
+                      {item.status !== "Pending_EB_Review" &&
+                      item.status !== "Conflict_Escalated" ? (
+                        <span className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-xs font-semibold text-slate-300">
+                          View only
+                        </span>
+                      ) : null}
+                      {item.genre ? (
+                        <span className="rounded-md border border-fuchsia-300/20 bg-fuchsia-300/10 px-2 py-1 text-xs font-semibold text-fuchsia-100">
+                          {item.genre}
+                        </span>
+                      ) : null}
+                      <span className="rounded-md border border-emerald-300/20 bg-emerald-300/10 px-2 py-1 text-xs font-semibold text-emerald-100">
+                        {getAgeLabel(item.createdAt)}
+                      </span>
+                    </div>
+                    <h3 className="mt-3 break-words text-2xl font-black text-white">
+                      {item.title}
+                    </h3>
+                    <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-slate-300">
+                      {item.authorName ? (
+                        <span className="flex items-center gap-2">
+                          <UserRound size={15} className="text-cyan-200" />
+                          {item.authorName}
+                        </span>
+                      ) : null}
+                      <span className="flex items-center gap-2 text-slate-400">
+                        <Clock3 size={15} className="text-emerald-200" />
+                        {formatSubmittedAt(item.createdAt)}
+                      </span>
+                    </div>
+                    <p className="mt-3 line-clamp-2 text-sm leading-6 text-slate-400">
+                      {item.description || "No description provided."}
                     </p>
-                  ) : null}
-                  <p className="mt-3 line-clamp-2 text-sm leading-6 text-slate-400">
-                    {item.description || "No description provided."}
-                  </p>
-                  {item.manuscriptUrl ? (
-                    <a
-                      href={item.manuscriptUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-lg border border-violet-300/25 bg-violet-300/10 px-3 text-sm font-semibold text-violet-100 hover:bg-violet-300/15"
-                    >
-                      <BookOpen size={15} />
-                      Manuscript
-                      <ExternalLink size={14} />
-                    </a>
-                  ) : null}
+                    {item.manuscriptUrl ? (
+                      <a
+                        href={item.manuscriptUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-lg border border-violet-300/25 bg-violet-300/10 px-3 text-sm font-semibold text-violet-100 hover:bg-violet-300/15"
+                      >
+                        <BookOpen size={15} />
+                        Manuscript
+                        <ExternalLink size={14} />
+                      </a>
+                    ) : null}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => void openQueueItem(item)}
+                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10"
+                  >
+                    <Eye size={15} />
+                    Open
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => void openQueueItem(item)}
-                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10"
-                >
-                  <Eye size={15} />
-                  Open
-                </button>
-              </div>
-            </article>
-          ))}
+              </article>
+            );
+          })}
         </div>
 
         <aside className="rounded-lg border border-white/10 bg-slate-900/75 p-5">
@@ -494,21 +894,31 @@ export default function SeriesProposalsPage() {
             <div className="mt-4 space-y-4">
               <div className="overflow-hidden rounded-lg border border-white/10 bg-slate-950/60">
                 <div className="grid gap-0 sm:grid-cols-[10rem_minmax(0,1fr)]">
-                  <div className="aspect-[3/4] bg-slate-950">
-                    {selected.coverImageUrl ? (
+                  <div className="relative aspect-[3/4] bg-slate-950">
+                    {selected.coverImageUrl || selected.manuscriptUrl ? (
                       <img
-                        src={selected.coverImageUrl}
-                        alt={`${selected.title} cover`}
+                        src={
+                          selected.coverImageUrl ||
+                          selected.manuscriptUrl ||
+                          undefined
+                        }
+                        alt={`${selected.title} preview`}
                         className="h-full w-full object-cover"
                         onError={(event) => {
                           event.currentTarget.style.display = "none";
                         }}
                       />
                     ) : (
-                      <div className="flex h-full w-full items-center justify-center text-slate-600">
+                      <div className="flex h-full w-full flex-col items-center justify-center gap-2 px-3 text-center text-slate-600">
                         <FileImage size={34} />
+                        <span className="text-xs font-semibold">No cover</span>
                       </div>
                     )}
+                    {!selected.coverImageUrl && selected.manuscriptUrl ? (
+                      <span className="absolute bottom-2 left-2 rounded bg-slate-950/80 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-200">
+                        Manuscript
+                      </span>
+                    ) : null}
                   </div>
                   <div className="min-w-0 p-4">
                     <p className="break-all text-xs text-slate-500">
@@ -535,6 +945,10 @@ export default function SeriesProposalsPage() {
                           selected.submitter.userId}
                       </p>
                     ) : null}
+                    <p className="mt-3 flex items-center gap-2 text-sm text-slate-400">
+                      <Clock3 size={15} className="text-emerald-200" />
+                      {formatSubmittedAt(selected.createdAt)}
+                    </p>
                   </div>
                 </div>
                 <div className="border-t border-white/10 p-4">
@@ -608,9 +1022,9 @@ export default function SeriesProposalsPage() {
 
               {!isEditorInChief && !selectedReview ? (
                 <div className="rounded-lg border border-amber-300/20 bg-amber-300/10 p-3 text-sm leading-6 text-amber-100">
-                  This proposal is pending EB review, but no active review slot
-                  is available for voting yet. It may be an older submission
-                  created before reviewer assignment was generated.
+                  {selected.status === "Pending_EB_Review"
+                    ? "This proposal is pending EB review, but no active review slot is available for voting yet. It may be an older submission created before reviewer assignment was generated."
+                    : "This submission is visible for tracking, but only Pending_EB_Review proposals can be voted by Editorial Board."}
                 </div>
               ) : null}
 
