@@ -33,56 +33,6 @@ export default function SubmissionPage() {
   const [isLoadingReviewResults, setIsLoadingReviewResults] = useState(false);
   const linkedSubmissionId = searchParams.get("id") ?? searchParams.get("submissionId");
 
-  const loadSubmissions = async () => {
-    setIsLoading(true);
-    try {
-      const result = await mangaErpApi.getMySubmissions();
-      setItems(result);
-    } catch (err) {
-      setItems([]);
-      toast.error(
-        "Could not load submissions",
-        err instanceof Error
-          ? err.message
-          : "Please check your Mangaka session.",
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    let ignore = false;
-
-    async function loadInitialSubmissions() {
-      try {
-        const result = await mangaErpApi.getMySubmissions();
-        if (!ignore) {
-          setItems(result);
-        }
-      } catch (err) {
-        if (!ignore) {
-          setItems([]);
-          toast.error(
-            "Could not load submissions",
-            err instanceof Error
-              ? err.message
-              : "Please check your Mangaka session.",
-          );
-        }
-      } finally {
-        if (!ignore) {
-          setIsLoading(false);
-        }
-      }
-    }
-
-    void loadInitialSubmissions();
-    return () => {
-      ignore = true;
-    };
-  }, [toast]);
-
   const fillForm = (detail: SubmissionDetailDto | null) => {
     setSelected(detail);
     setTitle(detail?.title ?? "");
@@ -108,6 +58,39 @@ export default function SubmissionPage() {
       );
     }
   };
+
+  const loadSubmissions = async (submissionIdToOpen?: string | null) => {
+    const targetSubmissionId = submissionIdToOpen ?? selected?.id ?? null;
+    setIsLoading(true);
+    try {
+      const result = await mangaErpApi.getMySubmissions();
+      setItems(result);
+
+      if (targetSubmissionId && result.some((item) => item.id === targetSubmissionId)) {
+        await openSubmission(targetSubmissionId);
+      } else if (targetSubmissionId) {
+        fillForm(null);
+        setFeedbackPins([]);
+        setReviewResults(null);
+      }
+    } catch (err) {
+      setItems([]);
+      toast.error(
+        "Could not load submissions",
+        err instanceof Error
+          ? err.message
+          : "Please check your Mangaka session.",
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadSubmissions(null);
+    // Initial backend load only.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (linkedSubmissionId) {
@@ -157,10 +140,7 @@ export default function SubmissionPage() {
         "Draft created",
         id ? `Submission ID: ${id}` : "Draft saved.",
       );
-      await loadSubmissions();
-      if (id) {
-        await openSubmission(id);
-      }
+      await loadSubmissions(id ?? null);
     } catch (err) {
       toast.error(
         "Could not create draft",
@@ -191,8 +171,7 @@ export default function SubmissionPage() {
         coverImageUrl: coverImageUrl.trim() || null,
       });
       toast.success("Metadata updated", "Draft metadata was saved.");
-      await openSubmission(selected.id);
-      await loadSubmissions();
+      await loadSubmissions(selected.id);
     } catch (err) {
       toast.error(
         "Could not update metadata",
@@ -228,7 +207,7 @@ export default function SubmissionPage() {
         "Manuscript updated",
         "The uploaded manuscript image was saved.",
       );
-      await openSubmission(selected.id);
+      await loadSubmissions(selected.id);
     } catch (err) {
       toast.error(
         "Could not update manuscript",
@@ -318,8 +297,7 @@ export default function SubmissionPage() {
           "The submission was sent to Editorial Board review.",
         );
       }
-      await openSubmission(selected.id);
-      await loadSubmissions();
+      await loadSubmissions(selected.id);
     } catch (err) {
       toast.error(
         "Could not submit",
@@ -350,10 +328,11 @@ export default function SubmissionPage() {
         <button
           type="button"
           onClick={() => void loadSubmissions()}
-          className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-bold text-slate-950 hover:bg-cyan-100"
+          disabled={isLoading}
+          className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-bold text-slate-950 hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          <RefreshCw size={16} />
-          Refresh
+          <RefreshCw size={16} className={isLoading ? "animate-spin" : ""} />
+          {isLoading ? "Refreshing..." : "Refresh"}
         </button>
       </div>
 
@@ -504,11 +483,11 @@ export default function SubmissionPage() {
           <div className="mt-5 grid gap-2">
             <button
               type="submit"
-              disabled={isSaving}
+              disabled={isSaving || Boolean(selected)}
               className="inline-flex items-center justify-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-bold text-slate-950 hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Save size={16} />
-              {isSaving ? "Saving..." : "Create draft"}
+              {isSaving ? "Saving..." : selected ? "Draft created" : "Create draft"}
             </button>
             <button
               type="button"
