@@ -6,6 +6,7 @@ import { mangaErpApi } from "../../shared/services/mangaErpService";
 import type {
   ChapterDto,
   MangaSeriesDto,
+  PageTaskDto,
   RecommendedAssistantDto,
 } from "../../shared/types/mangaErp";
 
@@ -13,6 +14,33 @@ type TaskAssignmentNavigationState = {
   seriesId?: string;
   chapterId?: string;
 };
+
+function formatDateTimeLocal(dateTime?: string | null) {
+  if (!dateTime) {
+    return "";
+  }
+
+  const value = new Date(dateTime);
+
+  if (Number.isNaN(value.getTime())) {
+    return "";
+  }
+
+  const pad = (number: number) => String(number).padStart(2, "0");
+
+  return (
+    [value.getFullYear(), pad(value.getMonth() + 1), pad(value.getDate())].join(
+      "-",
+    ) + `T${pad(value.getHours())}:${pad(value.getMinutes())}`
+  );
+}
+
+function getBaseImageUrl(
+  existingPage?: PageTaskDto,
+  existingTask?: PageTaskDto,
+) {
+  return existingPage?.baseImageUrl ?? existingTask?.baseImageUrl ?? "";
+}
 
 export default function TaskAssignmentPage() {
   const toast = useToast();
@@ -35,8 +63,11 @@ export default function TaskAssignmentPage() {
   const [originalPagePreviewUrl, setOriginalPagePreviewUrl] = useState("");
   const [baseImageUrl, setBaseImageUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingPageData, setIsLoadingPageData] = useState(false);
   const [isCreatingPage, setIsCreatingPage] = useState(false);
   const [isAssigning, setIsAssigning] = useState(false);
+  const [hasExistingBasePage, setHasExistingBasePage] = useState(false);
+  const [hasExistingTask, setHasExistingTask] = useState(false);
   const [message, setMessage] = useState("");
 
   async function loadSeriesAndChapters() {
@@ -131,11 +162,116 @@ export default function TaskAssignmentPage() {
   }, [chapterId]);
 
   useEffect(() => {
-    if (!originalPagePreviewUrl) return undefined;
+    let ignore = false;
+
+    const timer = window.setTimeout(() => {
+      if (!chapterId || !Number.isFinite(pageNumber) || pageNumber < 1) {
+        setHasExistingBasePage(false);
+        setHasExistingTask(false);
+        return;
+      }
+
+      async function loadExistingPageData() {
+        setIsLoadingPageData(true);
+        setMessage("");
+
+        // Chapter detail carries the immutable BaseImageUrl for each page.
+        // The task list provides assignment metadata only after the page is activated.
+        try {
+          const [chapterDetail, chapterTasks] = await Promise.all([
+            mangaErpApi.getChapter(chapterId),
+            mangaErpApi
+              .getChapterPageTasks(chapterId)
+              .catch(() => [] as PageTaskDto[]),
+          ]);
+
+          if (ignore) {
+            return;
+          }
+
+          const existingPage = chapterDetail.pageTasks?.find(
+            (page) => page.pageNumber === pageNumber,
+          );
+          const existingTask = chapterTasks.find(
+            (task) => task.pageNumber === pageNumber,
+          );
+          const taskDetail = existingTask?.id
+            ? await mangaErpApi
+                .getPageTask(existingTask.id)
+                .catch(() => existingTask)
+            : undefined;
+
+          if (ignore) {
+            return;
+          }
+
+          const pageData = taskDetail ?? existingTask ?? existingPage;
+          const existingImageUrl = getBaseImageUrl(
+            existingPage,
+            taskDetail ?? existingTask,
+          );
+
+          setHasExistingBasePage(Boolean(existingPage));
+          setHasExistingTask(Boolean(existingTask));
+          setOriginalPageFile(null);
+          setBaseImageUrl(existingImageUrl);
+          setOriginalPagePreviewUrl(existingImageUrl);
+
+          setAssistantId(pageData?.assignedAssistantId ?? "");
+          setTaskType(pageData?.taskType ?? "Background");
+          setTaskDescription(pageData?.description ?? "");
+          setDeadline(formatDateTimeLocal(pageData?.deadline));
+        } catch (err) {
+          if (ignore) {
+            return;
+          }
+
+          setHasExistingBasePage(false);
+          setHasExistingTask(false);
+          setOriginalPageFile(null);
+          setBaseImageUrl("");
+          setOriginalPagePreviewUrl("");
+          setAssistantId("");
+          setTaskType("Background");
+          setTaskDescription("");
+          setDeadline("");
+
+          const detail =
+            err instanceof Error
+              ? err.message
+              : "Could not load the selected page data.";
+
+          setMessage(detail);
+        } finally {
+          if (!ignore) {
+            setIsLoadingPageData(false);
+          }
+        }
+      }
+
+      void loadExistingPageData();
+    }, 0);
+
+    return () => {
+      ignore = true;
+      window.clearTimeout(timer);
+    };
+  }, [chapterId, pageNumber]);
+
+  useEffect(() => {
+    if (!originalPagePreviewUrl.startsWith("blob:")) return undefined;
+
     return () => URL.revokeObjectURL(originalPagePreviewUrl);
   }, [originalPagePreviewUrl]);
 
   const handleCreateBasePage = async () => {
+    if (hasExistingBasePage) {
+      const detail = `Page ${pageNumber} already has its original page image.`;
+      setMessage(detail);
+      toast.error("Base page already exists", detail);
+      return;
+    }
+
     if (!chapterId) {
       setMessage("Vui lòng chọn chapter trước khi tiếp tục.");
       return;
@@ -167,6 +303,8 @@ export default function TaskAssignmentPage() {
         pageNumber,
         uploadedBaseImageUrl,
       );
+
+      setHasExistingBasePage(true);
       setMessage("");
       toast.success(
         "Base page created",
@@ -182,6 +320,13 @@ export default function TaskAssignmentPage() {
   };
 
   const handleActivateTask = async () => {
+    if (hasExistingTask) {
+      const detail = `Page ${pageNumber} already has an assigned task.`;
+      setMessage(detail);
+      toast.error("Task already assigned", detail);
+      return;
+    }
+
     if (!chapterId) {
       setMessage("Vui lòng chọn chapter trước khi tiếp tục.");
       return;
@@ -225,9 +370,9 @@ export default function TaskAssignmentPage() {
         Description: taskDescription.trim() || null,
         Deadline: deadlineValue.toISOString(),
       });
+
+      setHasExistingTask(true);
       setMessage("");
-      setTaskDescription("");
-      setDeadline("");
       toast.success(
         "Page task assigned",
         `Page ${pageNumber} is now in the Assistant task inbox.`,
@@ -439,11 +584,57 @@ export default function TaskAssignmentPage() {
                 className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none focus:border-cyan-400"
               />
 
-              <p className="mt-2 text-xs leading-5 text-slate-500">
-                Required. Assistant will see this deadline in the assigned task
-                details.
+              <p className="mt-2 text-xs text-slate-500">
+                Required — visible to the Assistant in task details.
               </p>
             </div>
+
+            <div>
+              <label className="text-sm text-slate-400">Task type</label>
+
+              <select
+                value={taskType}
+                onChange={(event) => setTaskType(event.target.value)}
+                className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none"
+              >
+                <option value="General">General</option>
+                <option value="Background">Background</option>
+                <option value="Shading">Shading</option>
+                <option value="Inking">Inking</option>
+                <option value="Effect">Effect</option>
+                <option value="Coloring">Coloring</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="mt-5">
+            <label className="block text-sm text-slate-400">
+              Original page image
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                onChange={(event) =>
+                  handleOriginalPageFileChange(event.target.files?.[0] ?? null)
+                }
+                className="mt-2 block w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-slate-100"
+              />
+            </label>
+
+            {originalPagePreviewUrl ? (
+              <img
+                src={originalPagePreviewUrl}
+                alt="Original page selected for this task"
+                className="mt-4 max-h-72 w-full rounded-xl border border-slate-700 object-contain"
+              />
+            ) : null}
+
+            <p className="mt-3 text-xs text-slate-400">
+              {isLoadingPageData
+                ? "Loading saved page information..."
+                : hasExistingBasePage
+                  ? "This original image was previously uploaded for the selected page."
+                  : "The original image remains unchanged while artwork layers are reviewed."}
+            </p>
           </div>
 
           <label className="mt-5 block text-sm text-slate-400">
@@ -457,54 +648,6 @@ export default function TaskAssignmentPage() {
             />
           </label>
 
-          <div className="mt-5 rounded-xl border border-slate-800 bg-slate-950 p-4">
-            <div className="grid gap-3 md:grid-cols-2">
-              <label className="text-sm text-slate-400">
-                Original page image
-                <input
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp"
-                  onChange={(event) =>
-                    handleOriginalPageFileChange(
-                      event.target.files?.[0] ?? null,
-                    )
-                  }
-                  className="mt-2 block w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-slate-100"
-                />
-              </label>
-
-              <label className="text-sm text-slate-400">
-                Task type
-                <select
-                  value={taskType}
-                  onChange={(event) => setTaskType(event.target.value)}
-                  className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none"
-                >
-                  <option value="General">General</option>
-                  <option value="Background">Background</option>
-                  <option value="Shading">Shading</option>
-                  <option value="Inking">Inking</option>
-                  <option value="Effect">Effect</option>
-                  <option value="Coloring">Coloring</option>
-                </select>
-              </label>
-            </div>
-
-            {originalPagePreviewUrl ? (
-              <img
-                src={originalPagePreviewUrl}
-                alt="Original page selected for this task"
-                className="mt-4 max-h-72 w-full rounded-xl border border-slate-700 object-contain"
-              />
-            ) : null}
-
-            <p className="mt-3 text-xs leading-5 text-slate-400">
-              This image is uploaded as the immutable original page when you
-              create the base page. Assistant layers and composite previews will
-              not replace it.
-            </p>
-          </div>
-
           {message && (
             <div className="mt-5 rounded-xl border border-cyan-500/30 bg-cyan-500/10 p-4 text-sm text-cyan-200">
               {message}
@@ -514,24 +657,40 @@ export default function TaskAssignmentPage() {
           <div className="mt-5 grid gap-3 md:grid-cols-2">
             <button
               type="button"
-              disabled={isCreatingPage || !chapterId}
+              disabled={
+                isCreatingPage ||
+                isLoadingPageData ||
+                hasExistingBasePage ||
+                !chapterId
+              }
               onClick={handleCreateBasePage}
               className="flex items-center justify-center gap-2 rounded-xl border border-cyan-300/30 bg-cyan-300/10 px-5 py-3 font-semibold text-cyan-200 hover:bg-cyan-300/15 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Plus size={18} />
               {isCreatingPage
                 ? "Uploading & creating..."
-                : "Upload & Create Base Page"}
+                : hasExistingBasePage
+                  ? "Base Page Created"
+                  : "Upload & Create Base Page"}
             </button>
 
             <button
               type="button"
-              disabled={isAssigning || !chapterId}
+              disabled={
+                isAssigning ||
+                isLoadingPageData ||
+                hasExistingTask ||
+                !chapterId
+              }
               onClick={handleActivateTask}
               className="flex items-center justify-center gap-2 rounded-xl bg-cyan-600 px-5 py-3 font-semibold text-white hover:bg-cyan-500 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Send size={18} />
-              {isAssigning ? "Assigning..." : "Activate & Assign Task"}
+              {isAssigning
+                ? "Assigning..."
+                : hasExistingTask
+                  ? "Task Already Assigned"
+                  : "Activate & Assign Task"}
             </button>
           </div>
         </div>
