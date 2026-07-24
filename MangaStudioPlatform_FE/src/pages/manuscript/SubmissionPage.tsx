@@ -32,6 +32,7 @@ export default function SubmissionPage() {
   > | null>(null);
   const [isLoadingReviewResults, setIsLoadingReviewResults] = useState(false);
   const linkedSubmissionId = searchParams.get("id") ?? searchParams.get("submissionId");
+  const isDraftSelected = selected?.status === "Draft";
 
   const loadSubmissions = async () => {
     setIsLoading(true);
@@ -182,6 +183,11 @@ export default function SubmissionPage() {
       return;
     }
 
+    if (!isDraftSelected) {
+      toast.error("Metadata locked", "Only Draft submissions can be edited.");
+      return;
+    }
+
     setIsSaving(true);
     try {
       await mangaErpApi.updateSubmissionMetadata(selected.id, {
@@ -198,7 +204,7 @@ export default function SubmissionPage() {
         "Could not update metadata",
         err instanceof Error
           ? err.message
-          : "Only Draft or Requires_Revision can be edited.",
+          : "Only Draft submissions can be edited.",
       );
     } finally {
       setIsSaving(false);
@@ -211,6 +217,11 @@ export default function SubmissionPage() {
         "No draft selected",
         "Open a submission before updating manuscript.",
       );
+      return;
+    }
+
+    if (!isDraftSelected) {
+      toast.error("Manuscript locked", "Only Draft submissions can be edited.");
       return;
     }
 
@@ -234,7 +245,7 @@ export default function SubmissionPage() {
         "Could not update manuscript",
         err instanceof Error
           ? err.message
-          : "Only Draft or Requires_Revision can be edited.",
+          : "Only Draft submissions can be edited.",
       );
     } finally {
       setIsSaving(false);
@@ -303,21 +314,18 @@ export default function SubmissionPage() {
       return;
     }
 
+    if (!isDraftSelected) {
+      toast.error("Submission locked", "Only Draft submissions can be submitted.");
+      return;
+    }
+
     setIsSaving(true);
     try {
-      if (selected.status === "Requires_Revision") {
-        await mangaErpApi.resubmitSubmission(selected.id);
-        toast.success(
-          "Resubmitted",
-          "The submission returned to Editorial Board review.",
-        );
-      } else {
-        await mangaErpApi.submitSubmission(selected.id);
-        toast.success(
-          "Submitted",
-          "The submission was sent to Editorial Board review.",
-        );
-      }
+      await mangaErpApi.submitSubmission(selected.id);
+      toast.success(
+        "Submitted",
+        "The submission was sent to Editorial Board review.",
+      );
       await openSubmission(selected.id);
       await loadSubmissions();
     } catch (err) {
@@ -325,7 +333,7 @@ export default function SubmissionPage() {
         "Could not submit",
         err instanceof Error
           ? err.message
-          : "Only Draft or Requires_Revision can be submitted.",
+          : "Only Draft submissions can be submitted.",
       );
     } finally {
       setIsSaving(false);
@@ -343,7 +351,7 @@ export default function SubmissionPage() {
             Series submissions
           </h2>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
-            Draft, edit, submit, and resubmit series proposals through the MF1
+            Draft, edit, and submit series proposals through the MF1
             review workflow.
           </p>
         </div>
@@ -504,7 +512,7 @@ export default function SubmissionPage() {
           <div className="mt-5 grid gap-2">
             <button
               type="submit"
-              disabled={isSaving}
+              disabled={isSaving || Boolean(selected)}
               className="inline-flex items-center justify-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-bold text-slate-950 hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Save size={16} />
@@ -512,7 +520,7 @@ export default function SubmissionPage() {
             </button>
             <button
               type="button"
-              disabled={isSaving || !selected}
+              disabled={isSaving || !selected || !isDraftSelected}
               onClick={() => void updateMetadata()}
               className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
             >
@@ -521,7 +529,7 @@ export default function SubmissionPage() {
             </button>
             <button
               type="button"
-              disabled={isSaving || !selected}
+              disabled={isSaving || !selected || !isDraftSelected}
               onClick={() => void updateManuscript()}
               className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
             >
@@ -530,12 +538,12 @@ export default function SubmissionPage() {
             </button>
             <button
               type="button"
-              disabled={isSaving || !selected}
+              disabled={isSaving || !selected || !isDraftSelected}
               onClick={() => void submitSelected()}
               className="inline-flex items-center justify-center gap-2 rounded-lg border border-cyan-300/30 bg-cyan-300/10 px-4 py-2.5 text-sm font-semibold text-cyan-100 hover:bg-cyan-300/15 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Send size={16} />
-              {selected?.status === "Requires_Revision" ? "Resubmit" : "Submit"}
+              Submit
             </button>
           </div>
           {selected ? (

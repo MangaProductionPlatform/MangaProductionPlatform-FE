@@ -119,7 +119,6 @@ export default function ReportsPage() {
           <div className="mt-5 space-y-4">
             {[
               ["Approve", performance?.approveRate],
-              ["Revision", performance?.revisionRate],
               ["Reject", performance?.rejectRate],
             ].map(([label, value]) => (
               <div key={String(label)}>

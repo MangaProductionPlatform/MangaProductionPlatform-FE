@@ -1,14 +1,95 @@
-import { useEffect, useState } from "react";
-import { Database, FileText, RefreshCw, Users } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { CalendarDays, ChevronLeft, ChevronRight, Database, FileText, RefreshCw, Users } from "lucide-react";
 import { useToast } from "../../shared/components/toastContext";
 import { mangaErpApi } from "../../shared/services/mangaErpService";
 import type { AdminDashboardDto } from "../../shared/types/mangaErp";
 
-// Dashboard chỉ tổng hợp số liệu vận hành do backend trả về, không tự suy diễn dữ liệu ở client.
+type FilterMode = "range" | "month" | "year";
+
+const toIsoDate = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+const today = () => toIsoDate(new Date());
+const daysAgo = (days: number) => {
+  const date = new Date();
+  date.setDate(date.getDate() - days);
+  return toIsoDate(date);
+};
+const formatMonthYear = (value: string) => {
+  const [year, month] = value.split("-").map(Number);
+  if (!year || !month) return "";
+  return new Intl.DateTimeFormat("en-US", {
+    month: "long",
+    year: "numeric",
+  }).format(new Date(year, month - 1, 1));
+};
+const monthOptions = Array.from({ length: 12 }, (_, index) => ({
+  value: String(index + 1).padStart(2, "0"),
+  label: new Intl.DateTimeFormat("en-US", { month: "long" }).format(
+    new Date(2026, index, 1),
+  ),
+}));
+const weekDays = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+const parseIsoDate = (value: string) => {
+  const [year, month, day] = value.split("-").map(Number);
+  return new Date(year, month - 1, day || 1);
+};
+const formatDateLabel = (value: string) => {
+  if (!value) return "";
+  const date = parseIsoDate(value);
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(date);
+};
+
 export default function AdminDashboardPage() {
   const toast = useToast();
   const [dashboard, setDashboard] = useState<AdminDashboardDto | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [filterMode, setFilterMode] = useState<FilterMode>("range");
+  const [startDate, setStartDate] = useState(daysAgo(30));
+  const [endDate, setEndDate] = useState(today());
+  const [monthValue, setMonthValue] = useState(today().slice(0, 7));
+  const [yearValue, setYearValue] = useState(String(new Date().getFullYear()));
+
+  const activeFilter = useMemo(() => {
+    if (filterMode === "month") {
+      const [year, month] = monthValue.split("-").map(Number);
+      const lastDay = new Date(year, month, 0).getDate();
+      return {
+        filters: {
+          startDate: `${monthValue}-01`,
+          endDate: `${monthValue}-${String(lastDay).padStart(2, "0")}`,
+        },
+        groupBy: "day" as const,
+        label: formatMonthYear(monthValue),
+      };
+    }
+
+    if (filterMode === "year") {
+      return {
+        filters: {
+          startDate: `${yearValue}-01-01`,
+          endDate: `${yearValue}-12-31`,
+        },
+        groupBy: "month" as const,
+        label: `Year ${yearValue}`,
+      };
+    }
+
+    const start = startDate || daysAgo(30);
+    const end = endDate || today();
+    return {
+      filters: { startDate: start, endDate: end },
+      groupBy: "day" as const,
+      label: `${start} to ${end}`,
+    };
+  }, [endDate, filterMode, monthValue, startDate, yearValue]);
 
   const loadDashboard = async (showLoading = true) => {
     if (showLoading) setIsLoading(true);
@@ -24,18 +105,35 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const applyDashboardFilter = async () => {
+    setIsLoading(true);
+    try {
+      setDashboard(await mangaErpApi.getAdminDashboard(activeFilter.filters));
+    } catch (error) {
+      toast.error(
+        "Could not load admin dashboard",
+        error instanceof Error ? error.message : "Unknown error",
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
     let ignore = false;
     async function loadInitialDashboard() {
       try {
-        const result = await mangaErpApi.getAdminDashboard();
-        if (!ignore) setDashboard(result);
+        const dashboardResult = await mangaErpApi.getAdminDashboard();
+        if (!ignore) {
+          setDashboard(dashboardResult);
+        }
       } catch (error) {
-        if (!ignore)
+        if (!ignore) {
           toast.error(
             "Could not load admin dashboard",
             error instanceof Error ? error.message : "Unknown error",
           );
+        }
       } finally {
         if (!ignore) setIsLoading(false);
       }
@@ -44,7 +142,7 @@ export default function AdminDashboardPage() {
     return () => {
       ignore = true;
     };
-    // Initial backend load only.
+    // Initial backend load only. Filter changes apply when the user presses Apply.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -112,8 +210,24 @@ export default function AdminDashboardPage() {
             />
           </section>
 
+          <FilterBar
+            filterMode={filterMode}
+            setFilterMode={setFilterMode}
+            startDate={startDate}
+            setStartDate={setStartDate}
+            endDate={endDate}
+            setEndDate={setEndDate}
+            monthValue={monthValue}
+            setMonthValue={setMonthValue}
+            yearValue={yearValue}
+            setYearValue={setYearValue}
+            activeLabel={activeFilter.label}
+            isLoading={isLoading}
+            onApply={() => void applyDashboardFilter()}
+          />
+
           <section className="grid gap-5 xl:grid-cols-3">
-            <Breakdown
+            <CountBreakdown
               title="Users by role"
               items={[
                 ["Admins", userStats?.totalAdmins ?? 0],
@@ -124,18 +238,17 @@ export default function AdminDashboardPage() {
                 ["Editor-in-Chief", userStats?.totalEditorInChief ?? 0],
               ]}
             />
-            <Breakdown
+            <BarBreakdown
               title="Submission workflow"
               items={[
                 ["Draft", submissionStats?.draft ?? 0],
                 ["Pending EB Review", submissionStats?.pendingEBReview ?? 0],
-                ["Requires Revision", submissionStats?.requiresRevision ?? 0],
                 ["Conflict Escalated", submissionStats?.conflictEscalated ?? 0],
                 ["EB Approved", submissionStats?.ebApproved ?? 0],
                 ["EB Rejected", submissionStats?.ebRejected ?? 0],
               ]}
             />
-            <Breakdown
+            <BarBreakdown
               title="Series lifecycle"
               items={[
                 ["Active", seriesStats?.active ?? 0],
@@ -156,6 +269,254 @@ export default function AdminDashboardPage() {
               : "-"}
           </p>
         </>
+      ) : null}
+    </div>
+  );
+}
+
+function FilterBar({
+  filterMode,
+  setFilterMode,
+  startDate,
+  setStartDate,
+  endDate,
+  setEndDate,
+  monthValue,
+  setMonthValue,
+  yearValue,
+  setYearValue,
+  activeLabel,
+  isLoading,
+  onApply,
+}: {
+  filterMode: FilterMode;
+  setFilterMode: (mode: FilterMode) => void;
+  startDate: string;
+  setStartDate: (value: string) => void;
+  endDate: string;
+  setEndDate: (value: string) => void;
+  monthValue: string;
+  setMonthValue: (value: string) => void;
+  yearValue: string;
+  setYearValue: (value: string) => void;
+  activeLabel: string;
+  isLoading: boolean;
+  onApply: () => void;
+}) {
+  return (
+    <section className="rounded-lg border border-white/10 bg-slate-900/75 p-3">
+      <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
+        <div className="min-w-44">
+          <p className="flex items-center gap-2 text-sm font-bold text-white">
+            <CalendarDays size={16} className="text-cyan-200" />
+            Dashboard filters
+          </p>
+          <p className="mt-1 text-xs text-slate-500">{activeLabel}</p>
+        </div>
+
+        <div className="flex rounded-lg border border-white/10 bg-slate-950 p-1">
+          {(["range", "month", "year"] as FilterMode[]).map((mode) => (
+            <button
+              key={mode}
+              type="button"
+              onClick={() => setFilterMode(mode)}
+              className={`rounded-md px-3 py-2 text-xs font-bold capitalize transition ${
+                filterMode === mode
+                  ? "bg-white text-slate-950"
+                  : "text-slate-400 hover:bg-white/5 hover:text-white"
+              }`}
+            >
+              {mode}
+            </button>
+          ))}
+        </div>
+
+        {filterMode === "range" ? (
+          <div className="grid flex-1 gap-2 md:grid-cols-2">
+            <DatePickerInput
+              value={startDate}
+              onChange={setStartDate}
+              label="Start date"
+            />
+            <DatePickerInput
+              value={endDate}
+              onChange={setEndDate}
+              label="End date"
+            />
+          </div>
+        ) : null}
+
+        {filterMode === "month" ? (
+          <div className="grid flex-1 gap-2 md:grid-cols-[1fr_8rem]">
+            <select
+              className="input"
+              value={monthValue.slice(5, 7)}
+              onChange={(event) =>
+                setMonthValue(`${monthValue.slice(0, 4)}-${event.target.value}`)
+              }
+              aria-label="Month"
+            >
+              {monthOptions.map((month) => (
+                <option key={month.value} value={month.value}>
+                  {month.label}
+                </option>
+              ))}
+            </select>
+            <input
+              className="input"
+              type="number"
+              min="2020"
+              max="2100"
+              value={monthValue.slice(0, 4)}
+              onChange={(event) =>
+                setMonthValue(`${event.target.value}-${monthValue.slice(5, 7)}`)
+              }
+              aria-label="Month year"
+            />
+          </div>
+        ) : null}
+
+        {filterMode === "year" ? (
+          <input
+            className="input flex-1"
+            type="number"
+            min="2020"
+            max="2100"
+            value={yearValue}
+            onChange={(event) => setYearValue(event.target.value)}
+            aria-label="Year"
+          />
+        ) : null}
+
+        <button
+          type="button"
+          onClick={onApply}
+          disabled={isLoading}
+          className="inline-flex items-center justify-center rounded-lg bg-white px-4 py-2.5 text-sm font-black text-slate-950 hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          Apply
+        </button>
+      </div>
+    </section>
+  );
+}
+
+function DatePickerInput({
+  value,
+  onChange,
+  label,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  label: string;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [viewDate, setViewDate] = useState(() => parseIsoDate(value || today()));
+  const selectedDate = parseIsoDate(value || today());
+  const viewYear = viewDate.getFullYear();
+  const viewMonth = viewDate.getMonth();
+  const firstDay = new Date(viewYear, viewMonth, 1);
+  const startOffset = firstDay.getDay();
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+  const previousMonthDays = new Date(viewYear, viewMonth, 0).getDate();
+  const cells = Array.from({ length: 42 }, (_, index) => {
+    const dayIndex = index - startOffset + 1;
+    if (dayIndex < 1) {
+      return {
+        day: previousMonthDays + dayIndex,
+        date: new Date(viewYear, viewMonth - 1, previousMonthDays + dayIndex),
+        outside: true,
+      };
+    }
+    if (dayIndex > daysInMonth) {
+      return {
+        day: dayIndex - daysInMonth,
+        date: new Date(viewYear, viewMonth + 1, dayIndex - daysInMonth),
+        outside: true,
+      };
+    }
+    return {
+      day: dayIndex,
+      date: new Date(viewYear, viewMonth, dayIndex),
+      outside: false,
+    };
+  });
+
+  const moveMonth = (offset: number) => {
+    setViewDate(new Date(viewYear, viewMonth + offset, 1));
+  };
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        className="input flex w-full items-center justify-between text-left"
+        onClick={() => setIsOpen((open) => !open)}
+        aria-label={label}
+      >
+        <span>{formatDateLabel(value)}</span>
+        <CalendarDays size={16} className="text-slate-400" />
+      </button>
+
+      {isOpen ? (
+        <div className="absolute left-0 top-[calc(100%+0.5rem)] z-50 w-80 rounded-lg border border-white/10 bg-slate-950 p-4 shadow-2xl shadow-black/50">
+          <div className="flex items-center justify-between">
+            <button
+              type="button"
+              className="rounded-md p-2 text-slate-300 hover:bg-white/10 hover:text-white"
+              onClick={() => moveMonth(-1)}
+              aria-label="Previous month"
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <p className="text-sm font-bold text-white">
+              {new Intl.DateTimeFormat("en-US", {
+                month: "long",
+                year: "numeric",
+              }).format(viewDate)}
+            </p>
+            <button
+              type="button"
+              className="rounded-md p-2 text-slate-300 hover:bg-white/10 hover:text-white"
+              onClick={() => moveMonth(1)}
+              aria-label="Next month"
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
+
+          <div className="mt-4 grid grid-cols-7 gap-1 text-center text-xs font-bold text-slate-400">
+            {weekDays.map((day) => (
+              <span key={day}>{day}</span>
+            ))}
+          </div>
+          <div className="mt-2 grid grid-cols-7 gap-1">
+            {cells.map((cell) => {
+              const iso = toIsoDate(cell.date);
+              const isSelected = iso === toIsoDate(selectedDate);
+              return (
+                <button
+                  key={iso}
+                  type="button"
+                  className={`grid h-9 place-items-center rounded-md text-sm transition ${
+                    isSelected
+                      ? "bg-cyan-500 text-white ring-2 ring-cyan-300"
+                      : cell.outside
+                        ? "text-slate-600 hover:bg-white/5"
+                        : "text-slate-100 hover:bg-white/10"
+                  }`}
+                  onClick={() => {
+                    onChange(iso);
+                    setViewDate(cell.date);
+                    setIsOpen(false);
+                  }}
+                >
+                  {cell.day}
+                </button>
+              );
+            })}
+          </div>
+        </div>
       ) : null}
     </div>
   );
@@ -188,7 +549,7 @@ function Metric({
   );
 }
 
-function Breakdown({
+function CountBreakdown({
   title,
   items,
 }: {
@@ -206,6 +567,43 @@ function Breakdown({
           >
             <span className="text-slate-300">{label}</span>
             <span className="font-bold text-cyan-100">{count}</span>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function BarBreakdown({
+  title,
+  items,
+}: {
+  title: string;
+  items: Array<[string, number]>;
+}) {
+  const maxCount = Math.max(...items.map(([, count]) => count), 1);
+
+  return (
+    <section className="rounded-lg border border-white/10 bg-slate-900/75 p-5">
+      <h3 className="font-bold text-white">{title}</h3>
+      <div className="mt-4 space-y-3">
+        {items.map(([label, count]) => (
+          <div
+            key={label}
+            className="rounded-lg bg-slate-950 px-3 py-2 text-sm"
+          >
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-slate-300">{label}</span>
+              <span className="font-bold text-cyan-100">{count}</span>
+            </div>
+            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/5">
+              <div
+                className="h-full rounded-full bg-cyan-300"
+                style={{
+                  width: `${Math.max((count / maxCount) * 100, count ? 8 : 0)}%`,
+                }}
+              />
+            </div>
           </div>
         ))}
       </div>

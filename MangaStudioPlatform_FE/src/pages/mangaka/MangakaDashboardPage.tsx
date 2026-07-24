@@ -6,6 +6,7 @@ import {
   LineChart,
   RefreshCw,
   Send,
+  XCircle,
 } from "lucide-react";
 
 import { LoadingSkeleton } from "../../shared/components/LoadingSkeleton";
@@ -314,10 +315,10 @@ export default function MangakaDashboardPage() {
       icon: Send,
     },
     {
-      label: "Requires revision",
-      value: submissions.filter((item) => item.status === "Requires_Revision")
+      label: "Rejected proposals",
+      value: submissions.filter((item) => item.status === "EB_Rejected")
         .length,
-      icon: RefreshCw,
+      icon: XCircle,
     },
     {
       label: "Active series",
@@ -375,7 +376,7 @@ export default function MangakaDashboardPage() {
             Create or manage a proposal
           </h2>
           <p className="mt-2 text-sm text-slate-300">
-            Draft, update manuscript, submit and resubmit.
+            Draft, update manuscript, and submit proposals for board review.
           </p>
         </Link>
         <Link
