@@ -91,9 +91,6 @@ export default function AdminRolesPage() {
         </div>
       ) : null}
 
-      <p className="rounded-lg border border-amber-300/20 bg-amber-500/10 p-4 text-sm text-amber-100">
-        Permission editing is not available yet; this page is currently read-only.
-      </p>
     </div>
   );
 }
