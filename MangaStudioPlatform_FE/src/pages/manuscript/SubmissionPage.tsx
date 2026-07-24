@@ -60,9 +60,19 @@ export default function SubmissionPage() {
     }
   };
 
-  const loadSubmissions = async (submissionIdToOpen?: string | null) => {
-    const targetSubmissionId = submissionIdToOpen ?? selected?.id ?? null;
+  const loadSubmissions = async (
+    submissionIdToOpen?: string | null,
+    resetSelection = false,
+  ) => {
+    const targetSubmissionId = resetSelection
+      ? null
+      : submissionIdToOpen ?? selected?.id ?? null;
     setIsLoading(true);
+    if (resetSelection) {
+      fillForm(null);
+      setFeedbackPins([]);
+      setReviewResults(null);
+    }
     try {
       const result = await mangaErpApi.getMySubmissions();
       setItems(result);
@@ -335,7 +345,7 @@ export default function SubmissionPage() {
         </div>
         <button
           type="button"
-          onClick={() => void loadSubmissions()}
+          onClick={() => void loadSubmissions(null, true)}
           disabled={isLoading}
           className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-bold text-slate-950 hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-60"
         >
