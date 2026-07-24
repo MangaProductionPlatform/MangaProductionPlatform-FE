@@ -149,12 +149,6 @@ export default function AdminDashboardPage() {
             />
           </section>
 
-          <p className="text-xs text-slate-500">
-            Generated at{" "}
-            {dashboard.generatedAt
-              ? new Date(dashboard.generatedAt).toLocaleString()
-              : "-"}
-          </p>
         </>
       ) : null}
     </div>
