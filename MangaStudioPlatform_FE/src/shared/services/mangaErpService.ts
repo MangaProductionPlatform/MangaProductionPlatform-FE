@@ -3,6 +3,9 @@ import type {
   ActivateAccountPayload,
   ActivateAccountResult,
   AdminDashboardDto,
+  AdminDashboardFilters,
+  AdminChartGroupBy,
+  AdminChartsDto,
   AdminRoleDto,
   AdminWorkflowStatsDto,
   AssistantIncomeDto,
@@ -20,6 +23,11 @@ import type {
   CurrentUserProfileDto,
   CancellationQueueItemDto,
   EditorDashboardDto,
+  EditorialConflictsDto,
+  EditorialDecisionPayload,
+  EditorialDecisionResult,
+  EditorialReviewAssignmentDto,
+  EditorialReviewDetailDto,
   AddQaPinPayload,
   AssignQaFixPayload,
   FeedbackPinDto,
@@ -133,6 +141,54 @@ function mapQaSession(item: Record<string, unknown>): QaSessionDto {
   };
 }
 
+function mapEditorialReviewAssignment(item: Record<string, unknown>): EditorialReviewAssignmentDto {
+  return {
+    id: pickAny<string>(item, ["id", "Id"]),
+    workType: String(pickAny<string>(item, ["workType", "WorkType"])),
+    workId: pickAny<string>(item, ["workId", "WorkId"]),
+    roundNumber: pickAny<number>(item, ["roundNumber", "RoundNumber", "round", "Round"]),
+    status: String(pickAny<string>(item, ["status", "Status"])),
+    decision: pickAny<EditorialReviewAssignmentDto["decision"]>(item, ["decision", "Decision"]),
+    feedback: pickAny<string | null | undefined>(item, ["feedback", "Feedback"]),
+    assignedAt: pickAny<string | null | undefined>(item, ["assignedAt", "AssignedAt"]),
+    reviewedAt: pickAny<string | null | undefined>(item, ["reviewedAt", "ReviewedAt"]),
+  };
+}
+
+function mapEditorialConflictItem(item: Record<string, unknown>) {
+  return {
+    id: pickAny<string>(item, ["id", "Id", "workId", "WorkId"]),
+    title: pickAny<string>(item, ["title", "Title"]),
+    workType: String(pickAny<string>(item, ["workType", "WorkType"])),
+    roundNumber: pickAny<number | null | undefined>(item, ["roundNumber", "RoundNumber", "currentRound", "CurrentRound", "round", "Round"]),
+  };
+}
+
+function toQueryString(params: Record<string, string | undefined>) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value) query.set(key, value);
+  });
+  const text = query.toString();
+  return text ? `?${text}` : "";
+}
+
+function mapAdminCharts(data: Record<string, unknown>): AdminChartsDto {
+  const mapPoint = (item: Record<string, unknown>) => ({
+    date: pickAny<string>(item, ["date", "Date"]),
+    count: pickAny<number>(item, ["count", "Count"]),
+  });
+  const submissionTrends =
+    pickAny<Record<string, unknown>[] | undefined>(data, ["submissionTrends", "SubmissionTrends"]) ?? [];
+  const seriesTrends =
+    pickAny<Record<string, unknown>[] | undefined>(data, ["seriesTrends", "SeriesTrends"]) ?? [];
+  return {
+    submissionTrends: submissionTrends.map(mapPoint),
+    seriesTrends: seriesTrends.map(mapPoint),
+    generatedAt: pickAny<string>(data, ["generatedAt", "GeneratedAt"]),
+  };
+}
+
 export const mangaErpApi = {
   baseUrl: API_BASE_URL,
   serviceBaseUrls: SERVICE_BASE_URLS,
@@ -209,8 +265,17 @@ export const mangaErpApi = {
     });
   },
 
-  async getAdminDashboard() {
-    return request<AdminDashboardDto>("identity", "/api/v1/admin/dashboard");
+  async getAdminDashboard(filters: AdminDashboardFilters = {}) {
+    const query = toQueryString(filters);
+    return request<AdminDashboardDto>("identity", `/api/v1/admin/dashboard${query}`);
+  },
+
+  async getAdminCharts(filters: AdminDashboardFilters & { groupBy?: AdminChartGroupBy } = {}) {
+    const data = await request<Record<string, unknown>>(
+      "identity",
+      `/api/v1/admin/charts${toQueryString(filters)}`,
+    );
+    return mapAdminCharts(data);
   },
 
   async getAdminWorkflowStats() {
@@ -394,6 +459,56 @@ export const mangaErpApi = {
   async getSubmissionQueue(): Promise<SubmissionSummaryDto[]> {
     const data = await request<Record<string, unknown>[]>("submission", "/api/v1/submissions/queue");
     return data.map(mapSubmissionSummary);
+  },
+
+  async getEditorialReviews() {
+    const data = await request<Record<string, unknown>[]>("submission", "/api/v1/editorial-workflow/reviews");
+    return data.map(mapEditorialReviewAssignment);
+  },
+
+  async getEditorialReviewDetail(assignmentId: string): Promise<EditorialReviewDetailDto> {
+    const data = await request<Record<string, unknown>>("submission", `/api/v1/editorial-workflow/reviews/${assignmentId}`);
+    const detail = mapEditorialReviewAssignment(data);
+    const completedReviews =
+      pickAny<Record<string, unknown>[] | null | undefined>(data, ["completedReviews", "CompletedReviews"]) ?? null;
+    return {
+      ...detail,
+      bothComplete: Boolean(pickAny<boolean | undefined>(data, ["bothComplete", "BothComplete"])),
+      completedReviews: completedReviews?.map((item) => ({
+        reviewerId: pickAny<string>(item, ["reviewerId", "ReviewerId"]),
+        decision: pickAny<EditorialReviewAssignmentDto["decision"]>(item, ["decision", "Decision"]),
+        feedback: pickAny<string | null | undefined>(item, ["feedback", "Feedback"]),
+        reviewedAt: pickAny<string | null | undefined>(item, ["reviewedAt", "ReviewedAt"]),
+      })) ?? null,
+    };
+  },
+
+  async submitEditorialReviewDecision(assignmentId: string, payload: EditorialDecisionPayload) {
+    return request<EditorialDecisionResult>("submission", `/api/v1/editorial-workflow/reviews/${assignmentId}/decision`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async getEditorialConflicts(): Promise<EditorialConflictsDto> {
+    const data = await request<Record<string, unknown>>("submission", "/api/v1/editorial-workflow/conflicts");
+    const submissions = pickAny<Record<string, unknown>[] | undefined>(data, ["submissions", "Submissions"]) ?? [];
+    const chapters = pickAny<Record<string, unknown>[] | undefined>(data, ["chapters", "Chapters"]) ?? [];
+    return {
+      submissions: submissions.map(mapEditorialConflictItem),
+      chapters: chapters.map(mapEditorialConflictItem),
+    };
+  },
+
+  async getEditorialConflictDetail(workType: string, workId: string) {
+    return request<Record<string, unknown>>("submission", `/api/v1/editorial-workflow/conflicts/${workType}/${workId}`);
+  },
+
+  async resolveEditorialConflict(workType: string, workId: string, payload: EditorialDecisionPayload) {
+    return request<EditorialDecisionResult>("submission", `/api/v1/editorial-workflow/conflicts/${workType}/${workId}/decision`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
   },
 
   async getSubmission(id: string): Promise<SubmissionDetailDto> {

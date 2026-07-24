@@ -1,56 +1,53 @@
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import {
-  CheckCircle2,
-  Eye,
-  Gavel,
-  MessageSquare,
-  RefreshCw,
-  XCircle,
-} from "lucide-react";
+import { CheckCircle2, Eye, RefreshCw, XCircle } from "lucide-react";
 import { mangaErpApi } from "../../shared/services/mangaErpService";
 import type {
   CurrentUser,
+  EditorialConflictItemDto,
+  EditorialDecision,
+  EditorialReviewAssignmentDto,
+  EditorialReviewDetailDto,
   SubmissionDetailDto,
-  SubmissionSummaryDto,
-  SubmissionVotesDto,
-  SubmissionVoteType,
 } from "../../shared/types/mangaErp";
 import { useToast } from "../../shared/components/toastContext";
 import LoadingSkeleton from "../../shared/components/LoadingSkeleton";
 
-type BoardAction = "approve" | "revision" | "reject";
+type BoardAction = "approve" | "reject";
 
-const voteTypeByAction: Record<BoardAction, SubmissionVoteType> = {
-  approve: "APPROVE",
-  revision: "REQ_REVISION",
-  reject: "REJECT",
+type ProposalQueueItem = {
+  id: string;
+  title: string;
+  status: string;
+  workType: string;
+  workId: string;
+  roundNumber?: number | null;
+  assignment?: EditorialReviewAssignmentDto;
+  conflict?: EditorialConflictItemDto;
+};
+
+const decisionByAction: Record<BoardAction, EditorialDecision> = {
+  approve: "Approved",
+  reject: "Rejected",
 };
 
 const actionLabel: Record<BoardAction, string> = {
   approve: "Approve",
-  revision: "Request revision",
   reject: "Reject",
 };
 
 export default function SeriesProposalsPage() {
   const toast = useToast();
   const [searchParams] = useSearchParams();
-  const [queue, setQueue] = useState<SubmissionSummaryDto[]>([]);
+  const [queue, setQueue] = useState<ProposalQueueItem[]>([]);
   const [selected, setSelected] = useState<SubmissionDetailDto | null>(null);
+  const [selectedReview, setSelectedReview] =
+    useState<EditorialReviewDetailDto | null>(null);
   const [reason, setReason] = useState("");
-  const [pinPage, setPinPage] = useState("");
-  const [pinX, setPinX] = useState("0.5");
-  const [pinY, setPinY] = useState("0.5");
-  const [pinComment, setPinComment] = useState("");
-  const [pinCategory, setPinCategory] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [runningAction, setRunningAction] = useState<BoardAction | null>(null);
-  const [lastVoteResult, setLastVoteResult] = useState<string | null>(null);
-  const [voteSummary, setVoteSummary] = useState<SubmissionVotesDto | null>(
-    null,
-  );
+  const [lastResult, setLastResult] = useState<string | null>(null);
 
   const currentUser = useMemo(
     () =>
@@ -61,15 +58,54 @@ export default function SeriesProposalsPage() {
   );
   const isEditorialBoard = currentUser?.role === "editorial_board";
   const isEditorInChief = currentUser?.role === "editor_in_chief";
-  const linkedSubmissionId = searchParams.get("id") ?? searchParams.get("submissionId");
+  const linkedSubmissionId =
+    searchParams.get("id") ?? searchParams.get("submissionId");
 
   const loadQueue = async () => {
     setIsLoading(true);
     try {
-      const result = await mangaErpApi.getSubmissionQueue();
-      setQueue(result);
-      if (selected && !result.some((item) => item.id === selected.id)) {
+      if (isEditorInChief) {
+        const conflicts = await mangaErpApi.getEditorialConflicts();
+        const items = conflicts.submissions.map((item) => ({
+          id: item.id,
+          title: item.title,
+          status: "Conflict_Escalated",
+          workType: item.workType || "SeriesSubmission",
+          workId: item.id,
+          roundNumber: item.roundNumber,
+          conflict: item,
+        }));
+        setQueue(items);
+        if (selected && !items.some((item) => item.workId === selected.id)) {
+          setSelected(null);
+          setSelectedReview(null);
+        }
+        return;
+      }
+
+      const reviews = await mangaErpApi.getEditorialReviews();
+      const items = await Promise.all(
+        reviews
+          .filter((review) => review.workType === "SeriesSubmission")
+          .map(async (review) => {
+            const detail = await mangaErpApi.getSubmission(review.workId).catch(
+              () => null,
+            );
+            return {
+              id: review.id,
+              title: detail?.title ?? review.workId,
+              status: review.status,
+              workType: review.workType,
+              workId: review.workId,
+              roundNumber: review.roundNumber,
+              assignment: review,
+            };
+          }),
+      );
+      setQueue(items);
+      if (selected && !items.some((item) => item.workId === selected.id)) {
         setSelected(null);
+        setSelectedReview(null);
       }
     } catch (err) {
       setQueue([]);
@@ -83,21 +119,28 @@ export default function SeriesProposalsPage() {
   };
 
   useEffect(() => {
-    // Initial backend fetch; state updates occur as the request resolves.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadQueue();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const openSubmission = async (id: string) => {
+  const openQueueItem = async (item: ProposalQueueItem) => {
     try {
-      const detail = await mangaErpApi.getSubmission(id);
+      const detail = await mangaErpApi.getSubmission(item.workId);
       setSelected(detail);
       setReason(detail.feedbackMessage ?? "");
-      setLastVoteResult(null);
-      setVoteSummary(null);
-      const votes = await mangaErpApi.getSubmissionVotes(id).catch(() => null);
-      setVoteSummary(votes);
+      setLastResult(null);
+
+      if (item.assignment) {
+        const review = await mangaErpApi.getEditorialReviewDetail(
+          item.assignment.id,
+        );
+        setSelectedReview(review);
+      } else {
+        setSelectedReview(null);
+        await mangaErpApi
+          .getEditorialConflictDetail(item.workType, item.workId)
+          .catch(() => null);
+      }
     } catch (err) {
       toast.error(
         "Could not open submission",
@@ -108,24 +151,28 @@ export default function SeriesProposalsPage() {
 
   useEffect(() => {
     if (linkedSubmissionId) {
-      void openSubmission(linkedSubmissionId);
+      const linkedItem = queue.find((item) => item.workId === linkedSubmissionId);
+      if (linkedItem) {
+        void openQueueItem(linkedItem);
+      } else {
+        void mangaErpApi
+          .getSubmission(linkedSubmissionId)
+          .then((detail) => {
+            setSelected(detail);
+            setSelectedReview(null);
+            setReason(detail.feedbackMessage ?? "");
+          })
+          .catch((err) =>
+            toast.error(
+              "Could not open submission",
+              err instanceof Error ? err.message : "Please try again.",
+            ),
+          );
+      }
     }
     // React to notification deep links only.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [linkedSubmissionId]);
-
-  const buildFeedbackPins = () =>
-    pinComment.trim()
-      ? [
-          {
-            pageIdentifier: pinPage.trim() || "cover",
-            coordinateX: Number(pinX),
-            coordinateY: Number(pinY),
-            comment: pinComment.trim(),
-            category: pinCategory,
-          },
-        ]
-      : [];
+  }, [linkedSubmissionId, queue.length]);
 
   const runAction = async (action: BoardAction) => {
     if (!selected) {
@@ -136,8 +183,8 @@ export default function SeriesProposalsPage() {
       return;
     }
 
-    if (action !== "approve" && !reason.trim()) {
-      toast.error("Reason required", "Enter a revision or rejection reason.");
+    if (action === "reject" && !reason.trim()) {
+      toast.error("Reason required", "Enter a rejection reason.");
       return;
     }
 
@@ -146,6 +193,11 @@ export default function SeriesProposalsPage() {
         "Unsupported role",
         "This page accepts Editorial Board or Editor-in-Chief accounts.",
       );
+      return;
+    }
+
+    if (!isEditorInChief && !selectedReview) {
+      toast.error("Review assignment missing", "Open an assigned review first.");
       return;
     }
 
@@ -159,48 +211,41 @@ export default function SeriesProposalsPage() {
 
     setRunningAction(action);
     try {
-      if (isEditorInChief) {
-        const result = await mangaErpApi.resolveSubmissionConflict(
-          selected.id,
-          {
-            finalDecision: voteTypeByAction[action],
-            feedbackMessage:
-              action === "approve"
-                ? reason.trim() || "Approved by Editor-in-Chief."
-                : reason.trim(),
-          },
-        );
-        toast.success(
-          "Conflict resolved",
-          `${actionLabel[action]} saved as final decision.`,
-        );
-        setLastVoteResult(
-          `Final decision: ${result.finalDecision}. New status: ${result.newStatus}.`,
-        );
-      } else {
-        const result = await mangaErpApi.castSubmissionVote(selected.id, {
-          voteType: voteTypeByAction[action],
-          comment: reason.trim() || null,
-          feedbackPins: action === "revision" ? buildFeedbackPins() : [],
-        });
-        const outcome =
-          result.aggregationOutcome ??
-          `Waiting for more votes (${result.totalVotesInRound}/3)`;
-        toast.success("Vote submitted", outcome);
-        setLastVoteResult(
-          `${outcome}. Current status: ${result.submissionStatus}. Round ${result.roundNumber}.`,
-        );
-      }
+      const payload = {
+        decision: decisionByAction[action],
+        feedback:
+          action === "approve"
+            ? reason.trim() || null
+            : reason.trim(),
+      };
 
+      const result = isEditorInChief
+        ? await mangaErpApi.resolveEditorialConflict(
+            "SeriesSubmission",
+            selected.id,
+            payload,
+          )
+        : await mangaErpApi.submitEditorialReviewDecision(
+            selectedReview!.id,
+            payload,
+          );
+
+      toast.success(
+        isEditorInChief ? "Conflict resolved" : "Vote submitted",
+        `${actionLabel[action]} saved.`,
+      );
+      setLastResult(`Status: ${result.status}`);
       await loadQueue();
       const refreshed = await mangaErpApi
         .getSubmission(selected.id)
         .catch(() => null);
       setSelected(refreshed);
-      const votes = await mangaErpApi
-        .getSubmissionVotes(selected.id)
-        .catch(() => null);
-      setVoteSummary(votes);
+      if (!isEditorInChief && selectedReview) {
+        const review = await mangaErpApi
+          .getEditorialReviewDetail(selectedReview.id)
+          .catch(() => null);
+        setSelectedReview(review);
+      }
     } catch (err) {
       toast.error(
         isEditorInChief ? "Conflict decision failed" : "Vote failed",
@@ -225,8 +270,8 @@ export default function SeriesProposalsPage() {
           </h2>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
             {isEditorInChief
-              ? "Escalated conflicts and active proposals awaiting board review."
-              : "Submissions you can vote on in the current Editorial Board round."}
+              ? "Escalated conflicts awaiting a final approve or reject decision."
+              : "Assigned series proposals awaiting your approve or reject vote."}
           </p>
         </div>
         <button
@@ -263,12 +308,12 @@ export default function SeriesProposalsPage() {
                     {item.title}
                   </h3>
                   <p className="mt-1 text-sm text-slate-400">
-                    {item.genre ?? "Uncategorized"}
+                    Round {item.roundNumber ?? 1}
                   </p>
                 </div>
                 <button
                   type="button"
-                  onClick={() => void openSubmission(item.id)}
+                  onClick={() => void openQueueItem(item)}
                   className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10"
                 >
                   <Eye size={15} />
@@ -313,55 +358,32 @@ export default function SeriesProposalsPage() {
                 ) : null}
               </div>
 
-              {lastVoteResult ? (
+              {selectedReview ? (
+                <div className="rounded-lg border border-white/10 bg-slate-950/50 p-3 text-sm text-slate-300">
+                  <p className="text-xs font-semibold uppercase tracking-[.16em] text-slate-400">
+                    Your assignment
+                  </p>
+                  <p className="mt-2">
+                    Status:{" "}
+                    <span className="font-bold text-white">
+                      {selectedReview.status}
+                    </span>
+                  </p>
+                  {selectedReview.decision ? (
+                    <p className="mt-1">Decision: {selectedReview.decision}</p>
+                  ) : null}
+                </div>
+              ) : null}
+
+              {lastResult ? (
                 <div className="rounded-lg border border-emerald-300/20 bg-emerald-300/10 p-3 text-sm text-emerald-100">
-                  {lastVoteResult}
+                  {lastResult}
                 </div>
               ) : null}
 
               {isEditorInChief && selected.status !== "Conflict_Escalated" ? (
                 <div className="rounded-lg border border-amber-300/20 bg-amber-300/10 p-3 text-sm text-amber-100">
                   This proposal is not escalated.
-                </div>
-              ) : null}
-
-              {voteSummary ? (
-                <div className="rounded-lg border border-white/10 bg-slate-950/50 p-3">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className="text-xs font-semibold uppercase tracking-[.16em] text-slate-400">
-                      Round {voteSummary.round} votes
-                    </p>
-                    <p className="text-xs text-slate-400">
-                      {voteSummary.totalVotes}/3 | A {voteSummary.approveCount}{" "}
-                      | R {voteSummary.rejectCount} | Rev{" "}
-                      {voteSummary.revisionCount}
-                    </p>
-                  </div>
-                  <div className="mt-3 space-y-2">
-                    {voteSummary.votes.map((vote) => (
-                      <div
-                        key={`${vote.editorId}-${vote.votedAt}`}
-                        className="rounded-md border border-white/10 p-2 text-xs text-slate-300"
-                      >
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <span className="font-bold text-white">
-                            {vote.voteType}
-                          </span>
-                          <span className="break-all text-slate-500">
-                            {vote.editorId}
-                          </span>
-                        </div>
-                        {vote.comment ? (
-                          <p className="mt-1 leading-5">{vote.comment}</p>
-                        ) : null}
-                      </div>
-                    ))}
-                    {!voteSummary.votes.length ? (
-                      <p className="text-xs text-slate-500">
-                        No votes recorded for the current round.
-                      </p>
-                    ) : null}
-                  </div>
                 </div>
               ) : null}
 
@@ -374,55 +396,6 @@ export default function SeriesProposalsPage() {
                 }
               />
 
-              {!isEditorInChief ? (
-                <div className="space-y-2 rounded-lg border border-white/10 bg-slate-950/40 p-3">
-                  <p className="text-xs font-semibold uppercase tracking-[.16em] text-slate-400">
-                    Optional revision pin
-                  </p>
-                  <input
-                    className="input"
-                    value={pinPage}
-                    onChange={(event) => setPinPage(event.target.value)}
-                    placeholder="Page identifier"
-                  />
-                  <div className="grid grid-cols-2 gap-2">
-                    <input
-                      className="input"
-                      type="number"
-                      step="0.01"
-                      value={pinX}
-                      onChange={(event) => setPinX(event.target.value)}
-                      placeholder="X"
-                    />
-                    <input
-                      className="input"
-                      type="number"
-                      step="0.01"
-                      value={pinY}
-                      onChange={(event) => setPinY(event.target.value)}
-                      placeholder="Y"
-                    />
-                  </div>
-                  <select
-                    className="input"
-                    value={pinCategory}
-                    onChange={(event) =>
-                      setPinCategory(Number(event.target.value))
-                    }
-                  >
-                    <option value={0}>Visual</option>
-                    <option value={1}>Content</option>
-                    <option value={2}>Typo</option>
-                  </select>
-                  <textarea
-                    className="input min-h-20"
-                    value={pinComment}
-                    onChange={(event) => setPinComment(event.target.value)}
-                    placeholder="Pin comment"
-                  />
-                </div>
-              ) : null}
-
               <ActionButton
                 icon={<CheckCircle2 size={16} />}
                 label={isEditorInChief ? "Resolve as approve" : "Vote approve"}
@@ -431,23 +404,6 @@ export default function SeriesProposalsPage() {
                 }
                 loading={runningAction === "approve"}
                 onClick={() => void runAction("approve")}
-              />
-              <ActionButton
-                icon={
-                  isEditorInChief ? (
-                    <Gavel size={16} />
-                  ) : (
-                    <MessageSquare size={16} />
-                  )
-                }
-                label={
-                  isEditorInChief ? "Resolve as revision" : "Vote revision"
-                }
-                disabled={
-                  isEditorInChief && selected.status !== "Conflict_Escalated"
-                }
-                loading={runningAction === "revision"}
-                onClick={() => void runAction("revision")}
               />
               <ActionButton
                 icon={<XCircle size={16} />}

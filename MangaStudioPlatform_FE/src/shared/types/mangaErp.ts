@@ -127,6 +127,24 @@ export type AdminDashboardDto = {
   generatedAt: string;
 };
 
+export type AdminDashboardFilters = {
+  startDate?: string;
+  endDate?: string;
+};
+
+export type AdminChartGroupBy = "day" | "month";
+
+export type AdminTrendDataPointDto = {
+  date: string;
+  count: number;
+};
+
+export type AdminChartsDto = {
+  submissionTrends: AdminTrendDataPointDto[];
+  seriesTrends: AdminTrendDataPointDto[];
+  generatedAt: string;
+};
+
 export type AdminWorkflowStatsDto = {
   generatedAt: string;
   submissionStats: Array<{ status: string; count: number }>;
@@ -558,6 +576,52 @@ export type RequestRevisionPayload = {
 };
 
 export type SubmissionVoteType = "APPROVE" | "REJECT" | "REQ_REVISION";
+
+export type EditorialDecision = "Approved" | "Rejected";
+
+export type EditorialReviewAssignmentDto = {
+  id: string;
+  workType: string;
+  workId: string;
+  roundNumber: number;
+  status: string;
+  decision?: EditorialDecision | null;
+  feedback?: string | null;
+  assignedAt?: string | null;
+  reviewedAt?: string | null;
+};
+
+export type EditorialReviewDetailDto = EditorialReviewAssignmentDto & {
+  bothComplete: boolean;
+  completedReviews?: Array<{
+    reviewerId: string;
+    decision?: EditorialDecision | null;
+    feedback?: string | null;
+    reviewedAt?: string | null;
+  }> | null;
+};
+
+export type EditorialDecisionPayload = {
+  decision: EditorialDecision;
+  feedback?: string | null;
+};
+
+export type EditorialDecisionResult = {
+  status: string;
+  peerReviewConfidential?: boolean;
+};
+
+export type EditorialConflictItemDto = {
+  id: string;
+  title: string;
+  workType: string;
+  roundNumber?: number | null;
+};
+
+export type EditorialConflictsDto = {
+  submissions: EditorialConflictItemDto[];
+  chapters: EditorialConflictItemDto[];
+};
 
 export type CastSubmissionVotePayload = {
   voteType: SubmissionVoteType;
