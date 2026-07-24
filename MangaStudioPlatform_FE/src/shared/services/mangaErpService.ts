@@ -28,6 +28,7 @@ import type {
   EditorialDecisionResult,
   EditorialReviewAssignmentDto,
   EditorialReviewDetailDto,
+  EditorialSubmissionListItemDto,
   AddQaPinPayload,
   AssignQaFixPayload,
   FeedbackPinDto,
@@ -464,6 +465,19 @@ export const mangaErpApi = {
   async getEditorialReviews() {
     const data = await request<Record<string, unknown>[]>("submission", "/api/v1/editorial-workflow/reviews");
     return data.map(mapEditorialReviewAssignment);
+  },
+
+  async getEditorialAllSubmissions(): Promise<EditorialSubmissionListItemDto[]> {
+    const data = await request<Record<string, unknown>[]>("submission", "/api/v1/editorial-workflow/all-submissions");
+    return data.map((item) => ({
+      id: pickAny<string>(item, ["id", "Id"]),
+      title: pickAny<string>(item, ["title", "Title"]),
+      status: String(pickAny<string>(item, ["status", "Status"])),
+      submitterId: pickAny<string | null | undefined>(item, ["submitterId", "SubmitterId"]),
+      currentRound: pickAny<number | null | undefined>(item, ["currentRound", "CurrentRound", "roundNumber", "RoundNumber"]),
+      feedbackMessage: pickAny<string | null | undefined>(item, ["feedbackMessage", "FeedbackMessage"]),
+      createdAt: pickAny<string | null | undefined>(item, ["createdAt", "CreatedAt"]),
+    }));
   },
 
   async getEditorialReviewDetail(assignmentId: string): Promise<EditorialReviewDetailDto> {

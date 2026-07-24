@@ -41,7 +41,6 @@ const editorMenus = [
 const boardMenus = [
   { label: "Dashboard", path: "/app/board/dashboard", icon: LayoutDashboard },
   { label: "Series Proposals", path: "/app/board/series-proposals", icon: BookOpen },
-  { label: "Voting Center", path: "/app/board/voting-center", icon: ClipboardCheck },
   { label: "Publishing Schedule", path: "/app/board/publishing-schedule", icon: FileText },
   { label: "Cancellation Review", path: "/app/board/cancellation-review", icon: PenTool },
   { label: "Reports", path: "/app/board/reports", icon: FileText },

@@ -618,6 +618,16 @@ export type EditorialConflictItemDto = {
   roundNumber?: number | null;
 };
 
+export type EditorialSubmissionListItemDto = {
+  id: string;
+  title: string;
+  status: string;
+  submitterId?: string | null;
+  currentRound?: number | null;
+  feedbackMessage?: string | null;
+  createdAt?: string | null;
+};
+
 export type EditorialConflictsDto = {
   submissions: EditorialConflictItemDto[];
   chapters: EditorialConflictItemDto[];
