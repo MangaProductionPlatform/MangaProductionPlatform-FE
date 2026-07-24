@@ -2,9 +2,9 @@ import { ArrowRight, CheckCircle2, Scale, UsersRound } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const reviewRules = [
-  { icon: UsersRound, title: "Three-member review", copy: "The first three eligible Editorial Board members form the active review group." },
-  { icon: CheckCircle2, title: "Consensus outcome", copy: "Approve, revision, or reject is applied when the board reaches the configured agreement." },
-  { icon: Scale, title: "Conflict escalation", copy: "A round without consensus moves to the Head Editor for the final decision." },
+  { icon: UsersRound, title: "Assigned review", copy: "Eligible Editorial Board members receive assigned proposals for the active review round." },
+  { icon: CheckCircle2, title: "Board outcome", copy: "Approve creates the official active series; reject closes the proposal." },
+  { icon: Scale, title: "Conflict escalation", copy: "A split round moves to the Head Editor for a final approve or reject decision." },
 ];
 
 export default function VotingCenterPage() {
@@ -36,9 +36,8 @@ export default function VotingCenterPage() {
 
       <section className="rounded-2xl border border-white/10 bg-slate-900/75 p-6">
         <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Available vote outcomes</p>
-        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
           <Decision tone="emerald" title="Approve" copy="Create and activate the official series." />
-          <Decision tone="amber" title="Request revision" copy="Return feedback and reopen the Mangaka edit loop." />
           <Decision tone="rose" title="Reject" copy="Close the workflow with the board's reason." />
         </div>
       </section>
@@ -46,10 +45,9 @@ export default function VotingCenterPage() {
   );
 }
 
-function Decision({ tone, title, copy }: { tone: "emerald" | "amber" | "rose"; title: string; copy: string }) {
+function Decision({ tone, title, copy }: { tone: "emerald" | "rose"; title: string; copy: string }) {
   const tones = {
     emerald: "border-emerald-400/20 bg-emerald-500/10 text-emerald-200",
-    amber: "border-amber-400/20 bg-amber-500/10 text-amber-200",
     rose: "border-rose-400/20 bg-rose-500/10 text-rose-200",
   };
   return <div className={`rounded-xl border p-4 ${tones[tone]}`}><p className="font-bold">{title}</p><p className="mt-1 text-xs leading-5 text-slate-400">{copy}</p></div>;
