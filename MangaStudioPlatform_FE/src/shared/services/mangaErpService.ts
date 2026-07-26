@@ -10,6 +10,7 @@ import type {
   AdminWorkflowStatsDto,
   AssistantIncomeDto,
   AdminUserDto,
+  BasePageVersionDto,
   BoardDashboardDto,
   BoardPerformanceReportDto,
   BoardReportDto,
@@ -77,6 +78,7 @@ import type {
   UpdateProfilePayload,
   UpdateAdminAccountPayload,
   UpdateQaPinPayload,
+  UpdateTaskDetailsPayload,
   UpdateTaskDeadlinePayload,
   UpdateSubmissionManuscriptPayload,
   UpdateSubmissionMetadataPayload,
@@ -100,6 +102,58 @@ function pickAny<T>(value: Record<string, unknown>, keys: string[]): T {
     if (candidate !== undefined) return candidate as T;
   }
   return undefined as T;
+}
+
+function pickNonEmptyString(
+  value: Record<string, unknown>,
+  keys: string[],
+) {
+  for (const key of keys) {
+    const candidate = value[key];
+
+    if (typeof candidate === "string" && candidate.trim()) {
+      return candidate.trim();
+    }
+  }
+
+  return "";
+}
+
+function mapBasePageVersion(item: Record<string, unknown>): BasePageVersionDto {
+  return {
+    id: pickAny<string | undefined>(item, [
+      "id",
+      "Id",
+      "basePageId",
+      "BasePageId",
+    ]),
+    version: pickAny<number | undefined>(item, [
+      "version",
+      "Version",
+      "versionNumber",
+      "VersionNumber",
+    ]),
+    baseImageUrl: pickAny<string | null | undefined>(item, [
+      "baseImageUrl",
+      "BaseImageUrl",
+      "imageUrl",
+      "ImageUrl",
+      "fileUrl",
+      "FileUrl",
+    ]),
+    createdAt: pickAny<string | null | undefined>(item, [
+      "createdAt",
+      "CreatedAt",
+      "uploadedAt",
+      "UploadedAt",
+    ]),
+    isCurrent: pickAny<boolean | undefined>(item, [
+      "isCurrent",
+      "IsCurrent",
+      "isLatest",
+      "IsLatest",
+    ]),
+  };
 }
 
 function mapQaPin(item: Record<string, unknown>): QaBugPinDto {
@@ -644,7 +698,22 @@ export const mangaErpApi = {
   async getRecommendedAssistants(chapterId: string): Promise<RecommendedAssistantDto[]> {
     const data = await request<Record<string, unknown>[]>("chapter", `/api/v1/chapters/${chapterId}/recommend-assistants`);
     return data.map((item) => ({
-      assistantId: pickAny<string>(item, ["assistantId", "AssistantId", "id", "Id"]),
+      assistantId: pickNonEmptyString(item, [
+        "assistantId",
+        "AssistantId",
+        "assistantID",
+        "AssistantID",
+        "assistantUserId",
+        "AssistantUserId",
+        "assistantUserID",
+        "AssistantUserID",
+        "userId",
+        "UserId",
+        "identityUserId",
+        "IdentityUserId",
+        "id",
+        "Id",
+      ]),
       assistantName: pickAny<string>(item, ["assistantName", "AssistantName", "fullName", "FullName", "name", "Name"]),
       avatarUrl: pickAny<string | null | undefined>(item, ["avatarUrl", "AvatarUrl"]),
       penName: pickAny<string | null | undefined>(item, ["penName", "PenName"]),
@@ -728,6 +797,50 @@ export const mangaErpApi = {
   async getPageTask(pageTaskId: string) {
     const data = await request<Record<string, unknown>>("task", `/api/v1/tasks/${pageTaskId}`);
     return mapPageTask(data);
+  },
+
+  async updateTaskDetails(
+    pageTaskId: string,
+    payload: UpdateTaskDetailsPayload,
+  ) {
+    return request<void>("task", `/api/v1/tasks/${pageTaskId}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async getBasePageVersions(pageTaskId: string) {
+    const data = await request<
+      | Record<string, unknown>[]
+      | {
+          items?: Record<string, unknown>[];
+          Items?: Record<string, unknown>[];
+          versions?: Record<string, unknown>[];
+          Versions?: Record<string, unknown>[];
+          basePageVersions?: Record<string, unknown>[];
+          BasePageVersions?: Record<string, unknown>[];
+        }
+    >("task", `/api/v1/tasks/${pageTaskId}/base-pages/versions`);
+
+    const items = Array.isArray(data)
+      ? data
+      : data.items ??
+        data.Items ??
+        data.versions ??
+        data.Versions ??
+        data.basePageVersions ??
+        data.BasePageVersions ??
+        [];
+
+    return items.map(mapBasePageVersion);
+  },
+
+  async cancelAndRecreateTask(pageTaskId: string) {
+    return request<void>(
+      "task",
+      `/api/v1/tasks/${pageTaskId}/cancel-and-recreate`,
+      { method: "POST" },
+    );
   },
 
   async getMyNotifications(unreadOnly = false) {

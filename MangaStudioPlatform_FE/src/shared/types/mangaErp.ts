@@ -456,6 +456,7 @@ export type ActivatePagePayload = {
   AssignedAssistantId: string;
   Description?: string | null;
   Deadline?: string | null;
+  TaskType?: string | null;
 };
 
 export type BulkActivatePagesPayload = {
@@ -472,6 +473,21 @@ export type ReassignPageTaskPayload = {
 
 export type UpdateTaskDeadlinePayload = {
   Deadline?: string | null;
+};
+
+export type UpdateTaskDetailsPayload = {
+  Description?: string | null;
+  Deadline?: string | null;
+  TaskType?: string | null;
+  BaseImageUrl?: string | null;
+};
+
+export type BasePageVersionDto = {
+  id?: string;
+  version?: number;
+  baseImageUrl?: string | null;
+  createdAt?: string | null;
+  isCurrent?: boolean;
 };
 
 export type SetPageRegionPayload = {
