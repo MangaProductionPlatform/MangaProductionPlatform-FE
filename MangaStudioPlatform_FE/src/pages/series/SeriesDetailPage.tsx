@@ -5,6 +5,7 @@ import { mangaErpApi } from "../../shared/services/mangaErpService";
 import type { ChapterDto, MangaSeriesDto } from "../../shared/types/mangaErp";
 import { useToast } from "../../shared/components/toastContext";
 import { mangaCoverImages } from "../../shared/visuals/mangaVisuals";
+import { resolveMediaUrl } from "../../shared/utils/mediaUrl";
 
 export default function SeriesDetailPage() {
   const params = useParams();
@@ -68,8 +69,12 @@ export default function SeriesDetailPage() {
       {!isLoading && series ? (
         <section className="grid gap-5 rounded-lg border border-white/10 bg-slate-900/75 p-5 lg:grid-cols-[13rem_1fr]">
           <img
-            src={series.coverImageUrl || mangaCoverImages[2].image}
+            src={resolveMediaUrl(series.coverImageUrl) || mangaCoverImages[2].image}
             alt={series.title}
+            onError={(event) => {
+              event.currentTarget.onerror = null;
+              event.currentTarget.src = mangaCoverImages[2].image;
+            }}
             className="aspect-[2/3] w-full rounded-lg object-cover shadow-xl shadow-slate-950/30"
           />
           <div>
