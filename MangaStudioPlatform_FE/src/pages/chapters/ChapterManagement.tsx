@@ -37,7 +37,6 @@ export default function ChapterManagementPage() {
   const [chapterTitle, setChapterTitle] = useState("");
   const [chapterNumber, setChapterNumber] = useState("1");
   const [totalPages, setTotalPages] = useState("24");
-  const [assignedEditorId, setAssignedEditorId] = useState("");
   const [detailChapterId, setDetailChapterId] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -201,14 +200,6 @@ export default function ChapterManagementPage() {
       return;
     }
 
-    if (!assignedEditorId.trim()) {
-      toast.error(
-        "Editor ID required",
-        "Assign a Tantou Editor when creating the chapter.",
-      );
-      return;
-    }
-
     setIsSubmitting(true);
 
     try {
@@ -217,7 +208,6 @@ export default function ChapterManagementPage() {
         Title: chapterTitle,
         ChapterNumber: Number(chapterNumber),
         TotalPages: Number(totalPages),
-        AssignedEditorId: assignedEditorId.trim(),
       });
 
       toast.success(
@@ -524,14 +514,6 @@ export default function ChapterManagementPage() {
                   placeholder="Total pages"
                 />
               </div>
-
-              <input
-                required
-                className="input"
-                value={assignedEditorId}
-                onChange={(event) => setAssignedEditorId(event.target.value)}
-                placeholder="Assigned Tantou Editor ID"
-              />
 
               <button
                 disabled={isSubmitting}
