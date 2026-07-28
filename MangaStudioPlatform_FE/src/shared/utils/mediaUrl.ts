@@ -3,7 +3,15 @@ import { API_BASE_URL } from "../services/mangaErpConfig";
 export function resolveMediaUrl(url?: string | null) {
   const value = url?.trim() ?? "";
 
-  if (!value || import.meta.env.DEV || !API_BASE_URL) {
+  if (!value || !API_BASE_URL) {
+    return value;
+  }
+
+  if (
+    value.startsWith("data:") ||
+    value.startsWith("blob:") ||
+    value.startsWith("//")
+  ) {
     return value;
   }
 
@@ -21,7 +29,9 @@ export function resolveMediaUrl(url?: string | null) {
       return `${API_BASE_URL}${parsedUrl.pathname}${parsedUrl.search}${parsedUrl.hash}`;
     }
   } catch {
-    return value;
+    // Media paths returned by the API may omit the leading slash. Resolve them
+    // against the API host so they do not point to the current Vercel route.
+    return `${API_BASE_URL}/${value.replace(/^\.\//, "")}`;
   }
 
   return value;

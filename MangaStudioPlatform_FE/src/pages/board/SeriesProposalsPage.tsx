@@ -16,6 +16,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { mangaErpApi } from "../../shared/services/mangaErpService";
+import { resolveMediaUrl } from "../../shared/utils/mediaUrl";
 import type {
   CurrentUser,
   EditorialConflictItemDto,
@@ -75,11 +76,9 @@ const readAuthorName = (detail: SubmissionDetailDto | null) =>
   null;
 const readPreviewImage = (
   item: Pick<ProposalQueueItem, "coverImageUrl" | "manuscriptUrl">,
-) => item.coverImageUrl || item.manuscriptUrl || null;
-const filterSelectClass =
-  "input h-12 py-0 pl-4 pr-10 leading-normal text-sm";
-const filterInputClass =
-  "input h-12 py-0 leading-normal text-sm";
+) => resolveMediaUrl(item.coverImageUrl || item.manuscriptUrl);
+const filterSelectClass = "input h-12 py-0 pl-4 pr-10 leading-normal text-sm";
+const filterInputClass = "input h-12 py-0 leading-normal text-sm";
 const getTimeValue = (value?: string | null) => {
   if (!value) return 0;
   const time = new Date(value).getTime();
@@ -185,15 +184,24 @@ export default function SeriesProposalsPage() {
         return;
       }
 
-      const [allSubmissionsResult, queueResult, dashboardResult] = await Promise.allSettled([
-        withTimeout(
-          mangaErpApi.getEditorialAllSubmissions(),
-          "EB submissions list",
-          12000,
-        ),
-        withTimeout(mangaErpApi.getSubmissionQueue(), "Submission queue", 12000),
-        withTimeout(mangaErpApi.getBoardDashboard(), "Board dashboard", 12000),
-      ]);
+      const [allSubmissionsResult, queueResult, dashboardResult] =
+        await Promise.allSettled([
+          withTimeout(
+            mangaErpApi.getEditorialAllSubmissions(),
+            "EB submissions list",
+            12000,
+          ),
+          withTimeout(
+            mangaErpApi.getSubmissionQueue(),
+            "Submission queue",
+            12000,
+          ),
+          withTimeout(
+            mangaErpApi.getBoardDashboard(),
+            "Board dashboard",
+            12000,
+          ),
+        ]);
       const allSubmissions =
         allSubmissionsResult.status === "fulfilled"
           ? allSubmissionsResult.value
@@ -218,48 +226,55 @@ export default function SeriesProposalsPage() {
       }
 
       const allSubmissionItems = allSubmissions.map((submission) => {
-          return {
-            id: `submission-${submission.id}`,
-            title: submission.title,
-            status: submission.status,
-            workType: "SeriesSubmission",
-            workId: submission.id,
-            roundNumber: submission.currentRound ?? 1,
-            createdAt: submission.createdAt,
-            assignmentMissing:
-              submission.status === "Pending_EB_Review",
-          } satisfies ProposalQueueItem;
-        });
-
-      const knownWorkIds = new Set(allSubmissionItems.map((item) => item.workId));
-      const queueFallbackItems = queueFallback
-        .filter((submission) => !knownWorkIds.has(submission.id))
-        .map((submission) => ({
-          id: `queue-${submission.id}`,
+        return {
+          id: `submission-${submission.id}`,
           title: submission.title,
           status: submission.status,
           workType: "SeriesSubmission",
           workId: submission.id,
-          roundNumber: null,
-          genre: submission.genre,
+          roundNumber: submission.currentRound ?? 1,
           createdAt: submission.createdAt,
           assignmentMissing: submission.status === "Pending_EB_Review",
-        }) satisfies ProposalQueueItem);
+        } satisfies ProposalQueueItem;
+      });
+
+      const knownWorkIds = new Set(
+        allSubmissionItems.map((item) => item.workId),
+      );
+      const queueFallbackItems = queueFallback
+        .filter((submission) => !knownWorkIds.has(submission.id))
+        .map(
+          (submission) =>
+            ({
+              id: `queue-${submission.id}`,
+              title: submission.title,
+              status: submission.status,
+              workType: "SeriesSubmission",
+              workId: submission.id,
+              roundNumber: null,
+              genre: submission.genre,
+              createdAt: submission.createdAt,
+              assignmentMissing: submission.status === "Pending_EB_Review",
+            }) satisfies ProposalQueueItem,
+        );
 
       queueFallbackItems.forEach((item) => knownWorkIds.add(item.workId));
       const boardPending = boardDashboard?.proposalQueue ?? [];
       const boardPendingItems = boardPending
         .filter((submission) => !knownWorkIds.has(submission.id))
-        .map((submission) => ({
-          id: `pending-${submission.id}`,
-          title: submission.title,
-          status: "Pending_EB_Review",
-          workType: "SeriesSubmission",
-          workId: submission.id,
-          roundNumber: null,
-          createdAt: submission.submittedAt,
-          assignmentMissing: true,
-        }) satisfies ProposalQueueItem);
+        .map(
+          (submission) =>
+            ({
+              id: `pending-${submission.id}`,
+              title: submission.title,
+              status: "Pending_EB_Review",
+              workType: "SeriesSubmission",
+              workId: submission.id,
+              roundNumber: null,
+              createdAt: submission.submittedAt,
+              assignmentMissing: true,
+            }) satisfies ProposalQueueItem,
+        );
 
       const baseItems = [
         ...allSubmissionItems,
@@ -321,7 +336,9 @@ export default function SeriesProposalsPage() {
     );
 
     if (selectedReview) {
-      const review = items.find((item) => item.workId === selected?.id)?.assignment;
+      const review = items.find(
+        (item) => item.workId === selected?.id,
+      )?.assignment;
       if (review) {
         const detail = await mangaErpApi
           .getEditorialReviewDetail(review.id)
@@ -379,7 +396,11 @@ export default function SeriesProposalsPage() {
     let toTime: number | null = null;
 
     if (timeFilter === "today") {
-      fromTime = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+      fromTime = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
+      ).getTime();
       toTime = now.getTime();
     } else if (timeFilter === "week") {
       fromTime = now.getTime() - 7 * 24 * 60 * 60 * 1000;
@@ -391,16 +412,20 @@ export default function SeriesProposalsPage() {
       fromTime = createdFrom
         ? new Date(`${createdFrom}T00:00:00`).getTime()
         : null;
-      toTime = createdTo
-        ? new Date(`${createdTo}T23:59:59`).getTime()
-        : null;
+      toTime = createdTo ? new Date(`${createdTo}T23:59:59`).getTime() : null;
     }
 
     return queue
       .filter((item) => {
         const textMatch =
           !normalizedSearch ||
-          [item.title, item.genre, item.authorName, item.description, item.status]
+          [
+            item.title,
+            item.genre,
+            item.authorName,
+            item.description,
+            item.status,
+          ]
             .filter(Boolean)
             .some((value) =>
               String(value).toLowerCase().includes(normalizedSearch),
@@ -440,7 +465,15 @@ export default function SeriesProposalsPage() {
           getTimeValue(right.createdAt) - getTimeValue(left.createdAt);
         return sortMode === "oldest" ? -newestFirst : newestFirst;
       });
-  }, [createdFrom, createdTo, progressFilter, queue, searchText, sortMode, timeFilter]);
+  }, [
+    createdFrom,
+    createdTo,
+    progressFilter,
+    queue,
+    searchText,
+    sortMode,
+    timeFilter,
+  ]);
 
   const resetFilters = () => {
     setSearchText("");
@@ -452,7 +485,11 @@ export default function SeriesProposalsPage() {
   };
 
   useEffect(() => {
-    void loadQueue();
+    const loadTimer = window.setTimeout(() => {
+      void loadQueue();
+    }, 0);
+
+    return () => window.clearTimeout(loadTimer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -485,8 +522,12 @@ export default function SeriesProposalsPage() {
   };
 
   useEffect(() => {
-    if (linkedSubmissionId) {
-      const linkedItem = queue.find((item) => item.workId === linkedSubmissionId);
+    if (!linkedSubmissionId) return;
+
+    const openTimer = window.setTimeout(() => {
+      const linkedItem = queue.find(
+        (item) => item.workId === linkedSubmissionId,
+      );
       if (linkedItem) {
         void openQueueItem(linkedItem);
       } else {
@@ -504,7 +545,9 @@ export default function SeriesProposalsPage() {
             ),
           );
       }
-    }
+    }, 0);
+
+    return () => window.clearTimeout(openTimer);
     // React to notification deep links only.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [linkedSubmissionId, queue.length]);
@@ -551,10 +594,7 @@ export default function SeriesProposalsPage() {
     try {
       const payload = {
         decision: decisionByAction[action],
-        feedback:
-          action === "approve"
-            ? reason.trim() || null
-            : reason.trim(),
+        feedback: action === "approve" ? reason.trim() || null : reason.trim(),
       };
 
       const result = isEditorInChief
@@ -876,7 +916,7 @@ export default function SeriesProposalsPage() {
                     </p>
                     {item.manuscriptUrl ? (
                       <a
-                        href={item.manuscriptUrl}
+                        href={resolveMediaUrl(item.manuscriptUrl)}
                         target="_blank"
                         rel="noreferrer"
                         className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-lg border border-violet-300/25 bg-violet-300/10 px-3 text-sm font-semibold text-violet-100 hover:bg-violet-300/15"
@@ -919,11 +959,7 @@ export default function SeriesProposalsPage() {
                   <div className="relative aspect-[3/4] bg-slate-950">
                     {selected.coverImageUrl || selected.manuscriptUrl ? (
                       <img
-                        src={
-                          selected.coverImageUrl ||
-                          selected.manuscriptUrl ||
-                          undefined
-                        }
+                        src={readPreviewImage(selected) || undefined}
                         alt={`${selected.title} preview`}
                         className="h-full w-full object-cover"
                         onError={(event) => {
@@ -991,7 +1027,7 @@ export default function SeriesProposalsPage() {
                   </p>
                   {selected.manuscriptUrl ? (
                     <a
-                      href={selected.manuscriptUrl}
+                      href={resolveMediaUrl(selected.manuscriptUrl)}
                       target="_blank"
                       rel="noreferrer"
                       className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-violet-300/25 bg-violet-300/10 px-3 text-sm font-semibold text-violet-100 hover:bg-violet-300/15"
@@ -1003,13 +1039,13 @@ export default function SeriesProposalsPage() {
                 </div>
                 {selected.manuscriptUrl ? (
                   <a
-                    href={selected.manuscriptUrl}
+                    href={resolveMediaUrl(selected.manuscriptUrl)}
                     target="_blank"
                     rel="noreferrer"
                     className="mt-4 block overflow-hidden rounded-lg border border-white/10 bg-slate-950"
                   >
                     <img
-                      src={selected.manuscriptUrl}
+                      src={resolveMediaUrl(selected.manuscriptUrl)}
                       alt={`${selected.title} manuscript`}
                       loading="lazy"
                       className="max-h-80 w-full object-contain"
@@ -1075,7 +1111,8 @@ export default function SeriesProposalsPage() {
                 icon={<CheckCircle2 size={16} />}
                 label={isEditorInChief ? "Resolve as approve" : "Vote approve"}
                 disabled={
-                  (isEditorInChief && selected.status !== "Conflict_Escalated") ||
+                  (isEditorInChief &&
+                    selected.status !== "Conflict_Escalated") ||
                   (!isEditorInChief && !selectedReview)
                 }
                 loading={runningAction === "approve"}
@@ -1085,7 +1122,8 @@ export default function SeriesProposalsPage() {
                 icon={<XCircle size={16} />}
                 label={isEditorInChief ? "Resolve as reject" : "Vote reject"}
                 disabled={
-                  (isEditorInChief && selected.status !== "Conflict_Escalated") ||
+                  (isEditorInChief &&
+                    selected.status !== "Conflict_Escalated") ||
                   (!isEditorInChief && !selectedReview)
                 }
                 loading={runningAction === "reject"}
