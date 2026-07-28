@@ -32,6 +32,8 @@ import type {
   EditorialReviewDetailDto,
   EditorialSubmissionListItemDto,
   AddQaPinPayload,
+  AssignAssistantToMangakaPayload,
+  EndCollaborationPayload,
   AssignQaFixPayload,
   FeedbackPinDto,
   InviteAssistantPayload,
@@ -239,6 +241,18 @@ function mapAssistantCandidate(
       "availabilityReason",
       "AvailabilityReason",
     ]),
+    collaborationId: pickAny<string | null | undefined>(item, [
+      "collaborationId",
+      "CollaborationId",
+    ]),
+    concurrencyToken: pickAny<string | null | undefined>(item, [
+      "concurrencyToken",
+      "ConcurrencyToken",
+    ]),
+    expectedConcurrencyToken: pickAny<string | null | undefined>(item, [
+      "expectedConcurrencyToken",
+      "ExpectedConcurrencyToken",
+    ]),
   };
 }
 
@@ -406,6 +420,56 @@ export const mangaErpApi = {
     );
   },
 
+  async getUnassignedAssistants(): Promise<AssistantCandidateDto[]> {
+    const data = await request<unknown>(
+      "identity",
+      "/api/v1/admin/unassigned-assistants",
+    );
+
+    return getRecordArray(data, ["items", "Items", "assistants", "Assistants"])
+      .map(mapAssistantCandidate);
+  },
+
+  async getAdminMangakaAssistants(
+    mangakaId: string,
+  ): Promise<AssistantCandidateDto[]> {
+    const data = await request<unknown>(
+      "identity",
+      `/api/v1/admin/mangakas/${encodeURIComponent(mangakaId)}/assistants`,
+    );
+
+    return getRecordArray(data, ["items", "Items", "assistants", "Assistants"])
+      .map(mapAssistantCandidate);
+  },
+
+  async assignAssistantToMangaka(
+    assistantId: string,
+    payload: AssignAssistantToMangakaPayload,
+  ) {
+    return request<void>(
+      "identity",
+      `/api/v1/admin/assistants/${encodeURIComponent(assistantId)}/assign-mangaka`,
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+
+  async endStudioCollaboration(
+    collaborationId: string,
+    payload: EndCollaborationPayload,
+  ) {
+    return request<void>(
+      "identity",
+      `/api/v1/studios/collaborations/${encodeURIComponent(collaborationId)}/end`,
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+
   async getUser(id: string) {
     return request<AdminUserDto>("identity", `/api/v1/admin/accounts/${id}`);
   },
@@ -496,6 +560,16 @@ export const mangaErpApi = {
   async getMySeries() {
     const data = await request<Record<string, unknown>[]>("series", "/api/v1/series/my");
     return data.map(mapSeries);
+  },
+
+  async getMyManagedAssistants(): Promise<AssistantCandidateDto[]> {
+    const data = await request<unknown>(
+      "series",
+      "/api/v1/mangakas/me/assistants",
+    );
+
+    return getRecordArray(data, ["items", "Items", "assistants", "Assistants"])
+      .map(mapAssistantCandidate);
   },
 
   async getSeries(id: string) {

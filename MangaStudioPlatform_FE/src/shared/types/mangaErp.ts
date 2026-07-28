@@ -89,6 +89,15 @@ export type ListUsersResult = {
   totalCount: number;
 };
 
+export type AssignAssistantToMangakaPayload = {
+  MangakaId: string;
+};
+
+export type EndCollaborationPayload = {
+  reason: string;
+  expectedConcurrencyToken: string;
+};
+
 export type AdminRoleDto = {
   value: number;
   name: string;
@@ -325,6 +334,9 @@ export type AssistantCandidateDto = {
   isAvailable: boolean;
   availabilityCode?: string | null;
   availabilityReason?: string | null;
+  collaborationId?: string | null;
+  concurrencyToken?: string | null;
+  expectedConcurrencyToken?: string | null;
 };
 
 export type TaskAssistantCandidatesDto = {

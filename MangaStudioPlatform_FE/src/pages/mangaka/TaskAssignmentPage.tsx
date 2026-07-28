@@ -338,7 +338,7 @@ export default function TaskAssignmentPage() {
       : isUpdatingTask
         ? "Saving task changes..."
         : isTaskAwaitingAssistant
-          ? "Save & Assign Recreated Task"
+          ? "Activate & Assign Recreated Task"
           : "Save task changes"
     : isAssigning
       ? "Assigning..."
@@ -974,9 +974,15 @@ export default function TaskAssignmentPage() {
       await mangaErpApi.updateTaskDetails(selectedPageTaskId, payload);
 
       if (isTaskAwaitingAssistant) {
-        await mangaErpApi.reassignPageTask(chapterId, pageNumber, {
-          NewAssistantId: selectedAssistantId,
+        // Cancel-and-recreate creates a fresh Draft task. A Draft must be
+        // activated before it can be assigned; the reassign endpoint only
+        // accepts Incomplete or RevisionAlert tasks.
+        await mangaErpApi.activatePage(chapterId, {
+          PageNumber: pageNumber,
+          AssignedAssistantId: selectedAssistantId,
           Description: taskDescription.trim() || null,
+          Deadline: deadlineValue.toISOString(),
+          TaskType: taskType,
         });
 
         storeRecreatedTaskAssistantId(
@@ -991,7 +997,7 @@ export default function TaskAssignmentPage() {
       toast.success(
         isTaskAwaitingAssistant ? "Task assigned" : "Task updated",
         isTaskAwaitingAssistant
-          ? "The recreated task was assigned to the selected Assistant."
+          ? "The recreated task was activated and assigned to the selected Assistant."
           : "The Assistant will receive the latest task details.",
       );
     } catch (err) {

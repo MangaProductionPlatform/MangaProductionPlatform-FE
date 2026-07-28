@@ -3,13 +3,17 @@ import {
   AlertCircle,
   ArrowRight,
   CalendarClock,
+  Inbox,
   RefreshCw,
   RotateCcw,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useToast } from "../../shared/components/toastContext";
 import { mangaErpApi } from "../../shared/services/mangaErpService";
-import type { PageTaskDto } from "../../shared/types/mangaErp";
+import type {
+  PageTaskDto,
+  StudioInvitationDto,
+} from "../../shared/types/mangaErp";
 
 type TaskSummary = {
   label: string;
@@ -45,15 +49,24 @@ const getDeadlineState = (deadline: string) => {
 
 export default function AssistantDashboardPage() {
   const toast = useToast();
+  const [invitations, setInvitations] = useState<StudioInvitationDto[]>([]);
   const [tasks, setTasks] = useState<PageTaskDto[]>([]);
+  const [busyInvitationId, setBusyInvitationId] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
   const loadDashboard = useCallback(async () => {
     setIsLoading(true);
 
     try {
-      setTasks(await mangaErpApi.getAssignedPageTasks());
+      const [pendingInvitations, assignedTasks] = await Promise.all([
+        mangaErpApi.getPendingInvitations(),
+        mangaErpApi.getAssignedPageTasks(),
+      ]);
+
+      setInvitations(pendingInvitations);
+      setTasks(assignedTasks);
     } catch (error) {
+      setInvitations([]);
       setTasks([]);
       toast.error(
         "Could not load Assistant dashboard",
@@ -126,6 +139,28 @@ export default function AssistantDashboardPage() {
     [tasks],
   );
 
+  const respondToInvitation = async (
+    invitationId: string,
+    response: "accept" | "decline",
+  ) => {
+    setBusyInvitationId(invitationId);
+
+    try {
+      await mangaErpApi.respondToInvitation(invitationId, response);
+      toast.success(
+        response === "accept" ? "Invitation accepted" : "Invitation declined",
+      );
+      await loadDashboard();
+    } catch (error) {
+      toast.error(
+        "Response failed",
+        error instanceof Error ? error.message : "Unknown error",
+      );
+    } finally {
+      setBusyInvitationId("");
+    }
+  };
+
   return (
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-4">
@@ -137,8 +172,8 @@ export default function AssistantDashboardPage() {
             My work overview
           </h1>
           <p className="mt-2 max-w-2xl text-sm text-slate-400">
-            Review assigned page tasks, upcoming deadlines, and revision
-            requests.
+            Review assigned page tasks, upcoming deadlines, revision requests,
+            and series invitations.
           </p>
         </div>
 
@@ -197,7 +232,6 @@ export default function AssistantDashboardPage() {
         />
       </section>
 
-      {/* Studio invitations are no longer part of the direct task-assignment flow.
       <section className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex gap-3">
@@ -277,7 +311,7 @@ export default function AssistantDashboardPage() {
             No pending invitations. New studio invitations will appear here.
           </div>
         )}
-      </section> */}
+      </section>
     </div>
   );
 }

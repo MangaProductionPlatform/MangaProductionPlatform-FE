@@ -2,7 +2,10 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Copy, Mail, Save, ShieldCheck, Trash2 } from "lucide-react";
 import { mangaErpApi } from "../../shared/services/mangaErpService";
-import type { AdminUserDto } from "../../shared/types/mangaErp";
+import type {
+  AdminUserDto,
+  AssistantCandidateDto,
+} from "../../shared/types/mangaErp";
 import { useToast } from "../../shared/components/toastContext";
 
 const roles = [
@@ -19,6 +22,13 @@ export default function AdminUserDetailPage() {
   const [user, setUser] = useState<AdminUserDto | null>(null);
   const [form, setForm] = useState({ fullName: "", personalEmail: "", phoneNumber: "", managingTantouId: "", role: 1, status: 1 });
   const [busy, setBusy] = useState(false);
+  const [managedAssistants, setManagedAssistants] = useState<AssistantCandidateDto[]>([]);
+  const [unassignedAssistants, setUnassignedAssistants] = useState<AssistantCandidateDto[]>([]);
+  const [selectedAssistantIds, setSelectedAssistantIds] = useState<string[]>([]);
+  const [isLoadingManagedAssistants, setIsLoadingManagedAssistants] = useState(false);
+  const [isLoadingAssistants, setIsLoadingAssistants] = useState(false);
+  const [isAssigningAssistants, setIsAssigningAssistants] = useState(false);
+  const [endingCollaborationId, setEndingCollaborationId] = useState<string | null>(null);
 
   const applyUser = (value: AdminUserDto) => {
     setUser(value);
@@ -35,6 +45,106 @@ export default function AdminUserDetailPage() {
     mangaErpApi.getUser(id).then(value => { if (!ignore) applyUser(value); }).catch(error => toast.error("Could not load user", error instanceof Error ? error.message : "Unknown error"));
     return () => { ignore = true; };
   }, [id, toast]);
+
+  const loadUnassignedAssistants = async () => {
+    setIsLoadingAssistants(true);
+    try {
+      setUnassignedAssistants(await mangaErpApi.getUnassignedAssistants());
+    } catch (error) {
+      toast.error("Could not load unassigned Assistants", error instanceof Error ? error.message : "Unknown error");
+    } finally {
+      setIsLoadingAssistants(false);
+    }
+  };
+
+  const loadManagedAssistants = async () => {
+    if (!user) return;
+
+    setIsLoadingManagedAssistants(true);
+    try {
+      setManagedAssistants(
+        await mangaErpApi.getAdminMangakaAssistants(user.userId),
+      );
+    } catch (error) {
+      toast.error(
+        "Could not load this Mangaka's Assistants",
+        error instanceof Error ? error.message : "Unknown error",
+      );
+    } finally {
+      setIsLoadingManagedAssistants(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user?.role === "Mangaka") {
+      void loadUnassignedAssistants();
+      void loadManagedAssistants();
+    }
+    // Loading is intentionally tied to the managed Mangaka account.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.userId, user?.role]);
+
+  const toggleAssistant = (assistantId: string) => {
+    setSelectedAssistantIds((current) => {
+      if (current.includes(assistantId)) {
+        return current.filter((id) => id !== assistantId);
+      }
+
+      return managedAssistants.length + current.length < 4
+        ? [...current, assistantId]
+        : current;
+    });
+  };
+
+  const assignSelectedAssistants = async () => {
+    if (!user || selectedAssistantIds.length === 0) return;
+
+    setIsAssigningAssistants(true);
+    try {
+      for (const assistantId of selectedAssistantIds) {
+        await mangaErpApi.assignAssistantToMangaka(assistantId, {
+          MangakaId: user.userId,
+        });
+      }
+
+      toast.success(`${selectedAssistantIds.length} Assistant(s) assigned to ${user.fullName || user.username}.`);
+      setSelectedAssistantIds([]);
+      await Promise.all([loadUnassignedAssistants(), loadManagedAssistants()]);
+    } catch (error) {
+      toast.error("Could not assign Assistants", error instanceof Error ? error.message : "Unknown error");
+    } finally {
+      setIsAssigningAssistants(false);
+    }
+  };
+
+  const endCollaboration = async (assistant: AssistantCandidateDto) => {
+    const expectedConcurrencyToken =
+      assistant.expectedConcurrencyToken ?? assistant.concurrencyToken;
+    if (!assistant.collaborationId || !expectedConcurrencyToken) return;
+
+    const reason = window.prompt(
+      `Reason for ending collaboration with ${assistant.displayName}:`,
+    );
+    if (reason === null || !reason.trim()) return;
+    if (!window.confirm(`End collaboration with ${assistant.displayName}? This returns the Assistant to the Admin pool.`)) return;
+
+    setEndingCollaborationId(assistant.collaborationId);
+    try {
+      await mangaErpApi.endStudioCollaboration(assistant.collaborationId, {
+        reason: reason.trim(),
+        expectedConcurrencyToken,
+      });
+      toast.success(`${assistant.displayName} was removed from this Mangaka.`);
+      await Promise.all([loadUnassignedAssistants(), loadManagedAssistants()]);
+    } catch (error) {
+      toast.error(
+        "Could not end collaboration",
+        error instanceof Error ? error.message : "Unknown error",
+      );
+    } finally {
+      setEndingCollaborationId(null);
+    }
+  };
 
   const run = async (action: () => Promise<unknown>, success: string, refresh = true) => {
     setBusy(true); try { await action(); toast.success(success); if (refresh) await reload(); return true; }
@@ -68,5 +178,77 @@ export default function AdminUserDetailPage() {
         <button disabled={busy} className="inline-flex items-center gap-2 rounded-lg border border-rose-400/30 bg-rose-500/10 px-4 py-2 text-sm font-bold text-rose-200" onClick={() => { if (window.confirm(`Delete ${user.username}? This cannot be undone.`)) void run(() => mangaErpApi.deleteUser(user.userId),"Account deleted",false).then(ok => { if (ok) navigate("/admin/users"); }); }}><Trash2 size={16}/>Delete</button>
       </div>
     </section>
+
+    {user.role === "Mangaka" ? (
+      <section className="rounded-lg border border-cyan-300/20 bg-slate-900/75 p-5">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[.18em] text-cyan-200">Assistant management</p>
+            <h3 className="mt-1 text-xl font-black text-white">Assign Assistants to this Mangaka</h3>
+            <p className="mt-2 max-w-2xl text-sm text-slate-400">This Mangaka can manage up to four Assistants. Assigned Assistants leave the Admin pool and become available for this Mangaka to invite to a series.</p>
+          </div>
+          <span className="rounded-lg bg-slate-800 px-3 py-2 text-sm font-semibold text-cyan-100">{managedAssistants.length}/4 assigned</span>
+        </div>
+
+        <div className="mt-5">
+          <h4 className="text-sm font-bold text-white">Assigned Assistants</h4>
+          {isLoadingManagedAssistants ? (
+            <p className="mt-3 text-sm text-slate-400">Loading assigned Assistants...</p>
+          ) : managedAssistants.length ? (
+            <div className="mt-3 grid gap-3 md:grid-cols-2">
+              {managedAssistants.map((assistant) => (
+                <div key={assistant.assistantId} className="rounded-xl border border-cyan-300/30 bg-cyan-300/5 p-4">
+                  <p className="font-semibold text-white">{assistant.displayName}</p>
+                  <p className="mt-1 break-all text-sm text-slate-400">{assistant.email || assistant.assistantId}</p>
+                  <button
+                    type="button"
+                    disabled={!assistant.collaborationId || !(assistant.expectedConcurrencyToken ?? assistant.concurrencyToken) || endingCollaborationId !== null}
+                    title={!assistant.collaborationId || !(assistant.expectedConcurrencyToken ?? assistant.concurrencyToken) ? "This Assistant record does not include the collaboration details required to end it." : undefined}
+                    onClick={() => void endCollaboration(assistant)}
+                    className="mt-4 rounded-lg border border-rose-400/40 bg-rose-500/10 px-3 py-2 text-sm font-semibold text-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {endingCollaborationId === assistant.collaborationId ? "Ending collaboration..." : "End collaboration"}
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-3 rounded-xl border border-dashed border-slate-700 p-4 text-sm text-slate-400">No Assistants are assigned to this Mangaka yet.</p>
+          )}
+        </div>
+
+        <h4 className="mt-6 text-sm font-bold text-white">Available Assistant pool</h4>
+
+        <div className="mt-5 grid gap-3 md:grid-cols-2">
+          {isLoadingAssistants ? (
+            <p className="text-sm text-slate-400">Loading unassigned Assistants...</p>
+          ) : unassignedAssistants.length ? (
+            unassignedAssistants.map((assistant) => {
+              const isSelected = selectedAssistantIds.includes(assistant.assistantId);
+              const isSelectionLimitReached = managedAssistants.length + selectedAssistantIds.length >= 4 && !isSelected;
+
+              return (
+                <label key={assistant.assistantId} className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition ${isSelected ? "border-cyan-300 bg-cyan-300/10" : "border-slate-700 bg-slate-950/50"} ${isSelectionLimitReached ? "cursor-not-allowed opacity-50" : "hover:border-cyan-300/60"}`}>
+                  <input type="checkbox" checked={isSelected} disabled={isSelectionLimitReached || isAssigningAssistants} onChange={() => toggleAssistant(assistant.assistantId)} className="mt-1 h-4 w-4 accent-cyan-300" />
+                  <span className="min-w-0">
+                    <span className="block font-semibold text-white">{assistant.displayName}</span>
+                    <span className="mt-1 block break-all text-sm text-slate-400">{assistant.email || assistant.assistantId}</span>
+                  </span>
+                </label>
+              );
+            })
+          ) : (
+            <p className="rounded-xl border border-dashed border-slate-700 p-4 text-sm text-slate-400">No unassigned Assistants are currently available in the Admin pool.</p>
+          )}
+        </div>
+
+        <div className="mt-5 flex flex-wrap gap-3">
+          <button type="button" disabled={selectedAssistantIds.length === 0 || isAssigningAssistants} onClick={() => void assignSelectedAssistants()} className="rounded-lg bg-cyan-300 px-4 py-2.5 text-sm font-bold text-slate-950 disabled:cursor-not-allowed disabled:opacity-50">
+            {isAssigningAssistants ? "Assigning Assistants..." : `Assign selected Assistants (${selectedAssistantIds.length}/4)`}
+          </button>
+          <button type="button" disabled={isLoadingAssistants || isLoadingManagedAssistants || isAssigningAssistants} onClick={() => void Promise.all([loadUnassignedAssistants(), loadManagedAssistants()])} className="rounded-lg border border-white/15 px-4 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50">Refresh Assistants</button>
+        </div>
+      </section>
+    ) : null}
   </div>;
 }
