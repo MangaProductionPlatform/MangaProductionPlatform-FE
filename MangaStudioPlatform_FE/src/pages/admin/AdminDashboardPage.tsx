@@ -226,40 +226,66 @@ export default function AdminDashboardPage() {
             onApply={() => void applyDashboardFilter()}
           />
 
-          <section className="grid gap-5 xl:grid-cols-3">
-            <CountBreakdown
-              title="Users by role"
-              items={[
-                ["Admins", userStats?.totalAdmins ?? 0],
-                ["Mangaka", userStats?.totalMangaka ?? 0],
-                ["Assistants", userStats?.totalAssistants ?? 0],
-                ["Tantou Editors", userStats?.totalTantouEditors ?? 0],
-                ["Editorial Board", userStats?.totalEditorialBoard ?? 0],
-                ["Editor-in-Chief", userStats?.totalEditorInChief ?? 0],
-              ]}
-            />
-            <BarBreakdown
-              title="Submission workflow"
-              items={[
-                ["Draft", submissionStats?.draft ?? 0],
-                ["Pending EB Review", submissionStats?.pendingEBReview ?? 0],
-                ["Conflict Escalated", submissionStats?.conflictEscalated ?? 0],
-                ["EB Approved", submissionStats?.ebApproved ?? 0],
-                ["EB Rejected", submissionStats?.ebRejected ?? 0],
-              ]}
-            />
-            <BarBreakdown
-              title="Series lifecycle"
-              items={[
-                ["Active", seriesStats?.active ?? 0],
-                ["Hiatus", seriesStats?.hiatus ?? 0],
-                ["Cancelled", seriesStats?.cancelled ?? 0],
-                [
-                  "Pending cancellation",
-                  seriesStats?.pendingCancellationRequests ?? 0,
-                ],
-              ]}
-            />
+          <section className="space-y-4">
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-200">
+                  Operations
+                </p>
+                <h3 className="mt-1 text-xl font-black text-white">
+                  Workflow overview
+                </h3>
+              </div>
+              <p className="text-sm font-semibold text-slate-500">
+                {activeFilter.label}
+              </p>
+            </div>
+
+            <div className="grid gap-5 lg:grid-cols-3">
+              <CountBreakdown
+                title="Users by role"
+                total={userStats?.totalUsers ?? 0}
+                items={[
+                  ["Admins", userStats?.totalAdmins ?? 0],
+                  ["Mangaka", userStats?.totalMangaka ?? 0],
+                  ["Assistants", userStats?.totalAssistants ?? 0],
+                  ["Tantou Editors", userStats?.totalTantouEditors ?? 0],
+                  ["Editorial Board", userStats?.totalEditorialBoard ?? 0],
+                  ["Editor-in-Chief", userStats?.totalEditorInChief ?? 0],
+                ]}
+              />
+              <DonutBreakdown
+                title="Submission workflow"
+                items={[
+                  ["Draft", submissionStats?.draft ?? 0, "#38bdf8"],
+                  [
+                    "Pending EB Review",
+                    submissionStats?.pendingEBReview ?? 0,
+                    "#a78bfa",
+                  ],
+                  [
+                    "Conflict Escalated",
+                    submissionStats?.conflictEscalated ?? 0,
+                    "#fb7185",
+                  ],
+                  ["EB Approved", submissionStats?.ebApproved ?? 0, "#34d399"],
+                  ["EB Rejected", submissionStats?.ebRejected ?? 0, "#f59e0b"],
+                ]}
+              />
+              <DonutBreakdown
+                title="Series lifecycle"
+                items={[
+                  ["Active", seriesStats?.active ?? 0, "#34d399"],
+                  ["Hiatus", seriesStats?.hiatus ?? 0, "#f59e0b"],
+                  ["Cancelled", seriesStats?.cancelled ?? 0, "#fb7185"],
+                  [
+                    "Pending cancellation",
+                    seriesStats?.pendingCancellationRequests ?? 0,
+                    "#a78bfa",
+                  ],
+                  ]}
+                />
+            </div>
           </section>
 
         </>
@@ -545,19 +571,34 @@ function Metric({
 
 function CountBreakdown({
   title,
+  total,
   items,
 }: {
   title: string;
+  total: number;
   items: Array<[string, number]>;
 }) {
   return (
-    <section className="rounded-lg border border-white/10 bg-slate-900/75 p-5">
-      <h3 className="font-bold text-white">{title}</h3>
-      <div className="mt-4 space-y-3">
+    <section className="min-h-[25rem] rounded-lg border border-white/10 bg-slate-900/75 p-5">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-200">
+            People
+          </p>
+          <h3 className="mt-1 font-bold text-white">{title}</h3>
+        </div>
+        <div className="rounded-lg bg-cyan-300/10 px-3 py-2 text-right">
+          <p className="text-xl font-black text-cyan-100">{total}</p>
+          <p className="text-[11px] font-semibold uppercase text-slate-500">
+            Total
+          </p>
+        </div>
+      </div>
+      <div className="mt-5 space-y-2.5">
         {items.map(([label, count]) => (
           <div
             key={label}
-            className="flex items-center justify-between gap-3 rounded-lg bg-slate-950 px-3 py-2 text-sm"
+            className="flex min-h-11 items-center justify-between gap-3 rounded-lg bg-slate-950 px-3 py-2 text-sm"
           >
             <span className="text-slate-300">{label}</span>
             <span className="font-bold text-cyan-100">{count}</span>
@@ -568,38 +609,99 @@ function CountBreakdown({
   );
 }
 
-function BarBreakdown({
+function DonutBreakdown({
   title,
   items,
 }: {
   title: string;
-  items: Array<[string, number]>;
+  items: Array<[string, number, string]>;
 }) {
-  const maxCount = Math.max(...items.map(([, count]) => count), 1);
+  const total = items.reduce((sum, [, count]) => sum + count, 0);
+  const radius = 44;
+  const circumference = 2 * Math.PI * radius;
+  let offset = 0;
 
   return (
-    <section className="rounded-lg border border-white/10 bg-slate-900/75 p-5">
-      <h3 className="font-bold text-white">{title}</h3>
-      <div className="mt-4 space-y-3">
-        {items.map(([label, count]) => (
-          <div
-            key={label}
-            className="rounded-lg bg-slate-950 px-3 py-2 text-sm"
+    <section className="min-h-[25rem] rounded-lg border border-white/10 bg-slate-900/75 p-5">
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="font-bold text-white">{title}</h3>
+        <span className="rounded-lg bg-slate-950 px-3 py-1.5 text-sm font-black text-cyan-100">
+          {total}
+        </span>
+      </div>
+
+      <div className="mt-6 grid gap-6 md:grid-cols-[11rem_1fr] md:items-center lg:grid-cols-1 2xl:grid-cols-[11rem_1fr]">
+        <div className="relative mx-auto h-44 w-44 lg:h-48 lg:w-48 2xl:h-44 2xl:w-44">
+          <svg
+            viewBox="0 0 120 120"
+            role="img"
+            aria-label={`${title} donut chart`}
+            className="h-full w-full -rotate-90"
           >
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-slate-300">{label}</span>
-              <span className="font-bold text-cyan-100">{count}</span>
-            </div>
-            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/5">
-              <div
-                className="h-full rounded-full bg-cyan-300"
-                style={{
-                  width: `${Math.max((count / maxCount) * 100, count ? 8 : 0)}%`,
-                }}
-              />
+            <circle
+              cx="60"
+              cy="60"
+              r={radius}
+              fill="none"
+              stroke="rgba(255,255,255,0.08)"
+              strokeWidth="14"
+            />
+            {total > 0
+              ? items.map(([label, count, color]) => {
+                  const length = (count / total) * circumference;
+                  const segment = (
+                    <circle
+                      key={label}
+                      cx="60"
+                      cy="60"
+                      r={radius}
+                      fill="none"
+                      stroke={color}
+                      strokeWidth="14"
+                      strokeLinecap="round"
+                      strokeDasharray={`${Math.max(length - 2, 0)} ${circumference}`}
+                      strokeDashoffset={-offset}
+                    />
+                  );
+                  offset += length;
+                  return segment;
+                })
+              : null}
+          </svg>
+          <div className="absolute inset-0 grid place-items-center text-center">
+            <div>
+              <p className="text-4xl font-black text-white">{total}</p>
+              <p className="text-xs font-semibold uppercase text-slate-500">
+                Total
+              </p>
             </div>
           </div>
-        ))}
+        </div>
+
+        <div className="space-y-2.5">
+          {items.map(([label, count, color]) => {
+            const percent = total ? Math.round((count / total) * 100) : 0;
+            return (
+              <div
+                key={label}
+                className="grid min-h-11 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-lg bg-slate-950 px-3 py-2 text-sm"
+              >
+                <span
+                  className="h-3 w-3 rounded-full"
+                  style={{ backgroundColor: color }}
+                  aria-hidden="true"
+                />
+                <span className="min-w-0 text-slate-300">{label}</span>
+                <span className="font-bold text-cyan-100">
+                  {count}
+                  <span className="ml-2 text-xs font-semibold text-slate-500">
+                    {percent}%
+                  </span>
+                </span>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </section>
   );

@@ -17,7 +17,6 @@ import AssistantDashboardPage from "../pages/assistant/AssistantDashboardPage";
 import AssistantIncomePage from "../pages/assistant/AssistantIncomePage";
 import AssistantNotificationsPage from "../pages/assistant/AssistantNotificationsPage";
 import AssistantProfilePage from "../pages/assistant/AssistantProfilePage";
-import AssistantSubmissionsPage from "../pages/assistant/AssistantSubmissionsPage";
 import AssistantTaskDetailPage from "../pages/assistant/AssistantTaskDetailPage";
 import AssistantTasksPage from "../pages/assistant/AssistantTasksPage";
 import AssistantsPage from "../pages/assistants/AssistantsPage";
@@ -131,7 +130,7 @@ export function AppRouter() {
           <Route path="tasks" element={<AssistantTasksPage />} />
           <Route path="tasks/:id" element={<AssistantTaskDetailPage />} />
           <Route path="chapters" element={<AssistantChaptersPage />} />
-          <Route path="submissions" element={<AssistantSubmissionsPage />} />
+          <Route path="submissions" element={<Navigate to="/assistant/tasks" replace />} />
           <Route path="notifications" element={<AssistantNotificationsPage />} />
           <Route path="income" element={<AssistantIncomePage />} />
           <Route path="profile" element={<AssistantProfilePage />} />

@@ -89,7 +89,10 @@ export function mapPageTask(item: Record<string, unknown>): PageTaskDto {
   return {
     id: pick<string>(item, "id") ?? pick<string>(item, "pageTaskId"),
     chapterId: pick<string | undefined>(item, "chapterId"),
-    chapterTitle: pick<string | undefined>(item, "chapterTitle"),
+    chapterTitle:
+      pick<string | undefined>(item, "chapterTitle") ??
+      pick<string | undefined>(item, "chapterName") ??
+      pick<string | undefined>(item, "title"),
     chapterNumber: Number(pick<number | undefined>(item, "chapterNumber")) || undefined,
     pageNumber: Number(pick<number>(item, "pageNumber")),
     status: pick<string>(item, "status") ?? pick<string>(item, "taskStatus") ?? "Unknown",

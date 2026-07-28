@@ -28,6 +28,16 @@ const layerTypes: LayerType[] = [
   "Dialogue",
 ];
 
+function formatTaskTitle(task: PageTaskDto) {
+  const chapterName =
+    task.chapterTitle ??
+    (task.chapterNumber ? `Chapter ${task.chapterNumber}` : "Assigned chapter");
+  const pageLabel = task.pageNumber ? `Page ${task.pageNumber}` : "Page task";
+  const taskType = task.taskType ?? "General";
+
+  return `${chapterName} - ${pageLabel} - ${taskType}`;
+}
+
 export default function AssistantTaskDetailPage() {
   const { id } = useParams();
   const toast = useToast();
@@ -243,8 +253,8 @@ export default function AssistantTaskDetailPage() {
           {isLoadingTask
             ? "Loading task details..."
             : task
-              ? `${task.chapterTitle ?? "Chapter"} - Page ${task.pageNumber}`
-              : `Task ${id ?? "not found"}`}
+              ? formatTaskTitle(task)
+              : "Task details are not available"}
         </p>
       </header>
 

@@ -7,6 +7,15 @@ import { useToast } from "../../shared/components/toastContext";
 import { mangaCoverImages } from "../../shared/visuals/mangaVisuals";
 import { resolveMediaUrl } from "../../shared/utils/mediaUrl";
 
+function fallbackCoverForSeries(seriesId: string) {
+  const index = Array.from(seriesId).reduce(
+    (sum, char) => sum + char.charCodeAt(0),
+    0,
+  );
+
+  return mangaCoverImages[index % mangaCoverImages.length].image;
+}
+
 export default function SeriesListPage() {
   const toast = useToast();
   const [seriesList, setSeriesList] = useState<MangaSeriesDto[]>([]);
@@ -91,21 +100,21 @@ export default function SeriesListPage() {
           </div>
         ) : null}
 
-        {!isLoading && seriesList.map((series, index) => (
+        {!isLoading && seriesList.map((series) => {
+          const fallbackCover = fallbackCoverForSeries(series.id);
+          const coverSrc = resolveMediaUrl(series.coverImageUrl) || fallbackCover;
+
+          return (
           <article
             key={series.id}
             className="grid gap-4 rounded-lg border border-white/10 bg-slate-900/75 p-4 sm:grid-cols-[8.5rem_1fr]"
           >
             <img
-              src={
-                resolveMediaUrl(series.coverImageUrl) ||
-                mangaCoverImages[index % mangaCoverImages.length].image
-              }
+              src={coverSrc}
               alt={series.title}
               onError={(event) => {
                 event.currentTarget.onerror = null;
-                event.currentTarget.src =
-                  mangaCoverImages[index % mangaCoverImages.length].image;
+                event.currentTarget.src = fallbackCover;
               }}
               className="aspect-[2/3] w-full rounded-lg object-cover shadow-xl shadow-slate-950/30"
             />
@@ -132,6 +141,7 @@ export default function SeriesListPage() {
               <div className="mt-5 flex flex-wrap gap-2">
                 <Link
                   to={`/app/series/${series.id}`}
+                  state={{ coverImageUrl: coverSrc, seriesId: series.id }}
                   className="inline-flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-sm font-bold text-slate-950 hover:bg-cyan-100"
                 >
                   Open
@@ -152,7 +162,8 @@ export default function SeriesListPage() {
               </div>
             </div>
           </article>
-        ))}
+          );
+        })}
       </section>
     </div>
   );

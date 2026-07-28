@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { BookOpen, RefreshCw } from "lucide-react";
+import { BookOpen, ArrowRight, RefreshCw } from "lucide-react";
+import { Link } from "react-router-dom";
 import { mangaErpApi } from "../../shared/services/mangaErpService";
 import type { PageTaskDto } from "../../shared/types/mangaErp";
 import { useToast } from "../../shared/components/toastContext";
@@ -35,7 +36,13 @@ export default function AssistantChaptersPage() {
         tasks.reduce<
           Record<
             string,
-            { title: string; number?: number; total: number; completed: number }
+            {
+              title: string;
+              number?: number;
+              total: number;
+              completed: number;
+              taskIds: string[];
+            }
           >
         >((result, task) => {
           const key = task.chapterId || task.chapterTitle || "unknown";
@@ -44,8 +51,10 @@ export default function AssistantChaptersPage() {
             number: task.chapterNumber,
             total: 0,
             completed: 0,
+            taskIds: [],
           };
           current.total += 1;
+          current.taskIds.push(task.id);
           if (
             ["approved", "accepted", "complete", "completed"].includes(
               task.status.toLowerCase(),
@@ -93,6 +102,20 @@ export default function AssistantChaptersPage() {
               {chapter.completed} of {chapter.total} assigned page task(s)
               approved
             </p>
+            <div className="mt-5">
+              <Link
+                to={
+                  chapter.taskIds.length === 1
+                    ? `/assistant/tasks/${chapter.taskIds[0]}`
+                    : "/assistant/tasks"
+                }
+                state={{ chapterTitle: chapter.title }}
+                className="inline-flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-sm font-bold text-slate-950 hover:bg-cyan-100"
+              >
+                View Tasks
+                <ArrowRight size={15} />
+              </Link>
+            </div>
           </article>
         ))}
         {!loading && !chapters.length ? (

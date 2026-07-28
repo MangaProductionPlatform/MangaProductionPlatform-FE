@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { mangaErpApi } from "../../shared/services/mangaErpService";
 import type { ChapterDto, MangaSeriesDto } from "../../shared/types/mangaErp";
@@ -7,12 +7,28 @@ import { useToast } from "../../shared/components/toastContext";
 import { mangaCoverImages } from "../../shared/visuals/mangaVisuals";
 import { resolveMediaUrl } from "../../shared/utils/mediaUrl";
 
+type SeriesRouteState = {
+  coverImageUrl?: string;
+  seriesId?: string;
+};
+
+function fallbackCoverForSeries(seriesId: string) {
+  const index = Array.from(seriesId).reduce(
+    (sum, char) => sum + char.charCodeAt(0),
+    0,
+  );
+
+  return mangaCoverImages[index % mangaCoverImages.length].image;
+}
+
 export default function SeriesDetailPage() {
   const params = useParams();
+  const location = useLocation();
   const toast = useToast();
   const [series, setSeries] = useState<MangaSeriesDto | null>(null);
   const [chapters, setChapters] = useState<ChapterDto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const routeState = location.state as SeriesRouteState | null;
 
   useEffect(() => {
     if (!params.id) return;
@@ -69,11 +85,16 @@ export default function SeriesDetailPage() {
       {!isLoading && series ? (
         <section className="grid gap-5 rounded-lg border border-white/10 bg-slate-900/75 p-5 lg:grid-cols-[13rem_1fr]">
           <img
-            src={resolveMediaUrl(series.coverImageUrl) || mangaCoverImages[2].image}
+            src={
+              routeState?.seriesId === series.id && routeState.coverImageUrl
+                ? routeState.coverImageUrl
+                : resolveMediaUrl(series.coverImageUrl) ||
+                  fallbackCoverForSeries(series.id)
+            }
             alt={series.title}
             onError={(event) => {
               event.currentTarget.onerror = null;
-              event.currentTarget.src = mangaCoverImages[2].image;
+              event.currentTarget.src = fallbackCoverForSeries(series.id);
             }}
             className="aspect-[2/3] w-full rounded-lg object-cover shadow-xl shadow-slate-950/30"
           />

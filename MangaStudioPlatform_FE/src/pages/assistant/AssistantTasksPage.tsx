@@ -21,6 +21,16 @@ const filters = [
   "Approved",
 ];
 
+function formatTaskTitle(task: PageTaskDto) {
+  const chapterName =
+    task.chapterTitle ??
+    (task.chapterNumber ? `Chapter ${task.chapterNumber}` : "Assigned chapter");
+  const pageLabel = task.pageNumber ? `Page ${task.pageNumber}` : "Page task";
+  const taskType = task.taskType ?? "General";
+
+  return `${chapterName} - ${pageLabel} - ${taskType}`;
+}
+
 export default function AssistantTasksPage() {
   const toast = useToast();
   const [filter, setFilter] = useState("All");
@@ -145,8 +155,7 @@ export default function AssistantTasksPage() {
                   <div className="flex items-center gap-2">
                     <ClipboardList size={18} className="text-cyan-300" />
                     <h2 className="font-bold text-white">
-                      {task.chapterTitle ??
-                        `Chapter ${task.chapterNumber ?? ""}`}
+                      {formatTaskTitle(task)}
                     </h2>
                   </div>
                   <p className="mt-2 text-sm text-slate-400">

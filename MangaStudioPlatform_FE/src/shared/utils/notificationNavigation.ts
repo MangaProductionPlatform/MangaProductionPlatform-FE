@@ -58,7 +58,7 @@ export function getNotificationTarget(
     case "SegmentationTaskAssigned":
       return "/assistant/tasks";
     case "StudioInvitation":
-      return "/assistant/submissions";
+      return "/assistant/dashboard";
     default:
       break;
   }
