@@ -77,8 +77,10 @@ const readAuthorName = (detail: SubmissionDetailDto | null) =>
 const readPreviewImage = (
   item: Pick<ProposalQueueItem, "coverImageUrl" | "manuscriptUrl">,
 ) => resolveMediaUrl(item.coverImageUrl || item.manuscriptUrl);
-const filterSelectClass = "input h-12 py-0 pl-4 pr-10 leading-normal text-sm";
-const filterInputClass = "input h-12 py-0 leading-normal text-sm";
+const filterSelectClass =
+  "input !h-11 !min-h-11 !px-3 !py-2 !pr-9 !leading-5 text-sm";
+const filterInputClass =
+  "input !h-11 !min-h-11 !px-3 !py-2 !leading-5 text-sm";
 const getTimeValue = (value?: string | null) => {
   if (!value) return 0;
   const time = new Date(value).getTime();
@@ -173,10 +175,16 @@ export default function SeriesProposalsPage() {
           workType: item.workType || "SeriesSubmission",
           workId: item.id,
           roundNumber: item.roundNumber,
-          createdAt: null,
+          genre: item.genre,
+          coverImageUrl: item.coverImageUrl,
+          manuscriptUrl: item.manuscriptUrl,
+          description: item.description,
+          createdAt: item.createdAt ?? null,
           conflict: item,
         }));
         setQueue(items);
+        setIsLoading(false);
+        void enrichQueueDetails(items);
         if (selected && !items.some((item) => item.workId === selected.id)) {
           setSelected(null);
           setSelectedReview(null);
@@ -233,6 +241,9 @@ export default function SeriesProposalsPage() {
           workType: "SeriesSubmission",
           workId: submission.id,
           roundNumber: submission.currentRound ?? 1,
+          genre: submission.genre,
+          coverImageUrl: submission.coverImageUrl,
+          manuscriptUrl: submission.manuscriptUrl,
           createdAt: submission.createdAt,
           assignmentMissing: submission.status === "Pending_EB_Review",
         } satisfies ProposalQueueItem;
@@ -253,6 +264,8 @@ export default function SeriesProposalsPage() {
               workId: submission.id,
               roundNumber: null,
               genre: submission.genre,
+              coverImageUrl: submission.coverImageUrl,
+              manuscriptUrl: submission.manuscriptUrl,
               createdAt: submission.createdAt,
               assignmentMissing: submission.status === "Pending_EB_Review",
             }) satisfies ProposalQueueItem,
@@ -696,8 +709,8 @@ export default function SeriesProposalsPage() {
           })}
         </div>
 
-        <div className="flex flex-wrap items-end gap-3">
-          <label className="min-w-56 flex-1">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-[200px_150px_150px_158px_146px_146px]">
+          <label className="min-w-0">
             <span className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[.14em] text-slate-400">
               <Filter size={14} />
               Search
@@ -710,7 +723,7 @@ export default function SeriesProposalsPage() {
             />
           </label>
 
-          <label className="w-full min-w-44 sm:w-44">
+          <label className="min-w-0">
             <span className="mb-2 block text-xs font-semibold uppercase tracking-[.14em] text-slate-400">
               Progress
             </span>
@@ -731,7 +744,7 @@ export default function SeriesProposalsPage() {
             </select>
           </label>
 
-          <label className="w-full min-w-40 sm:w-44">
+          <label className="min-w-0">
             <span className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[.14em] text-slate-400">
               <Clock3 size={14} />
               Time
@@ -756,7 +769,7 @@ export default function SeriesProposalsPage() {
             </select>
           </label>
 
-          <label className="w-full min-w-40 sm:w-44">
+          <label className="min-w-0">
             <span className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[.14em] text-slate-400">
               <ArrowDownUp size={14} />
               Priority
@@ -772,7 +785,7 @@ export default function SeriesProposalsPage() {
             </select>
           </label>
 
-          <label className="w-full min-w-40 sm:w-44">
+          <label className="min-w-0">
             <span className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[.14em] text-slate-400">
               <CalendarDays size={14} />
               From
@@ -788,7 +801,7 @@ export default function SeriesProposalsPage() {
             />
           </label>
 
-          <label className="w-full min-w-40 sm:w-44">
+          <label className="min-w-0">
             <span className="mb-2 block text-xs font-semibold uppercase tracking-[.14em] text-slate-400">
               To
             </span>
@@ -802,7 +815,8 @@ export default function SeriesProposalsPage() {
               className={filterInputClass}
             />
           </label>
-
+        </div>
+        <div className="mt-3 flex items-center gap-3">
           <button
             type="button"
             onClick={resetFilters}

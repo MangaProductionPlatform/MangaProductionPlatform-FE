@@ -471,6 +471,8 @@ export type SubmissionSummaryDto = {
   genre?: string | null;
   status: string;
   feedbackMessage?: string | null;
+  coverImageUrl?: string | null;
+  manuscriptUrl?: string | null;
   createdAt: string;
   reviewedAt?: string | null;
 };
@@ -522,6 +524,29 @@ export type ReassignPageTaskPayload = {
 
 export type UpdateTaskDeadlinePayload = {
   Deadline?: string | null;
+};
+
+export type DeadlineExtensionRequestDto = {
+  requestId: string;
+  pageTaskId: string;
+  pageNumber: number;
+  reason: string;
+  requestedDeadline: string;
+  status: string;
+  rejectionReason?: string | null;
+  createdAt: string;
+  assistantId: string;
+  assistantName: string;
+};
+
+export type CreateDeadlineExtensionRequestPayload = {
+  Reason: string;
+  RequestedDeadline: string;
+};
+
+export type HandleDeadlineExtensionRequestPayload = {
+  IsApproved: boolean;
+  RejectionReason?: string | null;
 };
 
 export type UpdateTaskDetailsPayload = {
@@ -681,6 +706,11 @@ export type EditorialConflictItemDto = {
   title: string;
   workType: string;
   roundNumber?: number | null;
+  genre?: string | null;
+  coverImageUrl?: string | null;
+  manuscriptUrl?: string | null;
+  description?: string | null;
+  createdAt?: string | null;
 };
 
 export type EditorialSubmissionListItemDto = {
@@ -690,6 +720,9 @@ export type EditorialSubmissionListItemDto = {
   submitterId?: string | null;
   currentRound?: number | null;
   feedbackMessage?: string | null;
+  genre?: string | null;
+  coverImageUrl?: string | null;
+  manuscriptUrl?: string | null;
   createdAt?: string | null;
 };
 

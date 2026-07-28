@@ -617,6 +617,7 @@ function DonutBreakdown({
   items: Array<[string, number, string]>;
 }) {
   const total = items.reduce((sum, [, count]) => sum + count, 0);
+  const visibleSegments = items.filter(([, count]) => count > 0);
   const radius = 44;
   const circumference = 2 * Math.PI * radius;
   let offset = 0;
@@ -647,7 +648,7 @@ function DonutBreakdown({
               strokeWidth="14"
             />
             {total > 0
-              ? items.map(([label, count, color]) => {
+              ? visibleSegments.map(([label, count, color]) => {
                   const length = (count / total) * circumference;
                   const segment = (
                     <circle

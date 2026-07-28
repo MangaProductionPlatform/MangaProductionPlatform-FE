@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   BookOpen,
+  CalendarClock,
+  Check,
   ClipboardCheck,
   History,
   Plus,
@@ -9,6 +11,7 @@ import {
   Save,
   Send,
   X,
+  XCircle,
 } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { useToast } from "../../shared/components/toastContext";
@@ -16,6 +19,7 @@ import { mangaErpApi } from "../../shared/services/mangaErpService";
 import type {
   BasePageVersionDto,
   ChapterDto,
+  DeadlineExtensionRequestDto,
   MangaSeriesDto,
   PageTaskDto,
   TaskAssistantCandidatesDto,
@@ -313,6 +317,15 @@ export default function TaskAssignmentPage() {
   const [isLoadingWorkQueue, setIsLoadingWorkQueue] = useState(false);
   const [workQueueError, setWorkQueueError] = useState("");
   const [workQueueReloadKey, setWorkQueueReloadKey] = useState(0);
+  const [extensionRequests, setExtensionRequests] = useState<
+    DeadlineExtensionRequestDto[]
+  >([]);
+  const [isLoadingExtensions, setIsLoadingExtensions] = useState(false);
+  const [handlingExtensionRequestId, setHandlingExtensionRequestId] =
+    useState("");
+  const [extensionRejectionReasons, setExtensionRejectionReasons] = useState<
+    Record<string, string>
+  >({});
   const hydratedAssistantPageKeyRef = useRef("");
   const [message, setMessage] = useState("");
   const isTaskLocked = hasSubmittedArtwork(activePageTask);
@@ -508,6 +521,50 @@ export default function TaskAssignmentPage() {
       ignore = true;
     };
   }, [candidateSourceKey, chapterId, currentTaskId]);
+
+  useEffect(() => {
+    let ignore = false;
+
+    const timer = window.setTimeout(() => {
+      if (!currentTaskId) {
+        setExtensionRequests([]);
+        setIsLoadingExtensions(false);
+        return;
+      }
+
+      async function loadExtensionRequests() {
+        setIsLoadingExtensions(true);
+
+        try {
+          const result =
+            await mangaErpApi.getDeadlineExtensionRequests(currentTaskId);
+
+          if (!ignore) {
+            setExtensionRequests(result);
+          }
+        } catch (error) {
+          if (!ignore) {
+            setExtensionRequests([]);
+            toast.error(
+              "Could not load deadline extension requests",
+              getErrorMessage(error, "Please try again."),
+            );
+          }
+        } finally {
+          if (!ignore) {
+            setIsLoadingExtensions(false);
+          }
+        }
+      }
+
+      void loadExtensionRequests();
+    }, 0);
+
+    return () => {
+      ignore = true;
+      window.clearTimeout(timer);
+    };
+  }, [currentTaskId, toast]);
 
   useEffect(() => {
     let ignore = false;
@@ -1077,6 +1134,55 @@ export default function TaskAssignmentPage() {
     setWorkQueueReloadKey((currentKey) => currentKey + 1);
   };
 
+  const handleDeadlineExtension = async (
+    requestId: string,
+    isApproved: boolean,
+  ) => {
+    const rejectionReason = extensionRejectionReasons[requestId]?.trim() ?? "";
+
+    if (!isApproved && !rejectionReason) {
+      toast.error(
+        "Rejection reason is required",
+        "Tell the Assistant why this deadline extension was rejected.",
+      );
+      return;
+    }
+
+    setHandlingExtensionRequestId(requestId);
+
+    try {
+      await mangaErpApi.handleDeadlineExtensionRequest(requestId, {
+        IsApproved: isApproved,
+        RejectionReason: isApproved ? null : rejectionReason,
+      });
+
+      if (currentTaskId) {
+        setExtensionRequests(
+          await mangaErpApi.getDeadlineExtensionRequests(currentTaskId),
+        );
+      }
+
+      setExtensionRejectionReasons((current) => {
+        const next = { ...current };
+        delete next[requestId];
+        return next;
+      });
+      setPageDataReloadKey((current) => current + 1);
+      setWorkQueueReloadKey((current) => current + 1);
+      toast.success(
+        isApproved ? "Extension approved" : "Extension rejected",
+        "The Assistant will see the updated request status.",
+      );
+    } catch (error) {
+      toast.error(
+        "Could not handle extension request",
+        getErrorMessage(error, "Please try again."),
+      );
+    } finally {
+      setHandlingExtensionRequestId("");
+    }
+  };
+
   const handleOpenWorkQueueTask = (task: PageTaskDto) => {
     setPageNumber(task.pageNumber);
   };
@@ -1336,6 +1442,133 @@ export default function TaskAssignmentPage() {
               </select>
             </div>
           </div>
+
+          {currentTaskId ? (
+            <section className="mt-5 rounded-xl border border-violet-300/20 bg-violet-400/10 p-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h3 className="flex items-center gap-2 text-sm font-bold uppercase tracking-[0.16em] text-violet-200">
+                    <CalendarClock size={16} />
+                    Deadline extension requests
+                  </h3>
+                  <p className="mt-1 text-sm text-slate-400">
+                    Approve or reject Assistant deadline extension requests for
+                    this page task.
+                  </p>
+                </div>
+
+                <span className="rounded-lg bg-slate-950 px-3 py-1.5 text-sm font-bold text-violet-100">
+                  {extensionRequests.length}
+                </span>
+              </div>
+
+              <div className="mt-4 space-y-3">
+                {isLoadingExtensions ? (
+                  <div className="rounded-lg border border-slate-800 bg-slate-950 p-3 text-sm text-slate-400">
+                    Loading extension requests...
+                  </div>
+                ) : extensionRequests.length ? (
+                  extensionRequests.map((request) => {
+                    const isPending =
+                      request.status.trim().toLowerCase() === "pending";
+                    const isHandling =
+                      handlingExtensionRequestId === request.requestId;
+
+                    return (
+                      <article
+                        key={request.requestId}
+                        className="rounded-lg border border-slate-800 bg-slate-950 p-4"
+                      >
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div>
+                            <p className="font-semibold text-white">
+                              {request.assistantName || "Assistant"}
+                            </p>
+                            <p className="mt-1 text-sm text-slate-400">
+                              Requested deadline:{" "}
+                              <span className="text-cyan-100">
+                                {formatDateTime(request.requestedDeadline)}
+                              </span>
+                            </p>
+                          </div>
+
+                          <span className="rounded-md bg-slate-800 px-2.5 py-1 text-xs font-bold text-cyan-100">
+                            {request.status}
+                          </span>
+                        </div>
+
+                        <p className="mt-3 whitespace-pre-wrap text-sm text-slate-300">
+                          {request.reason || "No reason provided."}
+                        </p>
+
+                        {request.rejectionReason ? (
+                          <p className="mt-3 rounded-lg border border-rose-300/20 bg-rose-400/10 p-3 text-sm text-rose-100">
+                            Rejected reason: {request.rejectionReason}
+                          </p>
+                        ) : null}
+
+                        {isPending ? (
+                          <div className="mt-4 space-y-3">
+                            <textarea
+                              rows={2}
+                              value={
+                                extensionRejectionReasons[request.requestId] ??
+                                ""
+                              }
+                              onChange={(event) =>
+                                setExtensionRejectionReasons((current) => ({
+                                  ...current,
+                                  [request.requestId]: event.target.value,
+                                }))
+                              }
+                              placeholder="Reason required if rejecting..."
+                              className="w-full resize-none rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm text-slate-100 outline-none focus:border-violet-300"
+                            />
+
+                            <div className="flex flex-wrap gap-3">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  void handleDeadlineExtension(
+                                    request.requestId,
+                                    true,
+                                  )
+                                }
+                                disabled={isHandling}
+                                className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-60"
+                              >
+                                <Check size={16} />
+                                Approve
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  void handleDeadlineExtension(
+                                    request.requestId,
+                                    false,
+                                  )
+                                }
+                                disabled={isHandling}
+                                className="inline-flex items-center gap-2 rounded-lg border border-rose-300/30 bg-rose-400/10 px-4 py-2 text-sm font-semibold text-rose-100 hover:bg-rose-400/20 disabled:opacity-60"
+                              >
+                                <XCircle size={16} />
+                                Reject
+                              </button>
+                            </div>
+                          </div>
+                        ) : null}
+                      </article>
+                    );
+                  })
+                ) : (
+                  <div className="rounded-lg border border-dashed border-slate-700 bg-slate-950 p-4 text-sm text-slate-400">
+                    No deadline extension requests for this task.
+                  </div>
+                )}
+              </div>
+            </section>
+          ) : null}
 
           {/* Candidate cards were merged into the Assistant select above.
           {currentTaskId ? (
