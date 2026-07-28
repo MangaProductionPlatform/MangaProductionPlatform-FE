@@ -279,8 +279,7 @@ export default function TaskAssignmentPage() {
   const [assistantId, setAssistantId] = useState("");
   const [assistantCandidates, setAssistantCandidates] =
     useState<TaskAssistantCandidatesDto | null>(null);
-  const [loadedCandidateSourceKey, setLoadedCandidateSourceKey] =
-    useState("");
+  const [loadedCandidateSourceKey, setLoadedCandidateSourceKey] = useState("");
   const [isLoadingCandidates, setIsLoadingCandidates] = useState(false);
   const [candidateError, setCandidateError] = useState("");
   const [taskType, setTaskType] = useState("");
@@ -493,10 +492,7 @@ export default function TaskAssignmentPage() {
           setAssistantCandidates(null);
           setLoadedCandidateSourceKey(candidateSourceKey);
           setCandidateError(
-            getErrorMessage(
-              error,
-              "Could not load available Assistants.",
-            ),
+            getErrorMessage(error, "Could not load available Assistants."),
           );
         }
       } finally {
@@ -1281,7 +1277,7 @@ export default function TaskAssignmentPage() {
               !candidateError &&
               availableAssistants.length === 0 ? (
                 <p className="mt-2 text-xs text-amber-200">
-                  No Assistant is currently available for this task. {" "}
+                  No Assistant is currently available for this task.{" "}
                   {unavailableAssistants.length > 0
                     ? `${unavailableAssistants.length} Assistant(s) do not meet the assignment requirements.`
                     : "The candidate API returned no Assistant records."}
@@ -1319,7 +1315,6 @@ export default function TaskAssignmentPage() {
                 disabled={isTaskLocked}
                 className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none focus:border-cyan-400"
               />
-
             </div>
 
             <div>
@@ -1538,7 +1533,6 @@ export default function TaskAssignmentPage() {
                   ? "This original image was previously uploaded for the selected page."
                   : "The original image remains unchanged while artwork layers are reviewed."}
             </p>
-
           </div>
 
           <label className="mt-5 block text-sm text-slate-400">
@@ -1648,8 +1642,7 @@ export default function TaskAssignmentPage() {
                   {basePageVersions.map((version, index) => (
                     <article
                       key={
-                        version.id ??
-                        `${version.version ?? "version"}-${index}`
+                        version.id ?? `${version.version ?? "version"}-${index}`
                       }
                       className="overflow-hidden rounded-xl border border-slate-800 bg-slate-900"
                     >
