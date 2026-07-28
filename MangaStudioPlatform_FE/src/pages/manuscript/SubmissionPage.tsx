@@ -98,15 +98,23 @@ export default function SubmissionPage() {
   };
 
   useEffect(() => {
-    void loadSubmissions(null);
+    const timer = window.setTimeout(() => {
+      void loadSubmissions(null);
+    }, 0);
+
+    return () => window.clearTimeout(timer);
     // Initial backend load only.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    if (linkedSubmissionId) {
-      void openSubmission(linkedSubmissionId);
-    }
+    const timer = window.setTimeout(() => {
+      if (linkedSubmissionId) {
+        void openSubmission(linkedSubmissionId);
+      }
+    }, 0);
+
+    return () => window.clearTimeout(timer);
     // React to notification deep links only.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [linkedSubmissionId]);

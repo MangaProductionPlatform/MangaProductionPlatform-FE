@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import {
   AlertTriangle,
   ArrowLeft,
+  CalendarClock,
   ClipboardPenLine,
   Download,
   FileImage,
@@ -14,6 +15,7 @@ import { useToast } from "../../shared/components/toastContext";
 import { mangaErpApi } from "../../shared/services/mangaErpService";
 import type {
   LayerType,
+  DeadlineExtensionRequestDto,
   NotificationDto,
   PageTaskDto,
   QaBugPinDto,
@@ -38,6 +40,33 @@ function formatTaskTitle(task: PageTaskDto) {
   return `${chapterName} - ${pageLabel} - ${taskType}`;
 }
 
+function formatDateTimeLocal(dateTime?: string | null) {
+  if (!dateTime) return "";
+
+  const value = new Date(dateTime);
+  if (Number.isNaN(value.getTime())) return "";
+
+  const pad = (number: number) => String(number).padStart(2, "0");
+
+  return (
+    [value.getFullYear(), pad(value.getMonth() + 1), pad(value.getDate())].join(
+      "-",
+    ) + `T${pad(value.getHours())}:${pad(value.getMinutes())}`
+  );
+}
+
+function formatDateTime(dateTime?: string | null) {
+  if (!dateTime) return "No date recorded";
+
+  const value = new Date(dateTime);
+  if (Number.isNaN(value.getTime())) return dateTime;
+
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(value);
+}
+
 export default function AssistantTaskDetailPage() {
   const { id } = useParams();
   const toast = useToast();
@@ -54,6 +83,13 @@ export default function AssistantTaskDetailPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [isLoadingTask, setIsLoadingTask] = useState(Boolean(id));
+  const [extensionRequests, setExtensionRequests] = useState<
+    DeadlineExtensionRequestDto[]
+  >([]);
+  const [isLoadingExtensions, setIsLoadingExtensions] = useState(Boolean(id));
+  const [isRequestingExtension, setIsRequestingExtension] = useState(false);
+  const [requestedDeadline, setRequestedDeadline] = useState("");
+  const [extensionReason, setExtensionReason] = useState("");
 
   const existingSubmissionImageUrl =
     task?.fileUrlOriginal ??
@@ -115,6 +151,37 @@ export default function AssistantTaskDetailPage() {
       })
       .finally(() => setIsLoadingTask(false));
   }, [id, toast]);
+
+  useEffect(() => {
+    let ignore = false;
+
+    const timer = window.setTimeout(() => {
+      if (!id) {
+        setExtensionRequests([]);
+        setIsLoadingExtensions(false);
+        return;
+      }
+
+      async function loadExtensionRequests() {
+        setIsLoadingExtensions(true);
+        try {
+          const result = await mangaErpApi.getDeadlineExtensionRequests(id);
+          if (!ignore) setExtensionRequests(result);
+        } catch {
+          if (!ignore) setExtensionRequests([]);
+        } finally {
+          if (!ignore) setIsLoadingExtensions(false);
+        }
+      }
+
+      void loadExtensionRequests();
+    }, 0);
+
+    return () => {
+      ignore = true;
+      window.clearTimeout(timer);
+    };
+  }, [id]);
 
   const uploadArtwork = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -229,6 +296,50 @@ export default function AssistantTaskDetailPage() {
       );
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const requestDeadlineExtension = async () => {
+    if (!id) return;
+
+    const reason = extensionReason.trim();
+    const deadlineValue = new Date(requestedDeadline);
+
+    if (!requestedDeadline || Number.isNaN(deadlineValue.getTime())) {
+      toast.error("Invalid deadline", "Choose the new deadline you need.");
+      return;
+    }
+
+    if (deadlineValue.getTime() <= Date.now()) {
+      toast.error("Invalid deadline", "Requested deadline must be in the future.");
+      return;
+    }
+
+    if (!reason) {
+      toast.error("Reason is required", "Explain why this task needs more time.");
+      return;
+    }
+
+    setIsRequestingExtension(true);
+    try {
+      await mangaErpApi.createDeadlineExtensionRequest(id, {
+        Reason: reason,
+        RequestedDeadline: deadlineValue.toISOString(),
+      });
+      setRequestedDeadline("");
+      setExtensionReason("");
+      setExtensionRequests(await mangaErpApi.getDeadlineExtensionRequests(id));
+      toast.success(
+        "Extension request sent",
+        "The Mangaka can now approve or reject this request.",
+      );
+    } catch (error) {
+      toast.error(
+        "Could not request extension",
+        error instanceof Error ? error.message : "Please try again.",
+      );
+    } finally {
+      setIsRequestingExtension(false);
     }
   };
 
@@ -351,6 +462,85 @@ export default function AssistantTaskDetailPage() {
               </p>
             </div>
           ) : null}
+
+          <div className="mt-5 rounded-xl border border-violet-300/20 bg-violet-400/10 p-4">
+            <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-violet-200">
+              <CalendarClock size={16} /> Deadline extension
+            </p>
+
+            <div className="mt-4 space-y-3">
+              <label className="block text-sm text-slate-300">
+                Requested deadline
+                <input
+                  type="datetime-local"
+                  value={requestedDeadline}
+                  min={formatDateTimeLocal(new Date().toISOString())}
+                  onChange={(event) => setRequestedDeadline(event.target.value)}
+                  className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none focus:border-violet-300"
+                />
+              </label>
+
+              <label className="block text-sm text-slate-300">
+                Reason
+                <textarea
+                  value={extensionReason}
+                  onChange={(event) => setExtensionReason(event.target.value)}
+                  rows={3}
+                  placeholder="Explain why you need more time..."
+                  className="mt-2 w-full resize-none rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none focus:border-violet-300"
+                />
+              </label>
+
+              <button
+                type="button"
+                onClick={() => void requestDeadlineExtension()}
+                disabled={isRequestingExtension}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-3 font-semibold text-white hover:bg-violet-500 disabled:opacity-50"
+              >
+                <CalendarClock size={18} />
+                {isRequestingExtension ? "Sending request..." : "Request extension"}
+              </button>
+            </div>
+
+            <div className="mt-5 space-y-2">
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
+                Request history
+              </p>
+              {isLoadingExtensions ? (
+                <p className="rounded-lg border border-slate-800 bg-slate-950 p-3 text-sm text-slate-400">
+                  Loading extension requests...
+                </p>
+              ) : extensionRequests.length ? (
+                extensionRequests.map((request) => (
+                  <div
+                    key={request.requestId}
+                    className="rounded-lg border border-slate-800 bg-slate-950 p-3 text-sm"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="font-semibold text-white">
+                        {formatDateTime(request.requestedDeadline)}
+                      </span>
+                      <span className="rounded-md bg-slate-800 px-2 py-1 text-xs font-bold text-cyan-100">
+                        {request.status}
+                      </span>
+                    </div>
+                    <p className="mt-2 whitespace-pre-wrap text-slate-300">
+                      {request.reason}
+                    </p>
+                    {request.rejectionReason ? (
+                      <p className="mt-2 text-rose-200">
+                        Rejected reason: {request.rejectionReason}
+                      </p>
+                    ) : null}
+                  </div>
+                ))
+              ) : (
+                <p className="rounded-lg border border-dashed border-slate-700 bg-slate-950 p-3 text-sm text-slate-400">
+                  No extension requests for this task yet.
+                </p>
+              )}
+            </div>
+          </div>
         </section>
 
         <section className="rounded-2xl border border-slate-800 bg-slate-900 p-6">

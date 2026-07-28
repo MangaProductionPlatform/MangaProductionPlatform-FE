@@ -19,10 +19,12 @@ import type {
   CastSubmissionVotePayload,
   CastSubmissionVoteResult,
   CreateChapterPayload,
+  CreateDeadlineExtensionRequestPayload,
   CreateSubmissionPayload,
   CurrentUser,
   CurrentUserProfileDto,
   CancellationQueueItemDto,
+  DeadlineExtensionRequestDto,
   EditorDashboardDto,
   EditorialConflictsDto,
   EditorialDecisionPayload,
@@ -35,6 +37,7 @@ import type {
   EndCollaborationPayload,
   AssignQaFixPayload,
   FeedbackPinDto,
+  HandleDeadlineExtensionRequestPayload,
   InviteAssistantPayload,
   LayerHistoryDto,
   ListUsersResult,
@@ -370,6 +373,11 @@ function mapEditorialConflictItem(item: Record<string, unknown>) {
     title: pickAny<string>(item, ["title", "Title"]),
     workType: String(pickAny<string>(item, ["workType", "WorkType"])),
     roundNumber: pickAny<number | null | undefined>(item, ["roundNumber", "RoundNumber", "currentRound", "CurrentRound", "round", "Round"]),
+    genre: pickAny<string | null | undefined>(item, ["genre", "Genre"]),
+    coverImageUrl: pickAny<string | null | undefined>(item, ["coverImageUrl", "CoverImageUrl"]),
+    manuscriptUrl: pickAny<string | null | undefined>(item, ["manuscriptUrl", "ManuscriptUrl"]),
+    description: pickAny<string | null | undefined>(item, ["description", "Description"]),
+    createdAt: pickAny<string | null | undefined>(item, ["createdAt", "CreatedAt", "submittedAt", "SubmittedAt"]),
   };
 }
 
@@ -744,6 +752,9 @@ export const mangaErpApi = {
       submitterId: pickAny<string | null | undefined>(item, ["submitterId", "SubmitterId"]),
       currentRound: pickAny<number | null | undefined>(item, ["currentRound", "CurrentRound", "roundNumber", "RoundNumber"]),
       feedbackMessage: pickAny<string | null | undefined>(item, ["feedbackMessage", "FeedbackMessage"]),
+      genre: pickAny<string | null | undefined>(item, ["genre", "Genre"]),
+      coverImageUrl: pickAny<string | null | undefined>(item, ["coverImageUrl", "CoverImageUrl"]),
+      manuscriptUrl: pickAny<string | null | undefined>(item, ["manuscriptUrl", "ManuscriptUrl"]),
       createdAt: pickAny<string | null | undefined>(item, ["createdAt", "CreatedAt"]),
     }));
   },
@@ -1236,6 +1247,41 @@ export const mangaErpApi = {
       method: "PATCH",
       body: JSON.stringify(payload),
     });
+  },
+
+  async createDeadlineExtensionRequest(
+    pageTaskId: string,
+    payload: CreateDeadlineExtensionRequestPayload,
+  ) {
+    return request("task", `/api/v1/tasks/${pageTaskId}/extension-requests`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async handleDeadlineExtensionRequest(
+    requestId: string,
+    payload: HandleDeadlineExtensionRequestPayload,
+  ) {
+    return request(
+      "task",
+      `/api/v1/tasks/extension-requests/${requestId}/handle`,
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+
+  async getDeadlineExtensionRequests(pageTaskId?: string) {
+    const query = pageTaskId
+      ? `?pageTaskId=${encodeURIComponent(pageTaskId)}`
+      : "";
+
+    return request<DeadlineExtensionRequestDto[]>(
+      "task",
+      `/api/v1/tasks/extension-requests${query}`,
+    );
   },
 
   async getSamEmbedding(file: File) {

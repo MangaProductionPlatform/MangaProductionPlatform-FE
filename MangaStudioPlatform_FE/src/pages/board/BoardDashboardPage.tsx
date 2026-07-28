@@ -34,10 +34,10 @@ const formatDateTime = (value?: string | null) => {
   }).format(new Date(time));
 };
 
-const ageInDays = (value?: string | null) => {
+const ageInDays = (value: string | null | undefined, nowTimestamp: number) => {
   const time = getTimeValue(value);
   if (!time) return null;
-  return Math.floor((Date.now() - time) / (24 * 60 * 60 * 1000));
+  return Math.floor((nowTimestamp - time) / (24 * 60 * 60 * 1000));
 };
 
 const priorityRank = (item: EditorialSubmissionListItemDto) => {
@@ -54,6 +54,7 @@ export default function BoardDashboardPage() {
   const [data, setData] = useState<BoardDashboardDto | null>(null);
   const [submissions, setSubmissions] = useState<EditorialSubmissionListItemDto[]>([]);
   const [loading, setLoading] = useState(true);
+  const [statsNow] = useState(() => Date.now());
 
   const load = async () => {
     setLoading(true);
@@ -90,23 +91,27 @@ export default function BoardDashboardPage() {
   };
 
   useEffect(() => {
-    void load();
+    const timer = window.setTimeout(() => {
+      void load();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const stats = useMemo(() => {
-    const todayStart = new Date();
+    const todayStart = new Date(statsNow);
     todayStart.setHours(0, 0, 0, 0);
-    const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const weekAgo = statsNow - 7 * 24 * 60 * 60 * 1000;
     return {
       needsVote: submissions.filter((item) => item.status === "Pending_EB_Review").length,
       newToday: submissions.filter((item) => getTimeValue(item.createdAt) >= todayStart.getTime()).length,
-      stale: submissions.filter((item) => item.status === "Pending_EB_Review" && (ageInDays(item.createdAt) ?? 0) >= 7).length,
+      stale: submissions.filter((item) => item.status === "Pending_EB_Review" && (ageInDays(item.createdAt, statsNow) ?? 0) >= 7).length,
       approvedWeek: submissions.filter((item) => item.status === "EB_Approved" && getTimeValue(item.createdAt) >= weekAgo).length,
       rejectedWeek: submissions.filter((item) => item.status === "EB_Rejected" && getTimeValue(item.createdAt) >= weekAgo).length,
       conflicts: submissions.filter((item) => item.status === "Conflict_Escalated").length,
     };
-  }, [submissions]);
+  }, [statsNow, submissions]);
 
   const priorityQueue = useMemo(
     () =>
@@ -188,7 +193,7 @@ export default function BoardDashboardPage() {
           <div className="mt-5 space-y-3">
             {priorityQueue.length ? (
               priorityQueue.map((item) => (
-                <QueueRow key={item.id} item={item} />
+                <QueueRow key={item.id} item={item} nowTimestamp={statsNow} />
               ))
             ) : (
               <EmptyLine text="No submissions need board attention right now." />
@@ -302,8 +307,14 @@ function MetricCard({
   );
 }
 
-function QueueRow({ item }: { item: EditorialSubmissionListItemDto }) {
-  const days = ageInDays(item.createdAt);
+function QueueRow({
+  item,
+  nowTimestamp,
+}: {
+  item: EditorialSubmissionListItemDto;
+  nowTimestamp: number;
+}) {
+  const days = ageInDays(item.createdAt, nowTimestamp);
   const stale = item.status === "Pending_EB_Review" && days !== null && days >= 7;
   return (
     <Link

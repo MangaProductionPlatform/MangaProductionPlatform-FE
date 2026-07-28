@@ -39,6 +39,8 @@ export function mapSubmissionSummary(item: Record<string, unknown>): SubmissionS
     genre: pick<string | null | undefined>(item, "genre"),
     status: pick<string>(item, "status"),
     feedbackMessage: pick<string | null | undefined>(item, "feedbackMessage"),
+    coverImageUrl: pick<string | null | undefined>(item, "coverImageUrl"),
+    manuscriptUrl: pick<string | null | undefined>(item, "manuscriptUrl"),
     createdAt: pick<string>(item, "createdAt"),
     reviewedAt: pick<string | null | undefined>(item, "reviewedAt"),
   };
