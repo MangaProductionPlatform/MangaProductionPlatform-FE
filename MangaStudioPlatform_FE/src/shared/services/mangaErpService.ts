@@ -8,7 +8,6 @@ import type {
   AdminChartsDto,
   AdminRoleDto,
   AdminWorkflowStatsDto,
-  AssistantCandidateDto,
   AssistantIncomeDto,
   AdminUserDto,
   BasePageVersionDto,
@@ -101,6 +100,24 @@ import {
   normalizeRole,
   pick,
 } from "./mangaErpMappers";
+
+export type AssistantCandidateDto = {
+  assistantId: string;
+  displayName: string;
+  email: string;
+  activeTaskCount: number | null;
+  pendingAssignmentCount: number | null;
+  totalWorkload: number | null;
+  maxWorkload: number | null;
+  remainingCapacity: number | null;
+  hasSeriesAccess: boolean;
+  isAvailable: boolean;
+  availabilityCode?: string | null;
+  availabilityReason?: string | null;
+  collaborationId?: string | null;
+  concurrencyToken?: string | null;
+  expectedConcurrencyToken?: string | null;
+};
 
 function pickAny<T>(value: Record<string, unknown>, keys: string[]): T {
   for (const key of keys) {

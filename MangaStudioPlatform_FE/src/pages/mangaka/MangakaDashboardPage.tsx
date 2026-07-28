@@ -3,15 +3,12 @@ import { Link } from "react-router-dom";
 import {
   BookOpen,
   FilePenLine,
-  LineChart,
   RefreshCw,
   Send,
   XCircle,
 } from "lucide-react";
 
-import { LoadingSkeleton } from "../../shared/components/LoadingSkeleton";
 import { useToast } from "../../shared/components/toastContext";
-import { WorkflowEmptyState } from "../../shared/components/WorkflowEmptyState";
 import { mangaErpApi } from "../../shared/services/mangaErpService";
 import type {
   MangaSeriesDto,
@@ -37,70 +34,6 @@ type SeriesAnalyticsEntry = {
   series: MangaSeriesDto;
   analytics: SeriesAnalytics | null;
 };
-
-function getAnalyticsValue(
-  source: Record<string, unknown>,
-  key: string,
-): unknown {
-  const matchingKey = Object.keys(source).find(
-    (sourceKey) => sourceKey.toLowerCase() === key.toLowerCase(),
-  );
-
-  return matchingKey ? source[matchingKey] : undefined;
-}
-
-function toNumber(value: unknown): number | undefined {
-  if (typeof value === "number" && Number.isFinite(value)) {
-    return value;
-  }
-
-  if (typeof value === "string" && value.trim() !== "") {
-    const parsedValue = Number(value);
-    return Number.isFinite(parsedValue) ? parsedValue : undefined;
-  }
-
-  return undefined;
-}
-
-function toTrends(value: unknown): AnalyticsTrend[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-
-  return value.flatMap((trend) => {
-    if (!trend || typeof trend !== "object") {
-      return [];
-    }
-
-    const source = trend as Record<string, unknown>;
-    const month = getAnalyticsValue(source, "month");
-
-    if (typeof month !== "string") {
-      return [];
-    }
-
-    return [
-      {
-        month,
-        views: toNumber(getAnalyticsValue(source, "views")),
-        votes: toNumber(getAnalyticsValue(source, "votes")),
-        publishedChapters: toNumber(
-          getAnalyticsValue(source, "publishedChapters"),
-        ),
-      },
-    ];
-  });
-}
-
-function mapSeriesAnalytics(source: Record<string, unknown>): SeriesAnalytics {
-  return {
-    seriesId: String(getAnalyticsValue(source, "seriesId") ?? ""),
-    totalViews: toNumber(getAnalyticsValue(source, "totalViews")),
-    totalVotes: toNumber(getAnalyticsValue(source, "totalVotes")),
-    monthlyTrends: toTrends(getAnalyticsValue(source, "monthlyTrends")),
-    chapterTrends: toTrends(getAnalyticsValue(source, "chapterTrends")),
-  };
-}
 
 function formatMetric(value: number | undefined): string {
   return typeof value === "number"
@@ -153,7 +86,7 @@ function AnalyticsTrendTable({
   );
 }
 
-function SeriesAnalyticsPanel({ series, analytics }: SeriesAnalyticsEntry) {
+export function SeriesAnalyticsPanel({ series, analytics }: SeriesAnalyticsEntry) {
   return (
     <article className="rounded-2xl border border-cyan-200/15 bg-slate-950/30 p-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -228,11 +161,6 @@ export default function MangakaDashboardPage() {
   const toast = useToast();
   const [submissions, setSubmissions] = useState<SubmissionSummaryDto[]>([]);
   const [series, setSeries] = useState<MangaSeriesDto[]>([]);
-  const [analyticsEntries, setAnalyticsEntries] = useState<
-    SeriesAnalyticsEntry[]
-  >([]);
-  const [selectedAnalyticsSeriesId, setSelectedAnalyticsSeriesId] =
-    useState("");
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -251,35 +179,6 @@ export default function MangakaDashboardPage() {
 
       setSubmissions(submissionResult);
       setSeries(seriesResult);
-
-      // Analytics API is scoped by series, so each owned series is loaded separately.
-      const analyticsResults = await Promise.allSettled(
-        seriesResult.map((item) => mangaErpApi.getSeriesAnalytics(item.id)),
-      );
-
-      setAnalyticsEntries(
-        seriesResult.map((item, index) => {
-          const result = analyticsResults[index];
-
-          return {
-            series: item,
-            analytics:
-              result?.status === "fulfilled"
-                ? mapSeriesAnalytics(result.value)
-                : null,
-          };
-        }),
-      );
-
-      setSelectedAnalyticsSeriesId((currentSeriesId) => {
-        const currentSeriesExists = seriesResult.some(
-          (item) => item.id === currentSeriesId,
-        );
-
-        return currentSeriesExists
-          ? currentSeriesId
-          : (seriesResult[0]?.id ?? "");
-      });
     } catch (error) {
       toast.error(
         "Could not load MF1 dashboard",
@@ -326,11 +225,6 @@ export default function MangakaDashboardPage() {
       icon: BookOpen,
     },
   ];
-
-  const selectedAnalyticsEntry =
-    analyticsEntries.find(
-      (entry) => entry.series.id === selectedAnalyticsSeriesId,
-    ) ?? analyticsEntries[0];
 
   return (
     <div className="space-y-6">
@@ -431,64 +325,6 @@ export default function MangakaDashboardPage() {
         </div>
       </section>
 
-      <section className="rounded-2xl border border-cyan-300/20 bg-cyan-300/10 p-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 className="flex items-center gap-2 text-xl font-bold text-white">
-              <LineChart size={21} className="text-cyan-200" />
-              Series analytics
-            </h2>
-            <p className="mt-2 text-sm text-slate-300">
-              Select a series to view its views, votes, and published chapters.
-            </p>
-          </div>
-          <span className="rounded-full border border-cyan-100/20 bg-slate-950/30 px-3 py-1 text-sm text-cyan-100">
-            {series.length} series
-          </span>
-        </div>
-
-        {loading ? (
-          <LoadingSkeleton cards={1} className="mt-5" />
-        ) : selectedAnalyticsEntry ? (
-          <div className="mt-5 space-y-4">
-            <label className="block max-w-xl">
-              <span className="mb-2 block text-sm font-medium text-slate-200">
-                Series
-              </span>
-              <select
-                value={selectedAnalyticsEntry.series.id}
-                onChange={(event) =>
-                  setSelectedAnalyticsSeriesId(event.target.value)
-                }
-                className="input w-full"
-                aria-label="Select a series to view analytics"
-              >
-                {analyticsEntries.map((entry) => (
-                  <option key={entry.series.id} value={entry.series.id}>
-                    {entry.series.title}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <SeriesAnalyticsPanel
-              series={selectedAnalyticsEntry.series}
-              analytics={selectedAnalyticsEntry.analytics}
-            />
-          </div>
-        ) : (
-          <div className="mt-5">
-            <WorkflowEmptyState
-              icon={LineChart}
-              title="No official series analytics yet"
-              description="Create a proposal and wait for approval. Analytics will appear when an official series is available."
-              actionLabel="Manage proposals"
-              actionTo="/mangaka/submissions"
-              onRefresh={() => void loadDashboard(true)}
-            />
-          </div>
-        )}
-      </section>
     </div>
   );
 }

@@ -2,11 +2,17 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Copy, Mail, Save, ShieldCheck, Trash2 } from "lucide-react";
 import { mangaErpApi } from "../../shared/services/mangaErpService";
-import type {
-  AdminUserDto,
-  AssistantCandidateDto,
-} from "../../shared/types/mangaErp";
+import type { AdminUserDto } from "../../shared/types/mangaErp";
 import { useToast } from "../../shared/components/toastContext";
+
+type AdminAssistantCandidate = {
+  assistantId: string;
+  displayName: string;
+  email: string;
+  collaborationId?: string | null;
+  concurrencyToken?: string | null;
+  expectedConcurrencyToken?: string | null;
+};
 
 const roles = [
   [0, "Admin"],
@@ -40,10 +46,10 @@ export default function AdminUserDetailPage() {
   });
   const [busy, setBusy] = useState(false);
   const [managedAssistants, setManagedAssistants] = useState<
-    AssistantCandidateDto[]
+    AdminAssistantCandidate[]
   >([]);
   const [unassignedAssistants, setUnassignedAssistants] = useState<
-    AssistantCandidateDto[]
+    AdminAssistantCandidate[]
   >([]);
   const [selectedAssistantIds, setSelectedAssistantIds] = useState<string[]>(
     [],
@@ -174,7 +180,7 @@ export default function AdminUserDetailPage() {
     }
   };
 
-  const endCollaboration = async (assistant: AssistantCandidateDto) => {
+  const endCollaboration = async (assistant: AdminAssistantCandidate) => {
     const expectedConcurrencyToken =
       assistant.expectedConcurrencyToken ?? assistant.concurrencyToken;
     if (!assistant.collaborationId || !expectedConcurrencyToken) return;

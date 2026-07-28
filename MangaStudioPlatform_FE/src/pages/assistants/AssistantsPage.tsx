@@ -1,11 +1,10 @@
 import { useEffect, useState } from "react";
 import { MailPlus, RefreshCw, XCircle } from "lucide-react";
-import { mangaErpApi } from "../../shared/services/mangaErpService";
-import type {
-  AssistantCandidateDto,
-  MangaSeriesDto,
-  StudioInvitationDto,
-} from "../../shared/types/mangaErp";
+import {
+  mangaErpApi,
+  type AssistantCandidateDto,
+} from "../../shared/services/mangaErpService";
+import type { MangaSeriesDto, StudioInvitationDto } from "../../shared/types/mangaErp";
 import { useToast } from "../../shared/components/toastContext";
 
 export default function AssistantsPage() {

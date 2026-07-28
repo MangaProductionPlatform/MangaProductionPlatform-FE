@@ -5,7 +5,6 @@ import {
   FolderOpen,
   LayoutDashboard,
   LogOut,
-  UploadCloud,
   User,
   Wallet,
 } from "lucide-react";
@@ -27,7 +26,6 @@ const menus = [
     end: true,
   },
   { label: "Assigned Chapters", path: "/assistant/chapters", icon: FolderOpen },
-  { label: "Submissions", path: "/assistant/submissions", icon: UploadCloud },
   { label: "Notifications", path: "/assistant/notifications", icon: Bell },
   { label: "Income", path: "/assistant/income", icon: Wallet },
   { label: "Profile", path: "/assistant/profile", icon: User },
