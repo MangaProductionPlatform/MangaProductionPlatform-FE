@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   BookOpen,
   ClipboardCheck,
@@ -18,7 +18,7 @@ import type {
   ChapterDto,
   MangaSeriesDto,
   PageTaskDto,
-  RecommendedAssistantDto,
+  TaskAssistantCandidatesDto,
   UpdateTaskDetailsPayload,
 } from "../../shared/types/mangaErp";
 
@@ -82,33 +82,6 @@ function clearStoredRecreatedTaskAssistantId(
 
 function normalizeAssistantId(assistantId?: string | null) {
   return assistantId?.trim().toLowerCase() ?? "";
-}
-
-function findAcceptedAssistantId(
-  assistantId: string,
-  assistants: RecommendedAssistantDto[],
-) {
-  const normalizedAssistantId = normalizeAssistantId(assistantId);
-
-  if (!normalizedAssistantId) {
-    return "";
-  }
-
-  return (
-    assistants
-      .find(
-        (assistant) =>
-          normalizeAssistantId(assistant.assistantId) === normalizedAssistantId,
-      )
-      ?.assistantId?.trim() ?? ""
-  );
-}
-
-function findRecommendedAssistantId(
-  assistantId: string,
-  assistants: RecommendedAssistantDto[],
-) {
-  return findAcceptedAssistantId(assistantId, assistants) || assistantId.trim();
 }
 
 function formatDateTimeLocal(dateTime?: string | null) {
@@ -195,6 +168,104 @@ function hasSubmittedArtwork(task: PageTaskDto | null) {
   );
 }
 
+function getCurrentTimestamp() {
+  return Date.now();
+}
+
+function getErrorMessage(error: unknown, fallbackMessage: string) {
+  return error instanceof Error ? error.message : fallbackMessage;
+}
+
+type WorkQueueStatusInfo = {
+  label: string;
+  description: string;
+  order: number;
+  toneClassName: string;
+};
+
+type WorkQueueGroup = WorkQueueStatusInfo & {
+  statusKey: string;
+  tasks: PageTaskDto[];
+};
+
+const workQueueStatusInfoByKey: Record<string, WorkQueueStatusInfo> = {
+  pending: {
+    label: "Pending",
+    description: "Ready to be assigned.",
+    order: 1,
+    toneClassName: "border-slate-600 bg-slate-800 text-slate-200",
+  },
+  pendingacceptance: {
+    label: "Pending acceptance",
+    description: "Waiting for the Primary Assistant to respond.",
+    order: 2,
+    toneClassName: "border-amber-400/40 bg-amber-400/10 text-amber-100",
+  },
+  inprogress: {
+    label: "In progress",
+    description: "The Primary Assistant is working on this page.",
+    order: 3,
+    toneClassName: "border-cyan-400/40 bg-cyan-400/10 text-cyan-100",
+  },
+  incomplete: {
+    label: "In progress",
+    description: "The Primary Assistant is working on this page.",
+    order: 3,
+    toneClassName: "border-cyan-400/40 bg-cyan-400/10 text-cyan-100",
+  },
+  reassignmentrequired: {
+    label: "Needs reassignment",
+    description: "Choose another Assistant to continue the work.",
+    order: 4,
+    toneClassName: "border-orange-400/40 bg-orange-400/10 text-orange-100",
+  },
+  reviewing: {
+    label: "Reviewing",
+    description: "Artwork was submitted and needs your review.",
+    order: 5,
+    toneClassName: "border-violet-400/40 bg-violet-400/10 text-violet-100",
+  },
+  revisionalert: {
+    label: "Revision requested",
+    description: "The Assistant needs to revise the artwork.",
+    order: 6,
+    toneClassName: "border-rose-400/40 bg-rose-400/10 text-rose-100",
+  },
+  approved: {
+    label: "Approved",
+    description: "Artwork was accepted.",
+    order: 7,
+    toneClassName: "border-emerald-400/40 bg-emerald-400/10 text-emerald-100",
+  },
+  cancelled: {
+    label: "Cancelled",
+    description: "This task is no longer active.",
+    order: 8,
+    toneClassName: "border-slate-600 bg-slate-800 text-slate-300",
+  },
+  canceled: {
+    label: "Cancelled",
+    description: "This task is no longer active.",
+    order: 8,
+    toneClassName: "border-slate-600 bg-slate-800 text-slate-300",
+  },
+};
+
+function normalizeWorkQueueStatus(status?: string | null) {
+  return (status ?? "unknown").replace(/[\s_-]/g, "").toLowerCase();
+}
+
+function getWorkQueueStatusInfo(status?: string | null): WorkQueueStatusInfo {
+  return (
+    workQueueStatusInfoByKey[normalizeWorkQueueStatus(status)] ?? {
+      label: status?.trim() || "Unknown",
+      description: "Task status returned by the system.",
+      order: 99,
+      toneClassName: "border-slate-700 bg-slate-800 text-slate-200",
+    }
+  );
+}
+
 export default function TaskAssignmentPage() {
   const toast = useToast();
   const location = useLocation();
@@ -206,10 +277,13 @@ export default function TaskAssignmentPage() {
   const [chapterId, setChapterId] = useState("");
   const [pageNumber, setPageNumber] = useState(1);
   const [assistantId, setAssistantId] = useState("");
-  const [recommendedAssistants, setRecommendedAssistants] = useState<
-    RecommendedAssistantDto[]
-  >([]);
-  const [taskType, setTaskType] = useState("Background");
+  const [assistantCandidates, setAssistantCandidates] =
+    useState<TaskAssistantCandidatesDto | null>(null);
+  const [loadedCandidateSourceKey, setLoadedCandidateSourceKey] =
+    useState("");
+  const [isLoadingCandidates, setIsLoadingCandidates] = useState(false);
+  const [candidateError, setCandidateError] = useState("");
+  const [taskType, setTaskType] = useState("");
   const [taskDescription, setTaskDescription] = useState("");
   const [deadline, setDeadline] = useState("");
   const [originalPageFile, setOriginalPageFile] = useState<File | null>(null);
@@ -236,6 +310,10 @@ export default function TaskAssignmentPage() {
   const [isCancelConfirmationOpen, setIsCancelConfirmationOpen] =
     useState(false);
   const [pageDataReloadKey, setPageDataReloadKey] = useState(0);
+  const [workQueueTasks, setWorkQueueTasks] = useState<PageTaskDto[]>([]);
+  const [isLoadingWorkQueue, setIsLoadingWorkQueue] = useState(false);
+  const [workQueueError, setWorkQueueError] = useState("");
+  const [workQueueReloadKey, setWorkQueueReloadKey] = useState(0);
   const hydratedAssistantPageKeyRef = useRef("");
   const [message, setMessage] = useState("");
   const isTaskLocked = hasSubmittedArtwork(activePageTask);
@@ -248,7 +326,7 @@ export default function TaskAssignmentPage() {
     : isTaskAwaitingAssistant
       ? [
           "This recreated task is waiting for an Assistant.",
-          "Select an Assistant who accepted this series, then save and assign it.",
+          "Select an available Assistant, then save and assign it.",
         ].join(" ")
       : [
           "You can update the note, deadline, task type, and original page image",
@@ -260,18 +338,59 @@ export default function TaskAssignmentPage() {
       : isUpdatingTask
         ? "Saving task changes..."
         : isTaskAwaitingAssistant
-          ? "Save & Assign Recreated Task"
+          ? "Activate & Assign Recreated Task"
           : "Save task changes"
     : isAssigning
       ? "Assigning..."
       : "Activate & Assign Task";
-  const onlyAcceptedAssistantId =
-    canSelectAssistant && recommendedAssistants.length === 1
-      ? (recommendedAssistants[0].assistantId?.trim() ?? "")
+  const selectedAssistantId = assistantId.trim();
+  const currentTaskId = activePageTask?.id ?? selectedPageTaskId;
+  const candidateSourceKey = currentTaskId
+    ? `task:${currentTaskId}`
+    : chapterId
+      ? `chapter:${chapterId}`
       : "";
-  const selectedAssistantId =
-    findRecommendedAssistantId(assistantId, recommendedAssistants) ||
-    onlyAcceptedAssistantId;
+  const availableAssistants =
+    loadedCandidateSourceKey === candidateSourceKey
+      ? (assistantCandidates?.availableAssistants ?? [])
+      : [];
+  const unavailableAssistants =
+    loadedCandidateSourceKey === candidateSourceKey
+      ? (assistantCandidates?.unavailableAssistants ?? [])
+      : [];
+  const workQueueGroups = useMemo(() => {
+    const groups = new Map<string, WorkQueueGroup>();
+
+    workQueueTasks.forEach((task) => {
+      const statusKey = normalizeWorkQueueStatus(task.status);
+      const existingGroup = groups.get(statusKey);
+
+      if (existingGroup) {
+        existingGroup.tasks.push(task);
+        return;
+      }
+
+      groups.set(statusKey, {
+        statusKey,
+        ...getWorkQueueStatusInfo(task.status),
+        tasks: [task],
+      });
+    });
+
+    return Array.from(groups.values())
+      .map((group) => ({
+        ...group,
+        tasks: [...group.tasks].sort(
+          (firstTask, secondTask) =>
+            firstTask.pageNumber - secondTask.pageNumber,
+        ),
+      }))
+      .sort(
+        (firstGroup, secondGroup) =>
+          firstGroup.order - secondGroup.order ||
+          firstGroup.label.localeCompare(secondGroup.label),
+      );
+  }, [workQueueTasks]);
 
   async function loadSeriesAndChapters() {
     // Khởi tạo workspace bằng series/chapter đầu tiên mà Mangaka đang sở hữu.
@@ -350,62 +469,49 @@ export default function TaskAssignmentPage() {
   }, []);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      if (!chapterId) {
-        setRecommendedAssistants([]);
-        return;
-      }
+    let ignore = false;
+
+    if (!candidateSourceKey) {
+      return undefined;
+    }
+
+    async function loadAssistantCandidates() {
+      setIsLoadingCandidates(true);
+      setCandidateError("");
       // Danh sách này chỉ gợi ý; Mangaka vẫn là người quyết định Assistant nhận task.
-      void mangaErpApi
-        .getRecommendedAssistants(chapterId)
-        .then(setRecommendedAssistants)
-        .catch(() => setRecommendedAssistants([]));
-    }, 0);
-    return () => window.clearTimeout(timer);
-  }, [chapterId]);
+      try {
+        const candidates = currentTaskId
+          ? await mangaErpApi.getTaskAssistantCandidates(currentTaskId)
+          : await mangaErpApi.getChapterAssistantCandidates(chapterId);
 
-  useEffect(() => {
-    if (
-      !canSelectAssistant ||
-      !chapterId ||
-      assistantId.trim() ||
-      recommendedAssistants.length === 0
-    ) {
-      return;
+        if (!ignore) {
+          setAssistantCandidates(candidates);
+          setLoadedCandidateSourceKey(candidateSourceKey);
+        }
+      } catch (error) {
+        if (!ignore) {
+          setAssistantCandidates(null);
+          setLoadedCandidateSourceKey(candidateSourceKey);
+          setCandidateError(
+            getErrorMessage(
+              error,
+              "Could not load available Assistants.",
+            ),
+          );
+        }
+      } finally {
+        if (!ignore) {
+          setIsLoadingCandidates(false);
+        }
+      }
     }
 
-    const storedAssistantId = getStoredRecreatedTaskAssistantId(
-      chapterId,
-      pageNumber,
-    );
-    const restoredAcceptedAssistantId = findAcceptedAssistantId(
-      storedAssistantId,
-      recommendedAssistants,
-    );
-    const onlyAcceptedAssistantId =
-      recommendedAssistants.length === 1
-        ? (recommendedAssistants[0].assistantId?.trim() ?? "")
-        : "";
-    const nextAssistantId =
-      restoredAcceptedAssistantId || onlyAcceptedAssistantId;
+    void loadAssistantCandidates();
 
-    if (!nextAssistantId) {
-      return;
-    }
-
-    const timer = window.setTimeout(() => {
-      setAssistantId(nextAssistantId);
-      storeRecreatedTaskAssistantId(chapterId, pageNumber, nextAssistantId);
-    }, 0);
-
-    return () => window.clearTimeout(timer);
-  }, [
-    assistantId,
-    canSelectAssistant,
-    chapterId,
-    pageNumber,
-    recommendedAssistants,
-  ]);
+    return () => {
+      ignore = true;
+    };
+  }, [candidateSourceKey, chapterId, currentTaskId]);
 
   useEffect(() => {
     let ignore = false;
@@ -562,10 +668,84 @@ export default function TaskAssignmentPage() {
   }, [chapterId, pageDataReloadKey, pageNumber]);
 
   useEffect(() => {
+    let ignore = false;
+
+    const timer = window.setTimeout(() => {
+      async function loadWorkQueue() {
+        if (!chapterId) {
+          if (!ignore) {
+            setWorkQueueTasks([]);
+            setWorkQueueError("");
+            setIsLoadingWorkQueue(false);
+          }
+
+          return;
+        }
+
+        setIsLoadingWorkQueue(true);
+        setWorkQueueError("");
+
+        try {
+          const tasks = await mangaErpApi.getChapterPageTasks(chapterId);
+
+          if (!ignore) {
+            setWorkQueueTasks(tasks);
+          }
+        } catch (error) {
+          if (!ignore) {
+            setWorkQueueTasks([]);
+            setWorkQueueError(
+              getErrorMessage(error, "Could not load the task work queue."),
+            );
+          }
+        } finally {
+          if (!ignore) {
+            setIsLoadingWorkQueue(false);
+          }
+        }
+      }
+
+      void loadWorkQueue();
+    }, 0);
+
+    return () => {
+      ignore = true;
+      window.clearTimeout(timer);
+    };
+  }, [chapterId, pageDataReloadKey, workQueueReloadKey]);
+
+  useEffect(() => {
     if (!originalPagePreviewUrl.startsWith("blob:")) return undefined;
 
     return () => URL.revokeObjectURL(originalPagePreviewUrl);
   }, [originalPagePreviewUrl]);
+
+  const validateRequiredTaskFields = (requireNewBaseImage: boolean) => {
+    const missingFields: string[] = [];
+
+    if (!chapterId) missingFields.push("chapter");
+    if (!Number.isFinite(pageNumber) || pageNumber < 1) {
+      missingFields.push("page number");
+    }
+    if (!selectedAssistantId) missingFields.push("Assistant");
+    if (!deadline) missingFields.push("deadline");
+    if (!taskType) missingFields.push("task type");
+    if (!taskDescription.trim()) missingFields.push("task note");
+    if (
+      requireNewBaseImage
+        ? !originalPageFile
+        : !originalPageFile && !baseImageUrl && !hasExistingBasePage
+    ) {
+      missingFields.push("original page image");
+    }
+
+    if (missingFields.length === 0) return true;
+
+    const detail = `Complete the following required fields: ${missingFields.join(", ")}.`;
+    setMessage(detail);
+    toast.error("Required information is missing", detail);
+    return false;
+  };
 
   const handleCreateBasePage = async () => {
     if (hasExistingBasePage) {
@@ -574,6 +754,8 @@ export default function TaskAssignmentPage() {
       toast.error("Base page already exists", detail);
       return;
     }
+
+    if (!validateRequiredTaskFields(true)) return;
 
     if (!chapterId) {
       setMessage("Vui lòng chọn chapter trước khi tiếp tục.");
@@ -630,6 +812,8 @@ export default function TaskAssignmentPage() {
       return;
     }
 
+    if (!validateRequiredTaskFields(false)) return;
+
     if (!chapterId) {
       setMessage("Vui lòng chọn chapter trước khi tiếp tục.");
       return;
@@ -656,7 +840,7 @@ export default function TaskAssignmentPage() {
       return;
     }
 
-    if (deadlineValue.getTime() <= Date.now()) {
+    if (deadlineValue.getTime() <= getCurrentTimestamp()) {
       const detail = "The task deadline must be later than the current time.";
       setMessage(detail);
       toast.error("Invalid deadline", detail);
@@ -737,21 +921,14 @@ export default function TaskAssignmentPage() {
       return;
     }
 
-    if (isTaskAwaitingAssistant) {
-      const selectedAssistant = recommendedAssistants.find(
-        (assistant) =>
-          normalizeAssistantId(assistant.assistantId) ===
-          normalizeAssistantId(selectedAssistantId),
-      );
+    if (!validateRequiredTaskFields(false)) return;
 
-      if (!selectedAssistant) {
-        const detail =
-          "Select an Assistant who has accepted this series before assigning the recreated task.";
+    if (isTaskAwaitingAssistant && !selectedAssistantId) {
+      const detail = "Select an Assistant before assigning the recreated task.";
 
-        setMessage(detail);
-        toast.error("Assistant is required", detail);
-        return;
-      }
+      setMessage(detail);
+      toast.error("Assistant is required", detail);
+      return;
     }
 
     if (!deadline) {
@@ -797,9 +974,15 @@ export default function TaskAssignmentPage() {
       await mangaErpApi.updateTaskDetails(selectedPageTaskId, payload);
 
       if (isTaskAwaitingAssistant) {
-        await mangaErpApi.reassignPageTask(chapterId, pageNumber, {
-          NewAssistantId: selectedAssistantId,
+        // Cancel-and-recreate creates a fresh Draft task. A Draft must be
+        // activated before it can be assigned; the reassign endpoint only
+        // accepts Incomplete or RevisionAlert tasks.
+        await mangaErpApi.activatePage(chapterId, {
+          PageNumber: pageNumber,
+          AssignedAssistantId: selectedAssistantId,
           Description: taskDescription.trim() || null,
+          Deadline: deadlineValue.toISOString(),
+          TaskType: taskType,
         });
 
         storeRecreatedTaskAssistantId(
@@ -814,7 +997,7 @@ export default function TaskAssignmentPage() {
       toast.success(
         isTaskAwaitingAssistant ? "Task assigned" : "Task updated",
         isTaskAwaitingAssistant
-          ? "The recreated task was assigned to the selected Assistant."
+          ? "The recreated task was activated and assigned to the selected Assistant."
           : "The Assistant will receive the latest task details.",
       );
     } catch (err) {
@@ -892,6 +1075,14 @@ export default function TaskAssignmentPage() {
     if (nextAssistantId.trim()) {
       storeRecreatedTaskAssistantId(chapterId, pageNumber, nextAssistantId);
     }
+  };
+
+  const handleRefreshWorkQueue = () => {
+    setWorkQueueReloadKey((currentKey) => currentKey + 1);
+  };
+
+  const handleOpenWorkQueueTask = (task: PageTaskDto) => {
+    setPageNumber(task.pageNumber);
   };
 
   return (
@@ -1030,7 +1221,7 @@ export default function TaskAssignmentPage() {
 
             <div>
               <label className="text-sm text-slate-400">
-                Assistant accepted for this series
+                Available Assistant
               </label>
 
               <select
@@ -1044,11 +1235,9 @@ export default function TaskAssignmentPage() {
                 }
                 className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none"
               >
-                <option value="">
-                  Select an Assistant accepted for this series
-                </option>
+                <option value="">Select an available Assistant</option>
                 {selectedAssistantId &&
-                !recommendedAssistants.some(
+                !availableAssistants.some(
                   (assistant) =>
                     normalizeAssistantId(assistant.assistantId) ===
                     normalizeAssistantId(selectedAssistantId),
@@ -1057,23 +1246,51 @@ export default function TaskAssignmentPage() {
                     Previously assigned Assistant
                   </option>
                 ) : null}
-                {recommendedAssistants.map((assistant) => (
+                {availableAssistants.map((assistant) => (
                   <option
                     key={assistant.assistantId}
                     value={assistant.assistantId}
                   >
-                    {assistant.assistantName}
-                    {assistant.penName ? ` (${assistant.penName})` : ""} ·{" "}
-                    {assistant.activeTasksCount} active task(s)
+                    {assistant.displayName}
+                    {assistant.email ? ` (${assistant.email})` : ""}
                   </option>
                 ))}
+                {unavailableAssistants.length > 0 ? (
+                  <optgroup label="Unavailable Assistants">
+                    {unavailableAssistants.map((assistant) => (
+                      <option key={assistant.assistantId} disabled>
+                        {assistant.displayName}
+                        {assistant.availabilityReason
+                          ? ` — ${assistant.availabilityReason}`
+                          : " — Unavailable for this task"}
+                      </option>
+                    ))}
+                  </optgroup>
+                ) : null}
               </select>
+
+              {isLoadingCandidates ? (
+                <p className="mt-2 text-xs text-slate-400">
+                  Loading available Assistants...
+                </p>
+              ) : null}
 
               {canSelectAssistant &&
               !isLoadingPageData &&
-              recommendedAssistants.length === 0 ? (
+              !isLoadingCandidates &&
+              !candidateError &&
+              availableAssistants.length === 0 ? (
                 <p className="mt-2 text-xs text-amber-200">
-                  No Assistant who accepted this series is currently available.
+                  No Assistant is currently available for this task. {" "}
+                  {unavailableAssistants.length > 0
+                    ? `${unavailableAssistants.length} Assistant(s) do not meet the assignment requirements.`
+                    : "The candidate API returned no Assistant records."}
+                </p>
+              ) : null}
+
+              {candidateError ? (
+                <p role="alert" className="mt-2 text-xs text-rose-200">
+                  {candidateError}
                 </p>
               ) : null}
             </div>
@@ -1093,22 +1310,16 @@ export default function TaskAssignmentPage() {
             </div>
 
             <div>
-              <label className="text-sm text-slate-400">
-                Task deadline <span className="text-rose-300">*</span>
-              </label>
+              <label className="text-sm text-slate-400">Task deadline</label>
 
               <input
                 type="datetime-local"
                 value={deadline}
                 onChange={(event) => setDeadline(event.target.value)}
-                required
                 disabled={isTaskLocked}
                 className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none focus:border-cyan-400"
               />
 
-              <p className="mt-2 text-xs text-slate-500">
-                Required — visible to the Assistant in task details.
-              </p>
             </div>
 
             <div>
@@ -1120,6 +1331,7 @@ export default function TaskAssignmentPage() {
                 disabled={isTaskLocked}
                 className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none"
               >
+                <option value="">Select task type</option>
                 <option value="General">General</option>
                 <option value="Background">Background</option>
                 <option value="Shading">Shading</option>
@@ -1129,6 +1341,173 @@ export default function TaskAssignmentPage() {
               </select>
             </div>
           </div>
+
+          {/* Candidate cards were merged into the Assistant select above.
+          {currentTaskId ? (
+            <section className="mt-5 rounded-xl border border-slate-700 bg-slate-950/40 p-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-200">
+                    Assistant candidates
+                  </p>
+
+                  <p className="mt-1 text-sm text-slate-400">
+                    Select from Assistants returned by the workload and series
+                    access check for this task.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleRefreshCandidates}
+                  disabled={isLoadingCandidates}
+                  aria-label="Refresh Assistant candidates"
+                  className="inline-flex items-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-sm font-medium text-slate-200 transition hover:border-cyan-300/60 hover:text-cyan-100 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <RefreshCw
+                    size={16}
+                    className={isLoadingCandidates ? "animate-spin" : undefined}
+                  />
+                  Refresh candidates
+                </button>
+              </div>
+
+              {isLoadingCandidates ? (
+                <div className="mt-4 grid gap-3 lg:grid-cols-2">
+                  {[0, 1].map((index) => (
+                    <div
+                      key={index}
+                      className="h-28 animate-pulse rounded-xl border border-slate-800 bg-slate-900"
+                    />
+                  ))}
+                </div>
+              ) : null}
+
+              {!isLoadingCandidates && candidateError ? (
+                <p
+                  role="alert"
+                  className="mt-4 rounded-lg border border-rose-400/30 bg-rose-400/10 px-3 py-2 text-sm text-rose-100"
+                >
+                  {candidateError}
+                </p>
+              ) : null}
+
+              {!isLoadingCandidates && !candidateError ? (
+                <div className="mt-4 space-y-5">
+                  <div>
+                    <h3 className="text-sm font-semibold text-emerald-200">
+                      Available ({availableCandidates.length})
+                    </h3>
+
+                    {availableCandidates.length > 0 ? (
+                      <div className="mt-3 grid gap-3 lg:grid-cols-2">
+                        {availableCandidates.map((candidate) => {
+                          const isSelectedCandidate =
+                            normalizeAssistantId(selectedAssistantId) ===
+                            normalizeAssistantId(candidate.assistantId);
+
+                          return (
+                            <button
+                              key={candidate.assistantId}
+                              type="button"
+                              onClick={() =>
+                                handleCandidateSelection(candidate)
+                              }
+                              disabled={
+                                !canSelectAssistant ||
+                                isUpdatingTask ||
+                                isCancellingTask
+                              }
+                              className={`rounded-xl border p-4 text-left transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                                isSelectedCandidate
+                                  ? "border-cyan-300 bg-cyan-400/10"
+                                  : "border-slate-700 bg-slate-900/70 hover:border-cyan-300/60"
+                              }`}
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <div>
+                                  <p className="font-semibold text-white">
+                                    {candidate.displayName}
+                                  </p>
+
+                                  <p className="mt-1 break-all text-xs text-slate-400">
+                                    {candidate.email}
+                                  </p>
+                                </div>
+
+                                <span className="rounded-full bg-emerald-400/10 px-2 py-1 text-xs font-medium text-emerald-200">
+                                  Available
+                                </span>
+                              </div>
+
+                              <p className="mt-3 text-sm text-slate-300">
+                                {getCandidateWorkloadLabel(candidate)}
+                              </p>
+
+                              <p className="mt-1 text-xs text-slate-500">
+                                {candidate.activeTaskCount ?? 0} active task(s)
+                                · {candidate.pendingAssignmentCount ?? 0}{" "}
+                                pending invitation(s)
+                              </p>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p className="mt-3 text-sm text-slate-400">
+                        No Assistant candidates are currently available for this
+                        task.
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <h3 className="text-sm font-semibold text-amber-200">
+                      Unavailable ({unavailableCandidates.length})
+                    </h3>
+
+                    {unavailableCandidates.length > 0 ? (
+                      <div className="mt-3 grid gap-3 lg:grid-cols-2">
+                        {unavailableCandidates.map((candidate) => (
+                          <div
+                            key={candidate.assistantId}
+                            aria-disabled="true"
+                            className="rounded-xl border border-slate-800 bg-slate-900/40 p-4 opacity-70"
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div>
+                                <p className="font-semibold text-slate-200">
+                                  {candidate.displayName}
+                                </p>
+
+                                <p className="mt-1 break-all text-xs text-slate-500">
+                                  {candidate.email}
+                                </p>
+                              </div>
+
+                              <span className="rounded-full bg-amber-400/10 px-2 py-1 text-xs font-medium text-amber-200">
+                                Unavailable
+                              </span>
+                            </div>
+
+                            <p className="mt-3 text-sm text-slate-400">
+                              {candidate.availabilityReason ??
+                                candidate.availabilityCode ??
+                                "This Assistant cannot receive this task right now."}
+                            </p>
+
+                            <p className="mt-1 text-xs text-slate-500">
+                              {getCandidateWorkloadLabel(candidate)}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              ) : null}
+            </section>
+          ) : null} */}
 
           <div className="mt-5">
             <label className="block text-sm text-slate-400">
@@ -1160,97 +1539,6 @@ export default function TaskAssignmentPage() {
                   : "The original image remains unchanged while artwork layers are reviewed."}
             </p>
 
-            {hasExistingTask && selectedPageTaskId ? (
-              <button
-                type="button"
-                onClick={() => void handleLoadBasePageHistory()}
-                disabled={isLoadingBasePageHistory}
-                className="mt-4 inline-flex items-center gap-2 rounded-lg border border-violet-300/40 px-3 py-2 text-sm font-medium text-violet-200 transition hover:bg-violet-300/10 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <History size={16} />
-                {isLoadingBasePageHistory
-                  ? "Loading base page history..."
-                  : "View base page history"}
-              </button>
-            ) : null}
-
-            {isBasePageHistoryOpen ? (
-              <div className="mt-4 rounded-xl border border-slate-700 bg-slate-950/60 p-4">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <h3 className="font-semibold text-white">
-                      Base page versions
-                    </h3>
-                    <p className="mt-1 text-xs text-slate-400">
-                      Previous original images for this page are kept here for
-                      reference.
-                    </p>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => setIsBasePageHistoryOpen(false)}
-                    aria-label="Close base page history"
-                    className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-800 hover:text-white"
-                  >
-                    <X size={17} />
-                  </button>
-                </div>
-
-                {isLoadingBasePageHistory ? (
-                  <p className="mt-4 text-sm text-slate-400">
-                    Loading base page versions...
-                  </p>
-                ) : basePageVersions.length === 0 ? (
-                  <p className="mt-4 text-sm text-slate-400">
-                    No previous base page versions were returned for this task.
-                  </p>
-                ) : (
-                  <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                    {basePageVersions.map((version, index) => (
-                      <article
-                        key={
-                          version.id ??
-                          `${version.version ?? "version"}-${index}`
-                        }
-                        className="overflow-hidden rounded-xl border border-slate-800 bg-slate-900"
-                      >
-                        {version.baseImageUrl ? (
-                          <img
-                            src={version.baseImageUrl}
-                            alt={`Base page version ${
-                              version.version ?? index + 1
-                            }`}
-                            className="h-40 w-full object-contain"
-                          />
-                        ) : (
-                          <div className="flex h-40 items-center justify-center px-4 text-center text-xs text-slate-500">
-                            No image URL was returned for this version.
-                          </div>
-                        )}
-
-                        <div className="flex items-start justify-between gap-3 p-3">
-                          <div>
-                            <p className="text-sm font-semibold text-white">
-                              Version {version.version ?? index + 1}
-                            </p>
-                            <p className="mt-1 text-xs text-slate-400">
-                              {formatDateTime(version.createdAt)}
-                            </p>
-                          </div>
-
-                          {version.isCurrent ? (
-                            <span className="rounded-full bg-cyan-400/10 px-2 py-1 text-xs font-medium text-cyan-200">
-                              Current
-                            </span>
-                          ) : null}
-                        </div>
-                      </article>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ) : null}
           </div>
 
           <label className="mt-5 block text-sm text-slate-400">
@@ -1310,26 +1598,269 @@ export default function TaskAssignmentPage() {
             </button>
           </div>
 
+          {hasExistingTask && selectedPageTaskId ? (
+            <button
+              type="button"
+              onClick={() => void handleLoadBasePageHistory()}
+              disabled={isLoadingBasePageHistory}
+              className="mt-3 inline-flex items-center gap-2 rounded-lg border border-violet-300/40 px-3 py-2 text-sm font-medium text-violet-200 transition hover:bg-violet-300/10 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <History size={16} />
+              {isLoadingBasePageHistory
+                ? "Loading base page history..."
+                : "View base page history"}
+            </button>
+          ) : null}
+
+          {isBasePageHistoryOpen ? (
+            <div className="mt-3 rounded-xl border border-slate-700 bg-slate-950/60 p-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h3 className="font-semibold text-white">
+                    Base page versions
+                  </h3>
+                  <p className="mt-1 text-xs text-slate-400">
+                    Previous original images for this page are kept here for
+                    reference.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setIsBasePageHistoryOpen(false)}
+                  aria-label="Close base page history"
+                  className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-800 hover:text-white"
+                >
+                  <X size={17} />
+                </button>
+              </div>
+
+              {isLoadingBasePageHistory ? (
+                <p className="mt-4 text-sm text-slate-400">
+                  Loading base page versions...
+                </p>
+              ) : basePageVersions.length === 0 ? (
+                <p className="mt-4 text-sm text-slate-400">
+                  No previous base page versions were returned for this task.
+                </p>
+              ) : (
+                <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                  {basePageVersions.map((version, index) => (
+                    <article
+                      key={
+                        version.id ??
+                        `${version.version ?? "version"}-${index}`
+                      }
+                      className="overflow-hidden rounded-xl border border-slate-800 bg-slate-900"
+                    >
+                      {version.baseImageUrl ? (
+                        <img
+                          src={version.baseImageUrl}
+                          alt={`Base page version ${
+                            version.version ?? index + 1
+                          }`}
+                          className="h-40 w-full object-contain"
+                        />
+                      ) : (
+                        <div className="flex h-40 items-center justify-center px-4 text-center text-xs text-slate-500">
+                          No image URL was returned for this version.
+                        </div>
+                      )}
+
+                      <div className="flex items-start justify-between gap-3 p-3">
+                        <div>
+                          <p className="text-sm font-semibold text-white">
+                            Version {version.version ?? index + 1}
+                          </p>
+                          <p className="mt-1 text-xs text-slate-400">
+                            {formatDateTime(version.createdAt)}
+                          </p>
+                        </div>
+
+                        {version.isCurrent ? (
+                          <span className="rounded-full bg-cyan-400/10 px-2 py-1 text-xs font-medium text-cyan-200">
+                            Current
+                          </span>
+                        ) : null}
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : null}
+
           {hasExistingTask ? (
             <div className="mt-3 rounded-xl border border-amber-300/20 bg-amber-300/5 p-4">
-              <p className="text-sm text-amber-100">
-                {taskEditAvailabilityMessage}
-              </p>
-
               <button
                 type="button"
                 onClick={() => setIsCancelConfirmationOpen(true)}
                 disabled={isTaskLocked || isCancellingTask || isUpdatingTask}
-                className="mt-3 inline-flex items-center gap-2 rounded-lg border border-rose-300/40 px-3 py-2 text-sm font-semibold text-rose-200 transition hover:bg-rose-400/10 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex items-center gap-2 rounded-lg border border-rose-300/40 px-3 py-2 text-sm font-semibold text-rose-200 transition hover:bg-rose-400/10 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <RotateCcw size={16} />
                 {isCancellingTask
                   ? "Recreating task..."
                   : "Cancel & recreate task"}
               </button>
+
+              <p className="mt-2 text-xs leading-5 text-amber-100/80">
+                {taskEditAvailabilityMessage}
+              </p>
             </div>
           ) : null}
         </div>
+      </section>
+
+      <section className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-200">
+              Mangaka · Work queue
+            </p>
+
+            <h2 className="mt-2 text-xl font-bold text-white">
+              Task progress by status
+            </h2>
+
+            <p className="mt-2 text-sm text-slate-400">
+              Track every page task in the selected chapter and open a page to
+              continue working.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleRefreshWorkQueue}
+            disabled={!chapterId || isLoadingWorkQueue}
+            aria-label="Refresh task work queue"
+            className="inline-flex items-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-sm font-semibold text-slate-200 transition hover:border-cyan-300/50 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <RefreshCw
+              size={16}
+              className={isLoadingWorkQueue ? "animate-spin" : undefined}
+            />
+            Refresh queue
+          </button>
+        </div>
+
+        {!chapterId ? (
+          <p className="mt-5 rounded-xl border border-dashed border-slate-700 px-4 py-6 text-center text-sm text-slate-400">
+            Choose a chapter to view its work queue.
+          </p>
+        ) : null}
+
+        {chapterId && isLoadingWorkQueue ? (
+          <div className="mt-5 grid gap-4 md:grid-cols-2">
+            {[0, 1].map((index) => (
+              <div
+                key={index}
+                className="h-40 animate-pulse rounded-xl border border-slate-800 bg-slate-950/70"
+              />
+            ))}
+          </div>
+        ) : null}
+
+        {chapterId && !isLoadingWorkQueue && workQueueError ? (
+          <div
+            role="alert"
+            className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-rose-400/30 bg-rose-400/10 p-4 text-sm text-rose-100"
+          >
+            <span>{workQueueError}</span>
+
+            <button
+              type="button"
+              onClick={handleRefreshWorkQueue}
+              className="rounded-lg border border-rose-300/40 px-3 py-2 font-semibold transition hover:bg-rose-400/10"
+            >
+              Try again
+            </button>
+          </div>
+        ) : null}
+
+        {chapterId &&
+        !isLoadingWorkQueue &&
+        !workQueueError &&
+        workQueueGroups.length === 0 ? (
+          <p className="mt-5 rounded-xl border border-dashed border-slate-700 px-4 py-6 text-center text-sm text-slate-400">
+            No page tasks have been created for this chapter.
+          </p>
+        ) : null}
+
+        {chapterId &&
+        !isLoadingWorkQueue &&
+        !workQueueError &&
+        workQueueGroups.length > 0 ? (
+          <div className="mt-5 grid gap-4 xl:grid-cols-2">
+            {workQueueGroups.map((group) => (
+              <article
+                key={group.statusKey}
+                className="rounded-xl border border-slate-800 bg-slate-950/60 p-4"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h3 className="font-semibold text-white">{group.label}</h3>
+                    <p className="mt-1 text-xs text-slate-400">
+                      {group.description}
+                    </p>
+                  </div>
+
+                  <span
+                    className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${group.toneClassName}`}
+                  >
+                    {group.tasks.length}
+                  </span>
+                </div>
+
+                <div className="mt-4 space-y-2">
+                  {group.tasks.map((task) => (
+                    <button
+                      key={task.id}
+                      type="button"
+                      onClick={() => handleOpenWorkQueueTask(task)}
+                      aria-label={`Open page ${task.pageNumber} in task assignment`}
+                      className={`w-full rounded-xl border p-3 text-left transition focus:outline-none focus:ring-2 focus:ring-cyan-300/70 ${
+                        task.id === currentTaskId
+                          ? "border-cyan-300/70 bg-cyan-300/10"
+                          : "border-slate-800 bg-slate-950/80 hover:border-cyan-300/50 hover:bg-slate-900"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="font-semibold text-white">
+                            Page {task.pageNumber}
+                          </p>
+                          <p className="mt-1 text-xs text-slate-400">
+                            {task.taskType ??
+                              task.currentLayerType ??
+                              "Layer not specified"}
+                          </p>
+                        </div>
+
+                        <span className="text-xs font-medium text-slate-300">
+                          {task.status || group.label}
+                        </span>
+                      </div>
+
+                      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-400">
+                        <span>
+                          {task.assignedAssistantId
+                            ? "Assistant assigned"
+                            : "No Assistant assigned"}
+                        </span>
+                        <span>
+                          {task.deadline
+                            ? `Due ${formatDateTime(task.deadline)}`
+                            : "No deadline"}
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : null}
       </section>
 
       {isCancelConfirmationOpen ? (

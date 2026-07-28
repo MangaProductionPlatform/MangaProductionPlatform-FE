@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { MailPlus, RefreshCw, XCircle } from "lucide-react";
 import { mangaErpApi } from "../../shared/services/mangaErpService";
 import type {
+  AssistantCandidateDto,
   MangaSeriesDto,
   StudioInvitationDto,
 } from "../../shared/types/mangaErp";
@@ -11,7 +12,8 @@ export default function AssistantsPage() {
   const toast = useToast();
   const [series, setSeries] = useState<MangaSeriesDto[]>([]);
   const [seriesId, setSeriesId] = useState("");
-  const [email, setEmail] = useState("");
+  const [assistants, setAssistants] = useState<AssistantCandidateDto[]>([]);
+  const [assistantId, setAssistantId] = useState("");
   const [message, setMessage] = useState("");
   const [invitations, setInvitations] = useState<StudioInvitationDto[]>([]);
   const [busy, setBusy] = useState(false);
@@ -27,11 +29,14 @@ export default function AssistantsPage() {
     }
   };
   useEffect(() => {
-    mangaErpApi
-      .getMySeries()
-      .then((items) => {
-        setSeries(items);
-        if (items[0]) setSeriesId(items[0].id);
+    Promise.all([
+      mangaErpApi.getMySeries(),
+      mangaErpApi.getMyManagedAssistants(),
+    ])
+      .then(([seriesItems, assistantItems]) => {
+        setSeries(seriesItems);
+        setAssistants(assistantItems);
+        if (seriesItems[0]) setSeriesId(seriesItems[0].id);
       })
       .catch((e) =>
         toast.error(
@@ -47,15 +52,26 @@ export default function AssistantsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seriesId]);
   const invite = async () => {
-    if (!seriesId || !email.trim()) return;
+    const selectedAssistant = assistants.find(
+      (assistant) => assistant.assistantId === assistantId,
+    );
+
+    if (!seriesId || !selectedAssistant?.email) {
+      toast.error(
+        "Assistant is required",
+        "Select an Assistant managed by you before sending an invitation.",
+      );
+      return;
+    }
+
     setBusy(true);
     try {
       await mangaErpApi.inviteAssistant(seriesId, {
-        assistantEmail: email.trim(),
+        assistantEmail: selectedAssistant.email,
         message: message.trim() || null,
       });
       toast.success("Invitation sent");
-      setEmail("");
+      setAssistantId("");
       setMessage("");
       await loadInvitations();
     } catch (e) {
@@ -109,13 +125,19 @@ export default function AssistantsPage() {
             </option>
           ))}
         </select>
-        <input
+        <select
           className="input"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="Assistant email"
-        />
+          value={assistantId}
+          onChange={(e) => setAssistantId(e.target.value)}
+        >
+          <option value="">Select an Assistant</option>
+          {assistants.map((assistant) => (
+            <option key={assistant.assistantId} value={assistant.assistantId}>
+              {assistant.displayName}
+              {assistant.email ? ` (${assistant.email})` : ""}
+            </option>
+          ))}
+        </select>
         <textarea
           className="input min-h-24 md:col-span-2"
           value={message}

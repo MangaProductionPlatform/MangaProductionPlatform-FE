@@ -89,6 +89,15 @@ export type ListUsersResult = {
   totalCount: number;
 };
 
+export type AssignAssistantToMangakaPayload = {
+  MangakaId: string;
+};
+
+export type EndCollaborationPayload = {
+  reason: string;
+  expectedConcurrencyToken: string;
+};
+
 export type AdminRoleDto = {
   value: number;
   name: string;
@@ -310,6 +319,46 @@ export type RecommendedAssistantDto = {
   avatarUrl?: string | null;
   penName?: string | null;
   activeTasksCount: number;
+};
+
+export type AssistantCandidateDto = {
+  assistantId: string;
+  displayName: string;
+  email: string;
+  activeTaskCount: number | null;
+  pendingAssignmentCount: number | null;
+  totalWorkload: number | null;
+  maxWorkload: number | null;
+  remainingCapacity: number | null;
+  hasSeriesAccess: boolean;
+  isAvailable: boolean;
+  availabilityCode?: string | null;
+  availabilityReason?: string | null;
+  collaborationId?: string | null;
+  concurrencyToken?: string | null;
+  expectedConcurrencyToken?: string | null;
+};
+
+export type TaskAssistantCandidatesDto = {
+  availableAssistants: AssistantCandidateDto[];
+  unavailableAssistants: AssistantCandidateDto[];
+};
+
+export type TaskProgressDto = {
+  progressPercent: number | null;
+  status?: string | null;
+  updatedAt?: string | null;
+  updatedBy?: string | null;
+};
+
+export type TaskCheckpointDto = {
+  id?: string | null;
+  title?: string | null;
+  description?: string | null;
+  status?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+  completedAt?: string | null;
 };
 
 export type AssistantIncomeDto = {

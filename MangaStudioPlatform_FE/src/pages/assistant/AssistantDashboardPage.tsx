@@ -173,7 +173,7 @@ export default function AssistantDashboardPage() {
           </h1>
           <p className="mt-2 max-w-2xl text-sm text-slate-400">
             Review assigned page tasks, upcoming deadlines, revision requests,
-            and studio invitations.
+            and series invitations.
           </p>
         </div>
 

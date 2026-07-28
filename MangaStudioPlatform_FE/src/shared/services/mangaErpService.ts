@@ -8,6 +8,7 @@ import type {
   AdminChartsDto,
   AdminRoleDto,
   AdminWorkflowStatsDto,
+  AssistantCandidateDto,
   AssistantIncomeDto,
   AdminUserDto,
   BasePageVersionDto,
@@ -31,6 +32,8 @@ import type {
   EditorialReviewDetailDto,
   EditorialSubmissionListItemDto,
   AddQaPinPayload,
+  AssignAssistantToMangakaPayload,
+  EndCollaborationPayload,
   AssignQaFixPayload,
   FeedbackPinDto,
   InviteAssistantPayload,
@@ -69,6 +72,9 @@ import type {
   SchedulePublicationPayload,
   SetPageRegionPayload,
   SubmitPageLayerPayload,
+  TaskAssistantCandidatesDto,
+  TaskCheckpointDto,
+  TaskProgressDto,
   StartQaSessionPayload,
   SubmissionDetailDto,
   SubmissionSummaryDto,
@@ -117,6 +123,137 @@ function pickNonEmptyString(
   }
 
   return "";
+}
+
+function pickNullableNumber(
+  value: Record<string, unknown>,
+  keys: string[],
+) {
+  const candidate = pickAny<unknown>(value, keys);
+
+  if (typeof candidate === "number" && Number.isFinite(candidate)) {
+    return candidate;
+  }
+
+  if (typeof candidate === "string" && candidate.trim()) {
+    const parsed = Number(candidate);
+
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  return null;
+}
+
+function pickBoolean(value: Record<string, unknown>, keys: string[]) {
+  const candidate = pickAny<unknown>(value, keys);
+
+  if (typeof candidate === "boolean") {
+    return candidate;
+  }
+
+  if (typeof candidate === "string") {
+    return candidate.toLowerCase() === "true";
+  }
+
+  return false;
+}
+
+function getRecordArray(
+  value: unknown,
+  keys: string[],
+): Record<string, unknown>[] {
+  if (Array.isArray(value)) {
+    return value.filter(
+      (item): item is Record<string, unknown> =>
+        typeof item === "object" && item !== null,
+    );
+  }
+
+  if (typeof value !== "object" || value === null) {
+    return [];
+  }
+
+  const record = value as Record<string, unknown>;
+
+  for (const key of keys) {
+    const candidate = record[key];
+
+    if (Array.isArray(candidate)) {
+      return candidate.filter(
+        (item): item is Record<string, unknown> =>
+          typeof item === "object" && item !== null,
+      );
+    }
+  }
+
+  return [];
+}
+
+function mapAssistantCandidate(
+  item: Record<string, unknown>,
+): AssistantCandidateDto {
+  return {
+    assistantId: pickNonEmptyString(item, [
+      "assistantId",
+      "AssistantId",
+      "assistantUserId",
+      "AssistantUserId",
+      "userId",
+      "UserId",
+      "id",
+      "Id",
+    ]),
+    displayName: pickNonEmptyString(item, [
+      "displayName",
+      "DisplayName",
+      "assistantName",
+      "AssistantName",
+      "name",
+      "Name",
+    ]),
+    email: pickNonEmptyString(item, ["email", "Email"]),
+    activeTaskCount: pickNullableNumber(item, [
+      "activeTaskCount",
+      "ActiveTaskCount",
+      "activeTasksCount",
+      "ActiveTasksCount",
+    ]),
+    pendingAssignmentCount: pickNullableNumber(item, [
+      "pendingAssignmentCount",
+      "PendingAssignmentCount",
+    ]),
+    totalWorkload: pickNullableNumber(item, [
+      "totalWorkload",
+      "TotalWorkload",
+    ]),
+    maxWorkload: pickNullableNumber(item, ["maxWorkload", "MaxWorkload"]),
+    remainingCapacity: pickNullableNumber(item, [
+      "remainingCapacity",
+      "RemainingCapacity",
+    ]),
+    hasSeriesAccess: pickBoolean(item, ["hasSeriesAccess", "HasSeriesAccess"]),
+    isAvailable: pickBoolean(item, ["isAvailable", "IsAvailable"]),
+    availabilityCode: pickAny<string | null | undefined>(item, [
+      "availabilityCode",
+      "AvailabilityCode",
+    ]),
+    availabilityReason: pickAny<string | null | undefined>(item, [
+      "availabilityReason",
+      "AvailabilityReason",
+    ]),
+    collaborationId: pickAny<string | null | undefined>(item, [
+      "collaborationId",
+      "CollaborationId",
+    ]),
+    concurrencyToken: pickAny<string | null | undefined>(item, [
+      "concurrencyToken",
+      "ConcurrencyToken",
+    ]),
+    expectedConcurrencyToken: pickAny<string | null | undefined>(item, [
+      "expectedConcurrencyToken",
+      "ExpectedConcurrencyToken",
+    ]),
+  };
 }
 
 function mapBasePageVersion(item: Record<string, unknown>): BasePageVersionDto {
@@ -283,6 +420,56 @@ export const mangaErpApi = {
     );
   },
 
+  async getUnassignedAssistants(): Promise<AssistantCandidateDto[]> {
+    const data = await request<unknown>(
+      "identity",
+      "/api/v1/admin/unassigned-assistants",
+    );
+
+    return getRecordArray(data, ["items", "Items", "assistants", "Assistants"])
+      .map(mapAssistantCandidate);
+  },
+
+  async getAdminMangakaAssistants(
+    mangakaId: string,
+  ): Promise<AssistantCandidateDto[]> {
+    const data = await request<unknown>(
+      "identity",
+      `/api/v1/admin/mangakas/${encodeURIComponent(mangakaId)}/assistants`,
+    );
+
+    return getRecordArray(data, ["items", "Items", "assistants", "Assistants"])
+      .map(mapAssistantCandidate);
+  },
+
+  async assignAssistantToMangaka(
+    assistantId: string,
+    payload: AssignAssistantToMangakaPayload,
+  ) {
+    return request<void>(
+      "identity",
+      `/api/v1/admin/assistants/${encodeURIComponent(assistantId)}/assign-mangaka`,
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+
+  async endStudioCollaboration(
+    collaborationId: string,
+    payload: EndCollaborationPayload,
+  ) {
+    return request<void>(
+      "identity",
+      `/api/v1/studios/collaborations/${encodeURIComponent(collaborationId)}/end`,
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+
   async getUser(id: string) {
     return request<AdminUserDto>("identity", `/api/v1/admin/accounts/${id}`);
   },
@@ -373,6 +560,16 @@ export const mangaErpApi = {
   async getMySeries() {
     const data = await request<Record<string, unknown>[]>("series", "/api/v1/series/my");
     return data.map(mapSeries);
+  },
+
+  async getMyManagedAssistants(): Promise<AssistantCandidateDto[]> {
+    const data = await request<unknown>(
+      "series",
+      "/api/v1/mangakas/me/assistants",
+    );
+
+    return getRecordArray(data, ["items", "Items", "assistants", "Assistants"])
+      .map(mapAssistantCandidate);
   },
 
   async getSeries(id: string) {
@@ -797,6 +994,138 @@ export const mangaErpApi = {
   async getPageTask(pageTaskId: string) {
     const data = await request<Record<string, unknown>>("task", `/api/v1/tasks/${pageTaskId}`);
     return mapPageTask(data);
+  },
+
+  async getTaskAssistantCandidates(
+    pageTaskId: string,
+  ): Promise<TaskAssistantCandidatesDto> {
+    const data = await request<unknown>(
+      "task",
+      `/api/v1/tasks/${pageTaskId}/assistant-candidates`,
+    );
+
+    if (typeof data !== "object" || data === null || Array.isArray(data)) {
+      return {
+        availableAssistants: [],
+        unavailableAssistants: [],
+      };
+    }
+
+    const response = data as Record<string, unknown>;
+
+    return {
+      availableAssistants: getRecordArray(response, [
+        "availableAssistants",
+        "AvailableAssistants",
+      ]).map(mapAssistantCandidate),
+      unavailableAssistants: getRecordArray(response, [
+        "unavailableAssistants",
+        "UnavailableAssistants",
+      ]).map(mapAssistantCandidate),
+    };
+  },
+
+  async getChapterAssistantCandidates(
+    chapterId: string,
+  ): Promise<TaskAssistantCandidatesDto> {
+    const data = await request<unknown>(
+      "chapter",
+      `/api/v1/chapters/${chapterId}/assistant-candidates`,
+    );
+
+    if (typeof data !== "object" || data === null || Array.isArray(data)) {
+      return {
+        availableAssistants: [],
+        unavailableAssistants: [],
+      };
+    }
+
+    const response = data as Record<string, unknown>;
+
+    return {
+      availableAssistants: getRecordArray(response, [
+        "availableAssistants",
+        "AvailableAssistants",
+      ]).map(mapAssistantCandidate),
+      unavailableAssistants: getRecordArray(response, [
+        "unavailableAssistants",
+        "UnavailableAssistants",
+      ]).map(mapAssistantCandidate),
+    };
+  },
+
+  async getTaskProgress(pageTaskId: string): Promise<TaskProgressDto> {
+    const data = await request<Record<string, unknown>>(
+      "task",
+      `/api/v1/tasks/${pageTaskId}/progress`,
+    );
+
+    return {
+      progressPercent: pickNullableNumber(data, [
+        "progressPercent",
+        "ProgressPercent",
+        "percentage",
+        "Percentage",
+        "progress",
+        "Progress",
+      ]),
+      status: pickAny<string | null | undefined>(data, ["status", "Status"]),
+      updatedAt: pickAny<string | null | undefined>(data, [
+        "updatedAt",
+        "UpdatedAt",
+        "lastUpdatedAt",
+        "LastUpdatedAt",
+      ]),
+      updatedBy: pickAny<string | null | undefined>(data, [
+        "updatedBy",
+        "UpdatedBy",
+        "updatedByName",
+        "UpdatedByName",
+      ]),
+    };
+  },
+
+  async getTaskCheckpoints(pageTaskId: string): Promise<TaskCheckpointDto[]> {
+    const data = await request<unknown>(
+      "task",
+      `/api/v1/tasks/${pageTaskId}/checkpoints`,
+    );
+
+    return getRecordArray(data, [
+      "items",
+      "Items",
+      "checkpoints",
+      "Checkpoints",
+      "data",
+      "Data",
+    ]).map((item) => ({
+      id: pickAny<string | null | undefined>(item, ["id", "Id"]),
+      title: pickAny<string | null | undefined>(item, [
+        "title",
+        "Title",
+        "name",
+        "Name",
+      ]),
+      description: pickAny<string | null | undefined>(item, [
+        "description",
+        "Description",
+        "note",
+        "Note",
+      ]),
+      status: pickAny<string | null | undefined>(item, ["status", "Status"]),
+      createdAt: pickAny<string | null | undefined>(item, [
+        "createdAt",
+        "CreatedAt",
+      ]),
+      updatedAt: pickAny<string | null | undefined>(item, [
+        "updatedAt",
+        "UpdatedAt",
+      ]),
+      completedAt: pickAny<string | null | undefined>(item, [
+        "completedAt",
+        "CompletedAt",
+      ]),
+    }));
   },
 
   async updateTaskDetails(

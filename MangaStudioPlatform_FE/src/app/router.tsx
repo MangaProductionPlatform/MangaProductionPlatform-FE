@@ -145,7 +145,7 @@ export function AppRouter() {
           <Route path="submissions" element={<SubmissionPage />} />
           <Route path="series" element={<SeriesListPage />} />
           <Route path="series/:id" element={<SeriesDetailPage />} />
-          <Route path="assistants" element={<Navigate to="/mangaka/dashboard" replace />} />
+          <Route path="assistants" element={<AssistantsPage />} />
           <Route path="chapters" element={<ChapterManagementPage />} />
           <Route path="task-assignment" element={<TaskAssignmentPage />} />
           <Route path="layer-review" element={<LayerReviewPage />} />

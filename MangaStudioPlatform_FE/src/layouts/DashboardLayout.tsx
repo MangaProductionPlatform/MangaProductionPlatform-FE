@@ -7,6 +7,7 @@ import {
   FileText,
   LayoutDashboard,
   LogOut,
+  MailPlus,
   PenTool,
   Trophy,
   User,
@@ -75,6 +76,11 @@ export default function DashboardLayout() {
     label: "My Series",
     path: "/mangaka/series",
     icon: BookOpen,
+  },
+  {
+    label: "Assistant Invitations",
+    path: "/mangaka/assistants",
+    icon: MailPlus,
   },
   {
     label: "Chapter Management",
