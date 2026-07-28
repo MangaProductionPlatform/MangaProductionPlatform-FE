@@ -47,11 +47,6 @@ const editorMenus = [
   },
   { label: "Editorial QA", path: "/app/editor/annotations", icon: PenTool },
   { label: "QA Handoff", path: "/app/editor/publishing-queue", icon: FileText },
-  {
-    label: "Ranking & Reports",
-    path: "/app/editor/ranking-reports",
-    icon: Trophy,
-  },
   { label: "Notifications", path: "/app/editor/notifications", icon: Bell },
   { label: "Profile", path: "/app/editor/profile", icon: User },
 ] as const;
