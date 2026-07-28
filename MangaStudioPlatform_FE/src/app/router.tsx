@@ -37,7 +37,6 @@ import EditorNotificationsPage from "../pages/editors/NotificationsPage";
 import EditorProfilePage from "../pages/editors/EditorProfilePage";
 import EditorWorkspacePage from "../pages/editors/EditorWorkspacePage";
 import PublishingQueuePage from "../pages/editors/PublishingQueuePage";
-import RankingReportsPage from "../pages/editors/RankingReportsPage";
 import ReviewQueuePage from "../pages/editors/ReviewQueuePage";
 import SeriesMonitoringPage from "../pages/editors/SeriesMonitoringPage";
 import LandingPage from "../pages/landing/LandingPage";
@@ -86,7 +85,7 @@ export function AppRouter() {
           <Route path="editor/series-monitoring" element={<SeriesMonitoringPage />} />
           <Route path="editor/annotations" element={<AnnotationsPage />} />
           <Route path="editor/publishing-queue" element={<PublishingQueuePage />} />
-          <Route path="editor/ranking-reports" element={<RankingReportsPage />} />
+          <Route path="editor/ranking-reports" element={<Navigate to="/app/editor/dashboard" replace />} />
           <Route path="editor/notifications" element={<EditorNotificationsPage />} />
           <Route path="editor/profile" element={<EditorProfilePage />} />
         </Route>
