@@ -42,9 +42,7 @@ const formatDeadline = (deadline: string) =>
 const getDeadlineState = (deadline: string) => {
   const time = new Date(deadline).getTime();
 
-  return time < Date.now()
-    ? "Overdue"
-    : "Due " + formatDeadline(deadline);
+  return time < Date.now() ? "Overdue" : "Due " + formatDeadline(deadline);
 };
 
 export default function AssistantDashboardPage() {
@@ -227,7 +225,9 @@ export default function AssistantDashboardPage() {
           tasks={revisionTasks}
           isLoading={isLoading}
           emptyMessage="No revision requests need your attention."
-          renderMeta={(task) => task.rejectionNote ?? "Open task to view feedback."}
+          renderMeta={(task) =>
+            task.rejectionNote ?? "Open task to view feedback."
+          }
           tone="rose"
         />
       </section>
@@ -266,9 +266,7 @@ export default function AssistantDashboardPage() {
                 className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-slate-800 bg-slate-950/50 p-4"
               >
                 <div className="min-w-0">
-                  <p className="font-semibold text-white">
-                    Studio invitation
-                  </p>
+                  <p className="font-semibold text-white">Studio invitation</p>
                   <p className="mt-1 text-sm text-slate-400">
                     {invitation.message ||
                       "A Mangaka invited you to join their studio."}
@@ -370,8 +368,7 @@ function DashboardTaskPanel({
             >
               <div className="min-w-0">
                 <p className="font-semibold text-white">
-                  {task.chapterTitle ??
-                    `Chapter ${task.chapterNumber ?? ""}`}
+                  {task.chapterTitle ?? `Chapter ${task.chapterNumber ?? ""}`}
                 </p>
                 <p className="mt-1 text-sm text-slate-400">
                   Page {task.pageNumber}

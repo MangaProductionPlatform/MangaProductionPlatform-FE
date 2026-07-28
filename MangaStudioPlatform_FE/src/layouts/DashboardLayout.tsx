@@ -17,7 +17,12 @@ import { clearAuthSession } from "../shared/utils/authSession";
 import { QuickSettingsTrigger } from "../shared/components/QuickSettingsPanel";
 
 const defaultMenus = [
-  { label: "Dashboard", path: "/app/dashboard", icon: LayoutDashboard, end: true },
+  {
+    label: "Dashboard",
+    path: "/app/dashboard",
+    icon: LayoutDashboard,
+    end: true,
+  },
   { label: "Series", path: "/app/series", icon: BookOpen },
   { label: "Approval", path: "/app/series/approval", icon: ClipboardCheck },
   { label: "Chapters", path: "/app/chapters", icon: FileText },
@@ -30,20 +35,44 @@ const defaultMenus = [
 
 const editorMenus = [
   { label: "Dashboard", path: "/app/editor/dashboard", icon: LayoutDashboard },
-  { label: "Review Queue", path: "/app/editor/review-queue", icon: ClipboardCheck },
-  { label: "Series Monitoring", path: "/app/editor/series-monitoring", icon: BookOpen },
+  {
+    label: "Review Queue",
+    path: "/app/editor/review-queue",
+    icon: ClipboardCheck,
+  },
+  {
+    label: "Series Monitoring",
+    path: "/app/editor/series-monitoring",
+    icon: BookOpen,
+  },
   { label: "Editorial QA", path: "/app/editor/annotations", icon: PenTool },
   { label: "QA Handoff", path: "/app/editor/publishing-queue", icon: FileText },
-  { label: "Ranking & Reports", path: "/app/editor/ranking-reports", icon: Trophy },
+  {
+    label: "Ranking & Reports",
+    path: "/app/editor/ranking-reports",
+    icon: Trophy,
+  },
   { label: "Notifications", path: "/app/editor/notifications", icon: Bell },
   { label: "Profile", path: "/app/editor/profile", icon: User },
 ] as const;
 
 const boardMenus = [
   { label: "Dashboard", path: "/app/board/dashboard", icon: LayoutDashboard },
-  { label: "Series Proposals", path: "/app/board/series-proposals", icon: BookOpen },
-  { label: "Publishing Schedule", path: "/app/board/publishing-schedule", icon: FileText },
-  { label: "Cancellation Review", path: "/app/board/cancellation-review", icon: PenTool },
+  {
+    label: "Series Proposals",
+    path: "/app/board/series-proposals",
+    icon: BookOpen,
+  },
+  {
+    label: "Publishing Schedule",
+    path: "/app/board/publishing-schedule",
+    icon: FileText,
+  },
+  {
+    label: "Cancellation Review",
+    path: "/app/board/cancellation-review",
+    icon: PenTool,
+  },
   { label: "Reports", path: "/app/board/reports", icon: FileText },
   { label: "Notifications", path: "/app/board/notifications", icon: Bell },
   { label: "Profile", path: "/app/board/profile", icon: User },
@@ -52,9 +81,9 @@ const boardMenus = [
 export default function DashboardLayout() {
   const navigate = useNavigate();
   const toast = useToast();
-  const currentUser = JSON.parse(localStorage.getItem("currentUser") || "null") as
-    | { role?: string }
-    | null;
+  const currentUser = JSON.parse(
+    localStorage.getItem("currentUser") || "null",
+  ) as { role?: string } | null;
   const role = currentUser?.role;
 
   if (!currentUser) {
@@ -62,72 +91,72 @@ export default function DashboardLayout() {
   }
 
   const mangakaMenus = [
-  {
-    label: "Dashboard",
-    path: "/mangaka/dashboard",
-    icon: LayoutDashboard,
-  },
-  {
-    label: "Series Submissions",
-    path: "/mangaka/submissions",
-    icon: FileText,
-  },
-  {
-    label: "My Series",
-    path: "/mangaka/series",
-    icon: BookOpen,
-  },
-  {
-    label: "Assistant Invitations",
-    path: "/mangaka/assistants",
-    icon: MailPlus,
-  },
-  {
-    label: "Chapter Management",
-    path: "/mangaka/chapters",
-    icon: BookOpen,
-  },
-  {
-    label: "Task Assignment",
-    path: "/mangaka/task-assignment",
-    icon: ClipboardCheck,
-  },
-  {
-    label: "Layer Review",
-    path: "/mangaka/layer-review",
-    icon: PenTool,
-  },
-  {
-    label: "Submit QA",
-    path: "/mangaka/qa-submission",
-    icon: FileText,
-  },
-  {
-    label: "Profile",
-    path: "/mangaka/profile",
-    icon: User,
-  },
+    {
+      label: "Dashboard",
+      path: "/mangaka/dashboard",
+      icon: LayoutDashboard,
+    },
+    {
+      label: "Series Submissions",
+      path: "/mangaka/submissions",
+      icon: FileText,
+    },
+    {
+      label: "My Series",
+      path: "/mangaka/series",
+      icon: BookOpen,
+    },
+    {
+      label: "Assistant Invitations",
+      path: "/mangaka/assistants",
+      icon: MailPlus,
+    },
+    {
+      label: "Chapter Management",
+      path: "/mangaka/chapters",
+      icon: BookOpen,
+    },
+    {
+      label: "Task Assignment",
+      path: "/mangaka/task-assignment",
+      icon: ClipboardCheck,
+    },
+    {
+      label: "Layer Review",
+      path: "/mangaka/layer-review",
+      icon: PenTool,
+    },
+    {
+      label: "Submit QA",
+      path: "/mangaka/qa-submission",
+      icon: FileText,
+    },
+    {
+      label: "Profile",
+      path: "/mangaka/profile",
+      icon: User,
+    },
   ];
 
   const menus =
-  role === "editor"
-    ? editorMenus
-    : role === "editorial_board" || role === "editor_in_chief"
-    ? boardMenus
-    : role === "mangaka"
-    ? mangakaMenus
-    : defaultMenus;
+    role === "editor"
+      ? editorMenus
+      : role === "editorial_board" || role === "editor_in_chief"
+        ? boardMenus
+        : role === "mangaka"
+          ? mangakaMenus
+          : defaultMenus;
 
   const workspaceLabel =
-  role === "editor"
-    ? "Editor Workspace"
-    : role === "editorial_board"
-      ? "Editorial Board"
-      : role === "editor_in_chief"
-        ? "Editor-in-Chief"
-      : role === "mangaka"
-        ? "Mangaka Workspace"
-        : "Creator command center";
+    role === "editor"
+      ? "Editor Workspace"
+      : role === "editorial_board"
+        ? "Editorial Board"
+        : role === "editor_in_chief"
+          ? "Editor-in-Chief"
+          : role === "mangaka"
+            ? "Mangaka Workspace"
+            : "Creator command center";
   const homePath =
     role === "editor"
       ? "/app/editor/dashboard"
@@ -193,7 +222,6 @@ export default function DashboardLayout() {
               );
             })}
           </nav>
-
         </aside>
 
         <main className="min-w-0 flex-1">
@@ -232,7 +260,10 @@ export default function DashboardLayout() {
                 </button>
               </div>
             </div>
-            <nav className="mt-3 flex gap-2 overflow-x-auto pb-1" aria-label="Workspace navigation">
+            <nav
+              className="mt-3 flex gap-2 overflow-x-auto pb-1"
+              aria-label="Workspace navigation"
+            >
               {menus.map((item) => (
                 <NavLink
                   key={item.path}
