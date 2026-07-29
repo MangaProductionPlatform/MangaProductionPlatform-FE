@@ -79,8 +79,7 @@ const readPreviewImage = (
 ) => resolveMediaUrl(item.coverImageUrl || item.manuscriptUrl);
 const filterSelectClass =
   "input !h-11 !min-h-11 !px-3 !py-2 !pr-9 !leading-5 text-sm";
-const filterInputClass =
-  "input !h-11 !min-h-11 !px-3 !py-2 !leading-5 text-sm";
+const filterInputClass = "input !h-11 !min-h-11 !px-3 !py-2 !leading-5 text-sm";
 const getTimeValue = (value?: string | null) => {
   if (!value) return 0;
   const time = new Date(value).getTime();
@@ -153,6 +152,11 @@ export default function SeriesProposalsPage() {
   );
   const isEditorialBoard = currentUser?.role === "editorial_board";
   const isEditorInChief = currentUser?.role === "editor_in_chief";
+  const isEditorialVoteLocked =
+    !isEditorInChief &&
+    (selected?.status === "EB_Approved" ||
+      selected?.status === "EB_Rejected" ||
+      selectedReview?.status === "Completed");
   const linkedSubmissionId =
     searchParams.get("id") ?? searchParams.get("submissionId");
 
@@ -1131,7 +1135,8 @@ export default function SeriesProposalsPage() {
                 disabled={
                   (isEditorInChief &&
                     selected.status !== "Conflict_Escalated") ||
-                  (!isEditorInChief && !selectedReview)
+                  (!isEditorInChief &&
+                    (!selectedReview || isEditorialVoteLocked))
                 }
                 loading={runningAction === "approve"}
                 onClick={() => void runAction("approve")}
@@ -1142,7 +1147,8 @@ export default function SeriesProposalsPage() {
                 disabled={
                   (isEditorInChief &&
                     selected.status !== "Conflict_Escalated") ||
-                  (!isEditorInChief && !selectedReview)
+                  (!isEditorInChief &&
+                    (!selectedReview || isEditorialVoteLocked))
                 }
                 loading={runningAction === "reject"}
                 onClick={() => void runAction("reject")}
