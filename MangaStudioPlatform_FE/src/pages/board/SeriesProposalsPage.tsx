@@ -520,6 +520,7 @@ export default function SeriesProposalsPage() {
           item.assignment.id,
         );
         setSelectedReview(review);
+        setReason(review.feedback ?? detail.feedbackMessage ?? "");
       } else if (item.conflict) {
         setSelectedReview(null);
         await mangaErpApi
@@ -638,6 +639,7 @@ export default function SeriesProposalsPage() {
           .getEditorialReviewDetail(selectedReview.id)
           .catch(() => null);
         setSelectedReview(review);
+        if (review) setReason(review.feedback ?? "");
       }
     } catch (err) {
       toast.error(
