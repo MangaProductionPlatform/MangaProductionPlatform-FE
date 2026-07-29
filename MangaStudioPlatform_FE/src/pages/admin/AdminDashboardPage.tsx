@@ -2,7 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { CalendarDays, ChevronLeft, ChevronRight, Database, FileText, RefreshCw, Users } from "lucide-react";
 import { useToast } from "../../shared/components/toastContext";
 import { mangaErpApi } from "../../shared/services/mangaErpService";
-import type { AdminDashboardDto } from "../../shared/types/mangaErp";
+import type {
+  AdminDashboardDto,
+  AdminDashboardFilters,
+} from "../../shared/types/mangaErp";
 
 type FilterMode = "range" | "month" | "year";
 
@@ -51,6 +54,8 @@ export default function AdminDashboardPage() {
   const toast = useToast();
   const [dashboard, setDashboard] = useState<AdminDashboardDto | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [appliedFilters, setAppliedFilters] =
+    useState<AdminDashboardFilters>({});
   const [filterMode, setFilterMode] = useState<FilterMode>("range");
   const [startDate, setStartDate] = useState(daysAgo(30));
   const [endDate, setEndDate] = useState(today());
@@ -94,7 +99,7 @@ export default function AdminDashboardPage() {
   const loadDashboard = async (showLoading = true) => {
     if (showLoading) setIsLoading(true);
     try {
-      setDashboard(await mangaErpApi.getAdminDashboard());
+      setDashboard(await mangaErpApi.getAdminDashboard(appliedFilters));
     } catch (error) {
       toast.error(
         "Could not load admin dashboard",
@@ -109,6 +114,7 @@ export default function AdminDashboardPage() {
     setIsLoading(true);
     try {
       setDashboard(await mangaErpApi.getAdminDashboard(activeFilter.filters));
+      setAppliedFilters(activeFilter.filters);
     } catch (error) {
       toast.error(
         "Could not load admin dashboard",
