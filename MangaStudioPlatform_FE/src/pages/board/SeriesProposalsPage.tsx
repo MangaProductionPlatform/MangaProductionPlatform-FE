@@ -438,6 +438,8 @@ export default function SeriesProposalsPage() {
             item.authorName,
             item.description,
             item.status,
+            item.workId,
+            item.id,
           ]
             .filter(Boolean)
             .some((value) =>
@@ -719,7 +721,7 @@ export default function SeriesProposalsPage() {
               value={searchText}
               onChange={(event) => setSearchText(event.target.value)}
               className={filterInputClass}
-              placeholder="Title, author, genre, status"
+              placeholder="Title, author, genre, status, ID"
             />
           </label>
 
