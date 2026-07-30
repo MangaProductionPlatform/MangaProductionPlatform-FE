@@ -19,6 +19,7 @@ import { mangaErpApi } from "../../shared/services/mangaErpService";
 import { resolveMediaUrl } from "../../shared/utils/mediaUrl";
 import type {
   CurrentUser,
+  EditorialConflictDetailDto,
   EditorialConflictItemDto,
   EditorialDecision,
   EditorialReviewAssignmentDto,
@@ -131,6 +132,8 @@ export default function SeriesProposalsPage() {
   const [selected, setSelected] = useState<SubmissionDetailDto | null>(null);
   const [selectedReview, setSelectedReview] =
     useState<EditorialReviewDetailDto | null>(null);
+  const [selectedConflictDetail, setSelectedConflictDetail] =
+    useState<EditorialConflictDetailDto | null>(null);
   const [reason, setReason] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [runningAction, setRunningAction] = useState<BoardAction | null>(null);
@@ -166,6 +169,7 @@ export default function SeriesProposalsPage() {
     if (resetSelection) {
       setSelected(null);
       setSelectedReview(null);
+      setSelectedConflictDetail(null);
       setReason("");
       setLastResult(null);
     }
@@ -192,6 +196,7 @@ export default function SeriesProposalsPage() {
         if (selected && !items.some((item) => item.workId === selected.id)) {
           setSelected(null);
           setSelectedReview(null);
+          setSelectedConflictDetail(null);
         }
         return;
       }
@@ -518,6 +523,7 @@ export default function SeriesProposalsPage() {
       setSelected(detail);
       setReason(detail.feedbackMessage ?? "");
       setLastResult(null);
+      setSelectedConflictDetail(null);
 
       if (item.assignment) {
         const review = await mangaErpApi.getEditorialReviewDetail(
@@ -527,9 +533,10 @@ export default function SeriesProposalsPage() {
         setReason(review.feedback ?? detail.feedbackMessage ?? "");
       } else if (item.conflict) {
         setSelectedReview(null);
-        await mangaErpApi
+        const conflictDetail = await mangaErpApi
           .getEditorialConflictDetail(item.workType, item.workId)
           .catch(() => null);
+        setSelectedConflictDetail(conflictDetail);
       } else {
         setSelectedReview(null);
       }
@@ -1097,6 +1104,49 @@ export default function SeriesProposalsPage() {
                   {selectedReview.decision ? (
                     <p className="mt-1">Decision: {selectedReview.decision}</p>
                   ) : null}
+                </div>
+              ) : null}
+
+              {isEditorInChief && selectedConflictDetail ? (
+                <div className="rounded-lg border border-white/10 bg-slate-950/50 p-3 text-sm text-slate-300">
+                  <p className="text-xs font-semibold uppercase tracking-[.16em] text-slate-400">
+                    Board reviews
+                  </p>
+                  <p className="mt-2 text-xs text-slate-500">
+                    Round {selectedConflictDetail.roundNumber ?? "N/A"}
+                  </p>
+                  <div className="mt-3 space-y-3">
+                    {selectedConflictDetail.reviews.map((review, index) => (
+                      <div
+                        key={`${review.reviewerId}-${index}`}
+                        className="rounded-lg border border-white/10 bg-slate-900/70 p-3"
+                      >
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <span className="text-xs font-semibold uppercase tracking-[.14em] text-cyan-200">
+                            Reviewer {index + 1}
+                          </span>
+                          <span className="rounded-md border border-white/10 px-2 py-1 text-xs font-bold text-white">
+                            {review.decision ?? "Pending"}
+                          </span>
+                        </div>
+                        <p className="mt-2 break-all text-xs text-slate-500">
+                          {review.reviewerId}
+                        </p>
+                        {review.feedback ? (
+                          <p className="mt-2 whitespace-pre-wrap leading-6 text-slate-200">
+                            {review.feedback}
+                          </p>
+                        ) : (
+                          <p className="mt-2 text-slate-500">No feedback.</p>
+                        )}
+                        {review.reviewedAt ? (
+                          <p className="mt-2 text-xs text-slate-500">
+                            Reviewed {formatSubmittedAt(review.reviewedAt)}
+                          </p>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               ) : null}
 
