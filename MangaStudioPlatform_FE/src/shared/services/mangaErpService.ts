@@ -24,6 +24,7 @@ import type {
   CurrentUser,
   CurrentUserProfileDto,
   CancellationQueueItemDto,
+  EditorialConflictDetailDto,
   DeadlineExtensionRequestDto,
   EditorDashboardDto,
   EditorialConflictsDto,
@@ -793,8 +794,20 @@ export const mangaErpApi = {
     };
   },
 
-  async getEditorialConflictDetail(workType: string, workId: string) {
-    return request<Record<string, unknown>>("submission", `/api/v1/editorial-workflow/conflicts/${workType}/${workId}`);
+  async getEditorialConflictDetail(workType: string, workId: string): Promise<EditorialConflictDetailDto> {
+    const data = await request<Record<string, unknown>>("submission", `/api/v1/editorial-workflow/conflicts/${workType}/${workId}`);
+    const reviews = getRecordArray(data, ["reviews", "Reviews"]);
+    return {
+      workType: String(pickAny<string | undefined>(data, ["workType", "WorkType"]) ?? workType),
+      workId: String(pickAny<string | undefined>(data, ["workId", "WorkId"]) ?? workId),
+      roundNumber: pickAny<number | null | undefined>(data, ["roundNumber", "RoundNumber"]),
+      reviews: reviews.map((item) => ({
+        reviewerId: pickAny<string>(item, ["reviewerId", "ReviewerId"]),
+        decision: pickAny<EditorialReviewAssignmentDto["decision"]>(item, ["decision", "Decision"]),
+        feedback: pickAny<string | null | undefined>(item, ["feedback", "Feedback"]),
+        reviewedAt: pickAny<string | null | undefined>(item, ["reviewedAt", "ReviewedAt"]),
+      })),
+    };
   },
 
   async resolveEditorialConflict(workType: string, workId: string, payload: EditorialDecisionPayload) {

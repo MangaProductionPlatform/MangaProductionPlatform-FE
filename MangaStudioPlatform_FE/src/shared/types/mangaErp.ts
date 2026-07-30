@@ -713,6 +713,18 @@ export type EditorialConflictItemDto = {
   createdAt?: string | null;
 };
 
+export type EditorialConflictDetailDto = {
+  workType: string;
+  workId: string;
+  roundNumber?: number | null;
+  reviews: Array<{
+    reviewerId: string;
+    decision?: EditorialDecision | null;
+    feedback?: string | null;
+    reviewedAt?: string | null;
+  }>;
+};
+
 export type EditorialSubmissionListItemDto = {
   id: string;
   title: string;
