@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, CircleDashed, FileCheck2, History, RefreshCw, Send, UploadCloud, UserPlus } from "lucide-react";
+import { CheckCircle2, CircleDashed, FileCheck2, History, RefreshCw, Send, UserPlus } from "lucide-react";
 import { useToast } from "../../shared/components/toastContext";
 import { mangaErpApi } from "../../shared/services/mangaErpService";
 import type { ChapterDto, MangaSeriesDto, PageTaskDto, QaBugPinDto, QaFeedbackHistoryDto, QaHistoryDto, QaRevisionTaskDto, QaSummaryDto, RecommendedAssistantDto } from "../../shared/types/mangaErp";
@@ -36,8 +36,6 @@ export default function QaSubmissionPage() {
   const [tasks, setTasks] = useState<PageTaskDto[]>([]);
   const [recommendedAssistants, setRecommendedAssistants] = useState<RecommendedAssistantDto[]>([]);
   const [revisionTasks, setRevisionTasks] = useState<QaRevisionTaskDto[]>([]);
-  const [resolvedImageByPin, setResolvedImageByPin] = useState<Record<string, string>>({});
-  const [noteByPin, setNoteByPin] = useState<Record<string, string>>({});
   const [assistantByPin, setAssistantByPin] = useState<Record<string, string>>({});
   const [instructionsByPin, setInstructionsByPin] = useState<Record<string, string>>({});
   const [summary, setSummary] = useState<QaSummaryDto | null>(null);
@@ -165,24 +163,6 @@ export default function QaSubmissionPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const reportFixed = async (task: QaRevisionTaskDto) => {
-    const resolvedImageUrl = resolvedImageByPin[task.pinId]?.trim() ?? "";
-    setIsSubmitting(true);
-    try {
-      // Thao tác này không đóng pin; chỉ chuyển pin sang bước Editor xác minh.
-      await mangaErpApi.resolveQaPin(task.pinId, {
-        ResolvedImageUrl: resolvedImageUrl,
-        Notes: noteByPin[task.pinId]?.trim() || "Đã sửa pin QA theo yêu cầu.",
-      });
-      toast.success("Fix reported", "The Editor can now verify this fixed pin.");
-      await loadRevisionTasks(chapterId);
-    } catch (error) {
-      toast.error("Could not report fix", error instanceof Error ? error.message : "Unknown error");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   const assignFix = async (task: QaRevisionTaskDto) => {
     // Giao từng pin cho Assistant không làm thay đổi task sản xuất gốc của chapter.
     const assistantId = assistantByPin[task.pinId]?.trim();
@@ -214,9 +194,9 @@ export default function QaSubmissionPage() {
       toast.error("Chapter cannot be submitted again", `Current status is ${chapterStatus || "unknown"}. Only Draft or QA Revision Required chapters can be submitted for QA.`);
       return;
     }
-    // MF3 chặn nộp lại khi vẫn còn pin do Editor tạo nhưng Studio chưa báo đã sửa.
+    // Chỉ cho phép nộp lại sau khi các pin được Assistant sửa và chuyển sang bước xác minh.
     if (unresolvedRevisionTasks.length > 0) {
-      toast.error("Revision pins remain", "Report every QA revision pin as fixed before resubmitting.");
+      toast.error("Revision pins remain", "Wait until every QA revision pin is fixed before resubmitting.");
       return;
     }
     setIsSubmitting(true);
@@ -237,7 +217,7 @@ export default function QaSubmissionPage() {
         <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-200">Mangaka · MF2/MF3 handoff</p>
         <h1 className="mt-2 text-3xl font-black text-white">QA Submission & Corrections</h1>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
-          Submit completed chapters to QA, receive revision pins from Editor review, report fixed pins, and resubmit for re-review.
+          Submit completed chapters to QA, receive revision pins from Editor review, assign fixes to Assistants, and resubmit for re-review.
         </p>
       </header>
 
@@ -324,7 +304,7 @@ export default function QaSubmissionPage() {
           <div>
             <p className="text-xs font-semibold uppercase tracking-[.2em] text-amber-200">Editor revision pins</p>
             <h2 className="mt-2 text-xl font-bold text-white">Fix QA pins</h2>
-            <p className="mt-2 text-sm text-slate-400">Report each corrected pin as fixed. The Editor will resolve or reopen it after verification.</p>
+            <p className="mt-2 text-sm text-slate-400">Assign each revision pin to an Assistant for correction.</p>
           </div>
           <button type="button" className="btn-secondary inline-flex items-center gap-2" onClick={() => void loadRevisionTasks(chapterId)}>
             <RefreshCw size={16} />
@@ -346,23 +326,6 @@ export default function QaSubmissionPage() {
                 </div>
                 <span className={`rounded-lg px-3 py-2 text-sm ${["fixed", "resolved"].includes(taskStatus(task.status)) ? "bg-emerald-500/10 text-emerald-200" : "bg-amber-500/10 text-amber-200"}`}>{task.status}</span>
               </div>
-
-              {!["fixed", "resolved"].includes(taskStatus(task.status)) ? (
-                <div className="mt-4 grid gap-3 lg:grid-cols-[1fr_1fr_auto]">
-                  <label className="text-sm text-slate-400">
-                    Resolved image / layer URL (optional)
-                    <input className="input mt-2" value={resolvedImageByPin[task.pinId] ?? ""} onChange={(event) => setResolvedImageByPin((current) => ({ ...current, [task.pinId]: event.target.value }))} placeholder="url_anh_da_sua" />
-                  </label>
-                  <label className="text-sm text-slate-400">
-                    Fix notes (optional)
-                    <input className="input mt-2" value={noteByPin[task.pinId] ?? ""} onChange={(event) => setNoteByPin((current) => ({ ...current, [task.pinId]: event.target.value }))} placeholder="Đã vẽ lại bàn tay theo đúng ref." />
-                  </label>
-                  <button type="button" disabled={isSubmitting} onClick={() => void reportFixed(task)} className="inline-flex h-fit self-end items-center justify-center gap-2 rounded-xl bg-cyan-600 px-4 py-3 font-semibold text-white disabled:opacity-40">
-                    <UploadCloud size={17} />
-                    Report fixed
-                  </button>
-                </div>
-              ) : null}
 
               {!["fixed", "resolved"].includes(taskStatus(task.status)) ? (
                 <div className="mt-4 rounded-xl border border-cyan-300/20 bg-cyan-300/5 p-4">
